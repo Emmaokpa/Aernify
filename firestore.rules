@@ -1,47 +1,4 @@
-/**
- * @file firestore.rules
- * @description Security rules for the Earnify Firestore database.
- *
- * @section Core Philosophy
- * This ruleset enforces a strict user-ownership model. All user-specific, mutable data is
- * stored within a dedicated subcollection under that user's own document (`/users/{userId}`).
- * This ensures that a user can only ever access or modify their own information.
- *
- * @section Data Structure
- * The data is organized into two main categories:
- * 1. Top-level public collections (e.g., /games, /offers, /products): This data is intended
- *    for public consumption, is readable by any client (authenticated or not), and is not
- *    writable by any client. It is managed by backend processes.
- * 2. User-specific subcollections (e.g., /users/{userId}/purchases): All data created by
- *    and for a specific user is nested under their user document. Access to these
- *    subcollections is strictly controlled by matching the authenticated user's ID
- *    against the `{userId}` in the path.
- *
- * @section Key Security Decisions
- * - User Isolation: A user's data is completely isolated. They cannot read, write, or even
- *   list data belonging to other users.
- * - No User Listing: The top-level `/users` collection cannot be listed to protect user privacy.
- * - Public Data is Read-Only: All collections containing shared, static content like games,
- *   offers, and products are publicly readable but are locked down against any client-side writes.
- *   This prevents tampering with application-wide data.
- * - Path-based Authorization: The rules heavily rely on the document path for authorization
- *   decisions, which is efficient and secure. The `userId` from the path is the primary
- *   gatekeeper for all user-owned documents and subcollections.
- *
- * @section Denormalization for Authorization
- * The design uses path-based ownership, which is a form of denormalization. For any document
- * inside a user's subcollection (e.g., `/users/{userId}/purchases/{purchaseId}`), the document
- * data must contain a `userId` field that matches the `{userId}` in the path. This creates a
- * verifiable link for authorization without needing costly `get()` calls to other documents.
- * These relational fields are validated on create and enforced as immutable on update.
- *
- * @section Structural Segregation
- * This ruleset strictly separates private user data from public application data. User-specific
- * documents are in subcollections under `/users/{userId}`, ensuring they inherit ownership-based
- * security. Publicly accessible data (like `/games` or `/products`) is in separate top-level
- * collections with globally readable rules. This segregation simplifies `list` operation security
- * and improves performance.
- */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -50,61 +7,38 @@ service cloud.firestore {
     // Helper Functions
     // -------------------------------------------------------------------------
 
-    /**
-     * Checks if the user is signed in.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the requesting user's UID matches the provided userId.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * Checks if the document being accessed already exists.
-     * Crucial for secure update and delete operations.
-     */
     function isExistingDoc() {
       return resource != null;
     }
 
-    /**
-     * Combines ownership check with an existence check for state-changing operations.
-     */
     function isOwnerOfExistingDoc(userId) {
       return isOwner(userId) && isExistingDoc();
     }
+    
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
 
-    /**
-     * Validates that the incoming document's 'id' field matches the user's UID.
-     * Used for creating the user's own profile document.
-     */
     function incomingIdMatchesUser(userId) {
       return request.resource.data.id == userId;
     }
 
-    /**
-     * Ensures the 'id' field of a user profile document is immutable.
-     */
     function idIsImmutable() {
       return request.resource.data.id == resource.data.id;
     }
 
-    /**
-     * Validates that the incoming document's 'userId' field matches the path.
-     * Used for creating documents in user-owned subcollections.
-     */
     function incomingUserIdMatchesPath(userId) {
       return request.resource.data.userId == userId;
     }
 
-    /**
-     * Ensures the 'userId' field within a document is immutable.
-     */
     function userIdIsImmutable() {
       return request.resource.data.userId == resource.data.userId;
     }
@@ -113,279 +47,101 @@ service cloud.firestore {
     // Collection Rules
     // -------------------------------------------------------------------------
 
-    /**
-     * @description Stores user profiles. A user can create their own profile,
-     *   and can only read and update their own document. Deletion and listing
-     *   of users is disallowed to protect privacy.
-     * @path /users/{userId}
-     * @allow (create) An authenticated user creating their own profile document.
-     * @deny (create) An authenticated user trying to create a profile for another UID.
-     * @principle Restricts access to a user's own data tree and enforces self-creation.
-     */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && incomingIdMatchesUser(userId);
-      allow update: if isOwnerOfExistingDoc(userId) && idIsImmutable();
-      allow delete: if false;
+      allow update: if isOwnerOfExistingDoc(userId) || isAdmin();
+      allow delete: if isAdmin();
     }
 
-    /**
-     * @description Stores game information. This data is considered public
-     *   and can be read by any user, authenticated or not. Writes are disabled
-     *   from the client-side to protect this core application data.
-     * @path /games/{gameId}
-     * @allow (get, list) Any user, including anonymous users, reading game data.
-     * @deny (create, update, delete) Any user trying to modify the game list.
-     * @principle Enforces public read access for non-sensitive data, with writes
-     *   restricted to trusted backend environments.
-     */
     match /games/{gameId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Stores a user's game play sessions. A user can only access
-     *   and manage their own play history.
-     * @path /users/{userId}/userGamePlays/{userGamePlayId}
-     * @allow (create) An authenticated user creating a play session for themselves.
-     * @deny (get) An authenticated user trying to read another user's play session.
-     * @principle Enforces document ownership for all operations and validates
-     *   relational integrity via the 'userId' field.
-     */
     match /users/{userId}/userGamePlays/{userGamePlayId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow get, list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId);
+      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
     }
 
-    /**
-     * @description Stores offer information. This data is considered public
-     *   and can be read by any user, authenticated or not. Writes are disabled
-     *   from the client-side to protect this core application data.
-     * @path /offers/{offerId}
-     * @allow (get, list) Any user, including anonymous users, reading offer data.
-     * @deny (create, update, delete) Any user trying to modify the offer list.
-     * @principle Enforces public read access for non-sensitive data, with writes
-     *   restricted to trusted backend environments.
-     */
     match /offers/{offerId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Stores records of offers a user has completed. A user can
-     *   only access and manage their own offer completion history.
-     * @path /users/{userId}/userOfferCompletions/{userOfferCompletionId}
-     * @allow (create) An authenticated user creating a completion record for themselves.
-     * @deny (get) An authenticated user trying to read another user's completion record.
-     * @principle Enforces document ownership for all operations and validates
-     *   relational integrity via the 'userId' field.
-     */
     match /users/{userId}/userOfferCompletions/{userOfferCompletionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow get, list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId);
+      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
     }
 
-    /**
-     * @description Stores product information for the in-app shop. This data
-     *   is public and readable by anyone. Writes are disabled from clients.
-     * @path /products/{productId}
-     * @allow (get, list) Any user, including anonymous users, browsing products.
-     * @deny (create, update, delete) Any user trying to modify product data.
-     * @principle Enforces public read access for non-sensitive data, with writes
-     *   restricted to trusted backend environments.
-     */
     match /products/{productId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Stores a user's purchase history. A user can only access
-     *   and manage their own purchase records.
-     * @path /users/{userId}/purchases/{purchaseId}
-     * @allow (create) An authenticated user creating a purchase record for themselves.
-     * @deny (get) An authenticated user trying to read another user's purchase history.
-     * @principle Enforces document ownership for all operations and validates
-     *   relational integrity via the 'userId' field.
-     */
     match /users/{userId}/purchases/{purchaseId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow get, list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId);
+      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
     }
 
-    /**
-     * @description Stores available gift cards. This data is public and can be
-     *   read by any user. Writes are disabled from clients.
-     * @path /giftCards/{giftCardId}
-     * @allow (get, list) Any user, including anonymous users, browsing gift cards.
-     * @deny (create, update, delete) Any user trying to modify gift card data.
-     * @principle Enforces public read access for non-sensitive data, with writes
-     *   restricted to trusted backend environments.
-     */
     match /giftCards/{giftCardId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Stores a user's gift card redemption history. A user can only
-     *   access and manage their own redemption records.
-     * @path /users/{userId}/redemptions/{redemptionId}
-     * @allow (create) An authenticated user creating a redemption record for themselves.
-     * @deny (get) An authenticated user trying to read another user's redemption.
-     * @principle Enforces document ownership for all operations and validates
-     *   relational integrity via the 'userId' field.
-     */
     match /users/{userId}/redemptions/{redemptionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow get, list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId);
+      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
     }
 
-    /**
-     * @description Stores daily login bonus configurations. This data is public
-     *   and can be read by any user. Writes are disabled from clients.
-     * @path /dailyLoginBonuses/{dailyLoginBonusId}
-     * @allow (get, list) Any user, including anonymous users, reading bonus info.
-     * @deny (create, update, delete) Any user trying to modify bonus configurations.
-     * @principle Enforces public read access for non-sensitive data, with writes
-     *   restricted to trusted backend environments.
-     */
     match /dailyLoginBonuses/{dailyLoginBonusId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Stores a user's daily login history. A user can only access
-     *   and manage their own login records.
-     * @path /users/{userId}/userDailyLogins/{userDailyLoginId}
-     * @allow (create) An authenticated user creating a daily login record for themselves.
-     * @deny (get) An authenticated user trying to read another user's login history.
-     * @principle Enforces document ownership for all operations and validates
-     *   relational integrity via the 'userId' field.
-     */
     match /users/{userId}/userDailyLogins/{userDailyLoginId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow get, list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId);
+      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
     }
 
-    /**
-     * @description Stores weekly leaderboard entries. This data is public so all
-     *   users can view the leaderboard. Writes are disabled from the client, as
-     *   scores should only be calculated and written by a trusted backend service.
-     * @path /leaderboardEntries/{leaderboardEntryId}
-     * @allow (get, list) Any user, including anonymous users, viewing the leaderboard.
-     * @deny (create, update, delete) Any user trying to modify their score.
-     * @principle Enforces public read access for competitive data, with writes
-     *   restricted to trusted backend environments to prevent cheating.
-     */
     match /leaderboardEntries/{leaderboardEntryId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Stores weekly prize information. This data is public so all
-     *   users can see the prizes. Writes are disabled from the client.
-     * @path /weeklyPrizes/{weeklyPrizeId}
-     * @allow (get, list) Any user, including anonymous users, viewing prize info.
-     * @deny (create, update, delete) Any user trying to modify prize data.
-     * @principle Enforces public read access for non-sensitive data, with writes
-     *   restricted to trusted backend environments.
-     */
     match /weeklyPrizes/{weeklyPrizeId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Stores daily challenge configurations. This data is public
-     *   and can be read by any user. Writes are disabled from clients.
-     * @path /dailyChallenges/{dailyChallengeId}
-     * @allow (get, list) Any user, including anonymous users, viewing challenges.
-     * @deny (create, update, delete) Any user trying to modify challenge data.
-     * @principle Enforces public read access for non-sensitive data, with writes
-     *   restricted to trusted backend environments.
-     */
     match /dailyChallenges/{dailyChallengeId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Stores records of a user's daily challenge completions. A user
-     *   can only access and manage their own completion history.
-     * @path /users/{userId}/userDailyChallengeCompletions/{userDailyChallengeCompletionId}
-     * @allow (create) An auth'd user creating a challenge completion record for themselves.
-     * @deny (get) An auth'd user trying to read another user's challenge completion record.
-     * @principle Enforces document ownership for all operations and validates
-     *   relational integrity via the 'userId' field.
-     */
     match /users/{userId}/userDailyChallengeCompletions/{userDailyChallengeCompletionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow get, list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId);
+      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
     }
 
-    /**
-     * @description Stores a user's VIP subscription details. A user can only
-     *   access and manage their own subscription information.
-     * @path /users/{userId}/vipSubscriptions/{vipSubscriptionId}
-     * @allow (create) An authenticated user creating a subscription record for themselves.
-     * @deny (get) An authenticated user trying to read another user's subscription.
-     * @principle Enforces document ownership for all operations and validates
-     *   relational integrity via the 'userId' field.
-     */
     match /users/{userId}/vipSubscriptions/{vipSubscriptionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow get, list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId);
+      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
     }
   }
 }

@@ -9,39 +9,24 @@ import {
   ListChecks,
   ShoppingBag,
   Gift,
-  Trophy,
-  User,
   X,
-  Coins,
-  Sparkles,
   LogOut,
-  LogIn,
-  Shield,
+  ArrowLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
-import Logo from '../icons/logo';
-import { Button } from '../ui/button';
-import { ScrollArea } from '../ui/scroll-area';
-import { useAuth, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import Logo from '@/components/icons/logo';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
 
-const loggedInNavItems: NavItem[] = [
-  { title: 'Dashboard', href: '/', icon: <LayoutDashboard /> },
-  { title: 'Play Games', href: '/play', icon: <Gamepad2 /> },
-  { title: 'Challenges', href: '/challenges', icon: <Sparkles /> },
-  { title: 'Earn', href: '/earn', icon: <Coins /> },
-  { title: 'Affiliate', href: '/offers', icon: <ListChecks /> },
-  { title: 'Shop', href: '/shop', icon: <ShoppingBag /> },
-  { title: 'Redeem', href: '/redeem', icon: <Gift /> },
-  { title: 'Leaderboard', href: '/leaderboard', icon: <Trophy /> },
-  { title: 'Profile', href: '/profile', icon: <User /> },
-];
-
-const loggedOutNavItems: NavItem[] = [
-  { title: 'Login', href: '/login', icon: <LogIn /> },
-  { title: 'Sign Up', href: '/signup', icon: <User /> },
+const adminNavItems: NavItem[] = [
+  { title: 'Dashboard', href: '/admin', icon: <LayoutDashboard /> },
+  { title: 'Games', href: '/admin/games', icon: <Gamepad2 /> },
+  { title: 'Offers', href: '/admin/offers', icon: <ListChecks /> },
+  { title: 'Products', href: '/admin/products', icon: <ShoppingBag /> },
+  { title: 'Gift Cards', href: '/admin/gift-cards', icon: <Gift /> },
 ];
 
 type SidebarProps = {
@@ -49,28 +34,21 @@ type SidebarProps = {
   setOpen: (isOpen: boolean) => void;
 };
 
-export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
+export function Sidebar({ isOpen, setOpen }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
-  const { user } = useUser();
-  const firestore = useFirestore();
-
-  const userDocRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
-
-  const { data: userData } = useDoc<{ isAdmin?: boolean }>(userDocRef);
 
   const handleLogout = () => {
     signOut(auth);
     router.push('/login');
     setOpen(false);
   };
-
-  const navItems = user ? loggedInNavItems : loggedOutNavItems;
-  const isAdmin = userData?.isAdmin === true;
+  
+  const handleBackToApp = () => {
+    router.push('/');
+    setOpen(false);
+  }
 
   const content = (
     <div className="flex h-full flex-col">
@@ -82,8 +60,9 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
         </div>
       <ScrollArea className="flex-grow">
         <nav className="p-4">
+          <p className="px-3 py-2 text-xs font-semibold text-muted-foreground tracking-wider">MANAGE</p>
           <ul className="space-y-2">
-            {navItems.map((item) => (
+            {adminNavItems.map((item) => (
               <li key={item.title}>
                 <Link
                   href={item.href}
@@ -98,32 +77,19 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
                 </Link>
               </li>
             ))}
-             {isAdmin && (
-              <li>
-                <Link
-                  href="/admin"
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10',
-                    pathname.startsWith('/admin') && 'bg-primary/20 text-primary font-semibold'
-                  )}
-                >
-                  <Shield />
-                  Admin
-                </Link>
-              </li>
-            )}
           </ul>
         </nav>
       </ScrollArea>
-      {user && (
-        <div className="p-4 border-t">
-          <Button variant="outline" className="w-full" onClick={handleLogout}>
+      <div className="p-4 border-t space-y-2">
+          <Button variant="outline" className="w-full" onClick={handleBackToApp}>
+            <ArrowLeft className="mr-2" />
+            Back to App
+          </Button>
+          <Button variant="destructive" className="w-full bg-red-600/20 text-red-500 hover:bg-red-600/30 hover:text-red-400" onClick={handleLogout}>
             <LogOut className="mr-2" />
             Logout
           </Button>
         </div>
-      )}
     </div>
   );
 

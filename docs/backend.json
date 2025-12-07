@@ -45,6 +45,10 @@
         "isVIP": {
           "type": "boolean",
           "description": "Indicates whether the user has a VIP subscription."
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Indicates whether the user has admin privileges."
         }
       },
       "required": [
