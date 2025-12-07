@@ -31,13 +31,6 @@ export default function EarnPage() {
   
   const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef);
 
-  console.log('Earn Page Debug:', {
-    isUserLoading,
-    isUserDataLoading,
-    user: user ? { uid: user.uid, email: user.email } : null,
-    userData,
-  });
-
   const [adsWatched, setAdsWatched] = useState(0);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
   const dailyAdLimit = 20;
@@ -81,8 +74,8 @@ export default function EarnPage() {
     });
   }
 
+  const isLoading = isUserLoading || (user && isUserDataLoading);
   const referralCode = userData?.referralCode || '';
-  const isLoading = isUserLoading || isUserDataLoading;
 
 
   return (
@@ -136,7 +129,7 @@ export default function EarnPage() {
             </p>
             <div>
               <p className="text-sm font-medium mb-2">Your referral code:</p>
-              {isLoading && !referralCode ? (
+              {isLoading ? (
                 <div className="flex gap-2">
                   <Skeleton className="h-10 w-full" />
                   <Skeleton className="h-10 w-24" />
