@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Gamepad2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getImage } from '@/lib/placeholder-images';
 
 type Game = {
   name: string;
@@ -36,6 +37,7 @@ export default function DashboardPage() {
   }, []);
 
   const heroGame = games?.[0];
+  const defaultGameImage = getImage('game1').imageUrl;
 
   return (
     <>
@@ -45,7 +47,7 @@ export default function DashboardPage() {
           {heroGame && (
             <>
               <Image
-                src={heroGame.imageUrl}
+                src={heroGame.imageUrl || defaultGameImage}
                 alt={heroGame.name}
                 fill
                 className="object-cover transition-transform duration-500 ease-in-out group-hover:scale-105"
@@ -75,7 +77,7 @@ export default function DashboardPage() {
               <Link href={`/play/${game.id}`} key={game.id}>
                 <Card className="overflow-hidden aspect-[3/4] relative group transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 rounded-2xl">
                   <Image
-                    src={game.imageUrl}
+                    src={game.imageUrl || defaultGameImage}
                     alt={game.name}
                     fill
                     className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
@@ -94,5 +96,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    

@@ -26,17 +26,17 @@ import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { getImage } from '@/lib/placeholder-images';
 
 type Game = {
   name: string;
   iframeUrl: string;
-  imageUrl: string;
+  imageUrl?: string;
 };
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   iframeUrl: z.string().url('Must be a valid iFrame URL'),
-  imageUrl: z.string().url('Must be a valid image URL'),
 });
 
 type GameFormProps = {
@@ -53,7 +53,6 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
     defaultValues: {
       name: '',
       iframeUrl: '',
-      imageUrl: '',
     },
   });
   
@@ -66,7 +65,6 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
       form.reset({
         name: '',
         iframeUrl: '',
-        imageUrl: '',
       });
     }
   }, [game, form, isOpen]);
@@ -77,7 +75,14 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
       const docId = game ? game.id : crypto.randomUUID();
       const docRef = doc(firestore, 'games', docId);
 
-      await setDoc(docRef, { id: docId, ...values }, { merge: true });
+      // Always use a placeholder image for now
+      const defaultGameImage = getImage('game1').imageUrl;
+
+      await setDoc(docRef, { 
+        id: docId, 
+        ...values,
+        imageUrl: game?.imageUrl || defaultGameImage,
+       }, { merge: true });
 
       toast({
         title: game ? 'Game Updated' : 'Game Created',
@@ -127,19 +132,6 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com/image.png" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
                 Cancel
@@ -155,5 +147,3 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
     </Dialog>
   );
 }
-
-    

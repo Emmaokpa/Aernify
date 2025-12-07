@@ -9,6 +9,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { WithId } from '@/firebase/firestore/use-collection';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getImage } from '@/lib/placeholder-images';
 
 type Game = {
   name: string;
@@ -22,6 +23,7 @@ export default function PlayPage() {
     [firestore]
   );
   const { data: games, isLoading } = useCollection<Game>(gamesCollectionRef);
+  const defaultGameImage = getImage('game1').imageUrl;
 
   return (
     <>
@@ -38,7 +40,7 @@ export default function PlayPage() {
           <Link href={`/play/${game.id}`} key={game.id}>
             <Card className="overflow-hidden aspect-[3/4] relative group transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 rounded-2xl">
               <Image
-                src={game.imageUrl}
+                src={game.imageUrl || defaultGameImage}
                 alt={game.name}
                 fill
                 className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
@@ -54,5 +56,3 @@ export default function PlayPage() {
     </>
   );
 }
-
-    
