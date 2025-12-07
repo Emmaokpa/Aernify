@@ -28,6 +28,7 @@ import { doc } from 'firebase/firestore';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import Logo from '@/components/icons/logo';
+import { applyReferralCode } from '@/ai/flows/referral-flow';
 
 const formSchema = z
   .object({
@@ -41,6 +42,7 @@ const formSchema = z
       message: 'Password must be at least 6 characters.',
     }),
     confirmPassword: z.string(),
+    referralCode: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -60,6 +62,7 @@ export default function SignUpPage() {
       email: '',
       password: '',
       confirmPassword: '',
+      referralCode: '',
     },
   });
 
@@ -72,6 +75,8 @@ export default function SignUpPage() {
         values.password
       );
       const user = userCredential.user;
+      
+      const newReferralCode = Math.random().toString(36).substring(2, 7).toUpperCase();
 
       const userDocRef = doc(firestore, 'users', user.uid);
       const userData = {
@@ -81,13 +86,42 @@ export default function SignUpPage() {
         registrationDate: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
         coins: 10,
+        referralCode: newReferralCode,
         isVIP: false,
       };
 
-      // Create a user profile document in Firestore
+      if (values.referralCode) {
+        try {
+          const result = await applyReferralCode({
+            newUserUid: user.uid,
+            referralCode: values.referralCode,
+          });
+          if (result.success) {
+            toast({
+              title: 'Referral Success!',
+              description: `You and your friend have both received 100 coins!`,
+            });
+            // Add the referral bonus to the initial coins
+            userData.coins += 100;
+          } else {
+             toast({
+              variant: 'destructive',
+              title: 'Invalid Referral Code',
+              description: result.message,
+            });
+          }
+        } catch (e) {
+            console.error("Error applying referral code:", e);
+            toast({
+              variant: 'destructive',
+              title: 'Referral Error',
+              description: 'Could not apply the referral code.',
+            });
+        }
+      }
+
       setDocumentNonBlocking(userDocRef, userData, { merge: false });
 
-      // Let the onAuthStateChanged listener handle the redirect
     } catch (error: any) {
       console.error(error);
       toast({
@@ -164,6 +198,19 @@ export default function SignUpPage() {
                   <FormLabel>Confirm Password</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="referralCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Referral Code (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter a 5-digit code" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

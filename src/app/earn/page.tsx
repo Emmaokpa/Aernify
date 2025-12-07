@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,20 +13,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { useToast } from "@/hooks/use-toast";
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EarnPage() {
-  const referralCode = 'YOURCODE123';
+  const { toast } = useToast();
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+  
+  const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef);
+
   const [adsWatched, setAdsWatched] = useState(0);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
-  const [showReward, setShowReward] = useState(false);
   const dailyAdLimit = 20;
   const [countdown, setCountdown] = useState(15);
-  const { toast } = useToast();
-
+  
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isAdModalOpen && countdown > 0) {
@@ -54,6 +64,19 @@ export default function EarnPage() {
     });
     // In a real app, you would add 10 coins to the user's balance here.
   };
+
+  const handleCopyCode = () => {
+    if (!userData?.referralCode) return;
+    navigator.clipboard.writeText(userData.referralCode);
+    toast({
+      title: "Copied!",
+      description: "Referral code copied to clipboard.",
+    });
+  }
+
+  const referralCode = userData?.referralCode || '...';
+  const isLoading = isUserLoading || isUserDataLoading;
+
 
   return (
     <>
@@ -84,7 +107,7 @@ export default function EarnPage() {
             <div className="flex items-center justify-center text-sm text-muted-foreground">
               <Info className="w-4 h-4 mr-2" />
               <span>
-                {adsWatched >= dailyAdDatalimit
+                {adsWatched >= dailyAdLimit
                   ? 'You have reached your daily limit.'
                   : 'You can watch more ads.'}
               </span>
@@ -106,13 +129,20 @@ export default function EarnPage() {
             </p>
             <div>
               <p className="text-sm font-medium mb-2">Your referral code:</p>
-              <div className="flex gap-2">
-                <Input readOnly value={referralCode} className="font-mono" />
-                <Button>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copy
-                </Button>
-              </div>
+              {isLoading ? (
+                <div className="flex gap-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-24" />
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input readOnly value={referralCode} className="font-mono" />
+                  <Button onClick={handleCopyCode}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
