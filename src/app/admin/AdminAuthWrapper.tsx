@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -50,3 +51,5 @@ export default function AdminAuthWrapper({ children }: { children: React.ReactNo
   // If not an admin or not logged in, render nothing while redirecting.
   return null;
 }
+
+    

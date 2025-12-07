@@ -65,6 +65,7 @@ export default function AdminGamesPage() {
   }
 
   const handleDelete = async (gameId: string) => {
+    if(!firestore) return;
     try {
       await deleteDoc(doc(firestore, 'games', gameId));
       toast({
@@ -167,3 +168,5 @@ export default function AdminGamesPage() {
     </>
   );
 }
+
+    

@@ -22,6 +22,11 @@ service cloud.firestore {
     function isOwnerOfExistingDoc(userId) {
       return isOwner(userId) && isExistingDoc();
     }
+    
+    function isAdmin() {
+      // Check for the isAdmin flag on the user's document
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
 
     function incomingIdMatchesUser(userId) {
       return request.resource.data.id == userId;
@@ -53,7 +58,7 @@ service cloud.firestore {
 
     match /games/{gameId} {
       allow get, list: if true;
-      allow create, update, delete: if false; // Only admins could do this
+      allow create, update, delete: if isAdmin();
     }
 
     match /users/{userId}/userGamePlays/{userGamePlayId} {
@@ -141,3 +146,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

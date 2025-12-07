@@ -28,6 +28,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { user } = useUser();
 
   const handleLogout = () => {
+    if (!auth) return;
     signOut(auth);
     router.push('/login');
   };
@@ -78,3 +79,5 @@ export function Header({ onMenuClick }: HeaderProps) {
     </header>
   );
 }
+
+    

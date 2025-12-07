@@ -88,6 +88,7 @@ export default function SignUpPage() {
         coins: 10,
         referralCode: newReferralCode,
         isVIP: false,
+        isAdmin: false, // Default isAdmin to false for all new users
       };
 
       if (values.referralCode) {
@@ -232,3 +233,5 @@ export default function SignUpPage() {
     </Card>
   );
 }
+
+    

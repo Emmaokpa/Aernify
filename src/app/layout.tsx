@@ -8,7 +8,9 @@ import { Toaster } from '@/components/ui/toaster';
 import MainLayout from '@/components/layout/main-layout';
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
-import React from 'react';
+import React, { Suspense } from 'react';
+import { usePathname } from 'next/navigation';
+import AdminLayout from './admin/layout';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -21,14 +23,18 @@ function RootLayoutContent({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith('/admin');
 
   return (
     <html lang="en" className="dark">
       <body className={cn('font-body antialiased', inter.variable)}>
         <FirebaseClientProvider>
-          <MainLayout>
-            {children}
-          </MainLayout>
+          {isAdminRoute ? (
+            <AdminLayout>{children}</AdminLayout>
+          ) : (
+            <MainLayout>{children}</MainLayout>
+          )}
         </FirebaseClientProvider>
         <Toaster />
       </body>
@@ -36,15 +42,16 @@ function RootLayoutContent({
   );
 }
 
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <React.Suspense>
-       <RootLayoutContent>{children}</RootLayoutContent>
-    </React.Suspense>
-  )
+    <Suspense>
+      <RootLayoutContent>{children}</RootLayoutContent>
+    </Suspense>
+  );
 }
+
+    

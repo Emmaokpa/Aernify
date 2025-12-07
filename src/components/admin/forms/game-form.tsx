@@ -77,6 +77,7 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
   }, [game, form, isOpen]);
   
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!firestore) return;
     try {
       const docRef = game ? doc(firestore, 'games', game.id) : doc(firestore, 'games', crypto.randomUUID());
       await setDoc(docRef, values, { merge: true });
@@ -169,3 +170,5 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
     </Dialog>
   );
 }
+
+    

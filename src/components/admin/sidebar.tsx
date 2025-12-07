@@ -40,6 +40,7 @@ export function Sidebar({ isOpen, setOpen }: SidebarProps) {
   const auth = useAuth();
 
   const handleLogout = () => {
+    if (!auth) return;
     signOut(auth);
     router.push('/login');
     setOpen(false);
@@ -107,3 +108,5 @@ export function Sidebar({ isOpen, setOpen }: SidebarProps) {
     </>
   );
 }
+
+    

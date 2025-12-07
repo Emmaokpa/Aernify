@@ -45,6 +45,10 @@
         "isVIP": {
           "type": "boolean",
           "description": "Indicates whether the user has a VIP subscription."
+        },
+        "isAdmin": {
+            "type": "boolean",
+            "description": "Indicates whether the user has admin privileges."
         }
       },
       "required": [
@@ -899,3 +903,5 @@
     "reasoning": "The Firestore data structure is designed to support the Earnify app's core features, emphasizing security, scalability, and maintainability. The design adheres to the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs. Authorization independence is achieved through denormalization, avoiding `get()` calls in security rules. Structural Segregation ensures collections have homogeneous security postures, simplifying rules. Access Modeling standardizes authorization using path-based ownership for private data and membership maps for collaborative data.\n\n**Authorization Independence and Denormalization:**\n*   Many subcollections like `/users/{userId}/userGamePlays` and `/users/{userId}/purchases` will exist to record data for each user, these paths benefit from Path-Based ownership with easy to manage rules.\n\n*   No denormalization is needed because all relationships and access checks can be performed by checking `request.auth.uid`.\n\n**QAPs and Structural Segregation:**\n*   The structure supports secure `list` operations by segregating data based on ownership. For instance, listing games would not require filtering based on user roles, as the game collection itself is publicly readable."
   }
 }
+
+    
