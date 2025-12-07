@@ -52,7 +52,6 @@ type GameFormProps = {
 
 export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
   const firestore = useFirestore();
-  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
 
@@ -90,26 +89,26 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
     setIsSubmitting(true);
     setSubmissionError(null);
 
-    try {
-      const docId = game ? game.id : crypto.randomUUID();
-      const docRef = doc(firestore, 'games', docId);
+    const docId = game ? game.id : crypto.randomUUID();
+    const docRef = doc(firestore, 'games', docId);
 
-      const gameData = { 
-        id: docId, 
-        ...values,
-      };
-
-      await setDoc(docRef, gameData, { merge: true });
-
-      onSuccess();
-      setOpen(false);
-      
-    } catch (error: any) {
-       const errorMessage = error.message || 'An unknown error occurred.';
-       setSubmissionError(`Firestore Error: ${errorMessage} (Code: ${error.code || 'N/A'})`);
-    } finally {
-        setIsSubmitting(false);
-    }
+    const gameData = { 
+      id: docId, 
+      ...values,
+    };
+    
+    setDoc(docRef, gameData, { merge: true })
+      .then(() => {
+        onSuccess();
+        setOpen(false);
+      })
+      .catch((error: any) => {
+        const errorMessage = error.message || 'An unknown error occurred.';
+        setSubmissionError(`Submission Failed: ${errorMessage} (Code: ${error.code || 'N/A'})`);
+      })
+      .finally(() => {
+         setIsSubmitting(false);
+      });
   };
 
   return (
@@ -127,7 +126,7 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
         {submissionError && (
             <Alert variant="destructive">
                 <Terminal className="h-4 w-4" />
-                <AlertTitle>Submission Failed</AlertTitle>
+                <AlertTitle>Error</AlertTitle>
                 <AlertDescription>
                     {submissionError}
                 </AlertDescription>
