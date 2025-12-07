@@ -19,14 +19,13 @@ export default function AdminAuthWrapper({ children }: { children: React.ReactNo
   const { data: userData, isLoading: isUserDataLoading } = useDoc<{ isAdmin?: boolean }>(userDocRef);
 
   const isLoading = isUserLoading || (user && isUserDataLoading);
-  const isAuthenticated = !isLoading && user;
-  const isAdmin = isAuthenticated && userData?.isAdmin === true;
+  const isAdmin = !isLoading && user && userData?.isAdmin === true;
 
   useEffect(() => {
     // This effect handles redirection once all loading is complete.
+    // It will ONLY redirect if loading is finished and the user is NOT an admin.
     if (!isLoading) {
       if (!isAdmin) {
-        // If loading is done and the user is not an admin, redirect.
         router.push('/');
       }
     }
@@ -42,14 +41,11 @@ export default function AdminAuthWrapper({ children }: { children: React.ReactNo
   }
 
   // After loading, if the user is a confirmed admin, render the children.
-  // Otherwise, render null while the useEffect handles the redirection.
-  // This prevents non-admins from seeing any part of the admin UI.
   if (isAdmin) {
     return <>{children}</>;
   }
 
-  // If not an admin or not logged in, render nothing while redirecting.
+  // If not an admin or not logged in (and loading is complete), render nothing.
+  // The useEffect above is already handling the redirection.
   return null;
 }
-
-    
