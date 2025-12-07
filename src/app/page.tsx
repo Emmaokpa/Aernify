@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 
 export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,15 +23,23 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="grid gap-6">
-        <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden">
+      <div className="grid gap-8">
+        <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden group">
           <Image
             src={heroGame.imageUrl}
             alt={heroGame.title}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-500 ease-in-out group-hover:scale-105"
             data-ai-hint={heroGame.imageHint}
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute bottom-0 left-0 p-8">
+             <Link href="/play">
+              <Button size="lg" className='text-lg'>
+                Play Now <ArrowRight className="ml-2" />
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div>

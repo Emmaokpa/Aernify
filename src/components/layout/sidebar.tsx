@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
 import Logo from '../icons/logo';
 import { Button } from '../ui/button';
+import { ScrollArea } from '../ui/scroll-area';
 
 const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/', icon: <LayoutDashboard /> },
@@ -47,25 +48,27 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
             <X className="h-6 w-6" />
           </Button>
         </div>
-      <nav className="flex-grow p-4">
-        <ul className="space-y-2">
-          {navItems.map((item) => (
-            <li key={item.title}>
-              <Link
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10',
-                  pathname === item.href && 'bg-primary/20 text-primary font-semibold'
-                )}
-              >
-                {item.icon}
-                {item.title}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <ScrollArea className="flex-grow">
+        <nav className="p-4">
+          <ul className="space-y-2">
+            {navItems.map((item) => (
+              <li key={item.title}>
+                <Link
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10',
+                    pathname === item.href && 'bg-primary/20 text-primary font-semibold'
+                  )}
+                >
+                  {item.icon}
+                  {item.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </ScrollArea>
     </div>
   );
 
