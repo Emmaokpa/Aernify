@@ -25,7 +25,6 @@ import { useEffect, useState } from 'react';
 import type { WithId } from '@/firebase/firestore/use-collection';
 import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
-import { useToast } from '@/hooks/use-toast';
 import { Loader2, Terminal } from 'lucide-react';
 import { ImageUploader } from './image-uploader';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -51,10 +50,8 @@ type GameFormProps = {
 
 export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
   const firestore = useFirestore();
-  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const [debugMessage, setDebugMessage] = useState('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -70,7 +67,6 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
   useEffect(() => {
     if (isOpen) {
         setSubmissionError(null);
-        setDebugMessage(''); // Clear debug message on open
         if (game) {
           reset(game);
         } else {
@@ -90,7 +86,6 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
     }
     setIsSubmitting(true);
     setSubmissionError(null);
-    setDebugMessage('');
 
     const docId = game ? game.id : crypto.randomUUID();
     const docRef = doc(firestore, 'games', docId);
@@ -99,23 +94,13 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
       id: docId, 
       ...values,
     };
-    
-    // TRACE POINT 1: Display the data payload
-    setDebugMessage('TRACE 1: Attempting to save data. Payload keys: ' + Object.keys(gameData).join(', '));
 
     try {
       await setDoc(docRef, gameData, { merge: true });
-
-      // On SUCCESS:
-      setDebugMessage(''); // Clear debug message
       onSuccess();
       setOpen(false);
-
     } catch (error: any) {
-      // TRACE POINT 2: Display the exact error
-      const errorMessage = 'TRACE 2: FIRESTORE WRITE FAILED! Error Code: ' + (error.code || 'N/A') + '. Details: ' + error.message;
-      setDebugMessage(errorMessage);
-      setSubmissionError('Submission failed. See details below.');
+      setSubmissionError(`CRITICAL FAILURE: ${error.code} - ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -127,16 +112,16 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
         <DialogHeader>
           <DialogTitle>{game ? 'Edit Game' : 'Add New Game'}</DialogTitle>
            <DialogDescription>
-             {submissionError ? 'Please correct the issues below and try again.' : (game ? 'Update the details for this game.' : 'Fill in the details to add a new game.')}
+             {game ? 'Update the details for this game.' : 'Fill in the details to add a new game.'}
            </DialogDescription>
         </DialogHeader>
 
-        {debugMessage && (
+        {submissionError && (
             <Alert variant="destructive">
                 <Terminal className="h-4 w-4" />
-                <AlertTitle>Debug Information</AlertTitle>
-                <AlertDescription className="break-all">
-                    {debugMessage}
+                <AlertTitle>Save Failed</AlertTitle>
+                <AlertDescription className="break-words">
+                    {submissionError}
                 </AlertDescription>
             </Alert>
         )}
