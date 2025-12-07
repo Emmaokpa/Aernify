@@ -3,14 +3,16 @@
 
 import { products } from '@/lib/data';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Coins, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 
-export default function ProductDetailPage({ params }: { params: { productId: string } }) {
-  const product = products.find((p) => p.id === params.productId);
+export default function ProductDetailPage() {
+  const params = useParams();
+  const productId = Array.isArray(params.productId) ? params.productId[0] : params.productId;
+  const product = products.find((p) => p.id === productId);
 
   if (!product) {
     notFound();
