@@ -26,10 +26,9 @@ import type { WithId } from '@/firebase/firestore/use-collection';
 import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Terminal } from 'lucide-react';
 import { ImageUploader } from './image-uploader';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
 
 type Game = {
   name: string;
@@ -52,8 +51,10 @@ type GameFormProps = {
 
 export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [debugMessage, setDebugMessage] = useState('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -68,7 +69,8 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
 
   useEffect(() => {
     if (isOpen) {
-        setSubmissionError(null); // Clear errors when dialog opens
+        setSubmissionError(null);
+        setDebugMessage(''); // Clear debug message on open
         if (game) {
           reset(game);
         } else {
@@ -88,6 +90,7 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
     }
     setIsSubmitting(true);
     setSubmissionError(null);
+    setDebugMessage('');
 
     const docId = game ? game.id : crypto.randomUUID();
     const docRef = doc(firestore, 'games', docId);
@@ -97,18 +100,25 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
       ...values,
     };
     
-    setDoc(docRef, gameData, { merge: true })
-      .then(() => {
-        onSuccess();
-        setOpen(false);
-      })
-      .catch((error: any) => {
-        const errorMessage = error.message || 'An unknown error occurred.';
-        setSubmissionError(`Submission Failed: ${errorMessage} (Code: ${error.code || 'N/A'})`);
-      })
-      .finally(() => {
-         setIsSubmitting(false);
-      });
+    // TRACE POINT 1: Display the data payload
+    setDebugMessage('TRACE 1: Attempting to save data. Payload keys: ' + Object.keys(gameData).join(', '));
+
+    try {
+      await setDoc(docRef, gameData, { merge: true });
+
+      // On SUCCESS:
+      setDebugMessage(''); // Clear debug message
+      onSuccess();
+      setOpen(false);
+
+    } catch (error: any) {
+      // TRACE POINT 2: Display the exact error
+      const errorMessage = 'TRACE 2: FIRESTORE WRITE FAILED! Error Code: ' + (error.code || 'N/A') + '. Details: ' + error.message;
+      setDebugMessage(errorMessage);
+      setSubmissionError('Submission failed. See details below.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -116,19 +126,17 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{game ? 'Edit Game' : 'Add New Game'}</DialogTitle>
-           {submissionError && (
-             <DialogDescription>
-                Please correct the issues below and try again.
-             </DialogDescription>
-           )}
+           <DialogDescription>
+             {submissionError ? 'Please correct the issues below and try again.' : (game ? 'Update the details for this game.' : 'Fill in the details to add a new game.')}
+           </DialogDescription>
         </DialogHeader>
 
-        {submissionError && (
+        {debugMessage && (
             <Alert variant="destructive">
                 <Terminal className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>
-                    {submissionError}
+                <AlertTitle>Debug Information</AlertTitle>
+                <AlertDescription className="break-all">
+                    {debugMessage}
                 </AlertDescription>
             </Alert>
         )}
