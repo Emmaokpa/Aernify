@@ -1,9 +1,8 @@
 import PageHeader from "@/components/page-header";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { games } from "@/lib/data";
 import Image from "next/image";
-import { Coins } from "lucide-react";
+import Link from 'next/link';
 
 export default function PlayPage() {
   return (
@@ -12,31 +11,20 @@ export default function PlayPage() {
         title="Play Games"
         description="Choose a game to play and earn coins. The more you play, the more you earn!"
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {games.map((game) => (
-          <Card key={game.id} className="overflow-hidden flex flex-col">
-            <CardHeader className="p-0">
-              <div className="relative aspect-video">
-                <Image
-                  src={game.imageUrl}
-                  alt={game.title}
-                  fill
-                  className="object-cover"
-                  data-ai-hint={game.imageHint}
-                />
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 flex-grow">
-              <CardTitle className="text-lg">{game.title}</CardTitle>
-              <p className="text-sm text-muted-foreground">{game.provider}</p>
-            </CardContent>
-            <CardFooter className="p-4 flex justify-between items-center bg-muted/50">
-              <div className="font-bold text-primary flex items-center gap-1.5">
-                <Coins className="w-4 h-4" /> +{game.reward}
-              </div>
-              <Button>Play Now</Button>
-            </CardFooter>
-          </Card>
+          <Link href={`/play`} key={game.id}>
+            <Card className="overflow-hidden aspect-[3/4] relative group transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 rounded-2xl">
+              <Image
+                src={game.imageUrl}
+                alt={game.title}
+                fill
+                className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+                data-ai-hint={game.imageHint}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+            </Card>
+          </Link>
         ))}
       </div>
     </>
