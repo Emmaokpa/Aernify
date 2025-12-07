@@ -76,7 +76,7 @@ export default function SignUpPage() {
       );
       const user = userCredential.user;
       
-      const newReferralCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+      const newReferralCode = user.uid.substring(0, 6).toUpperCase();
 
       const userDocRef = doc(firestore, 'users', user.uid);
       const userData = {
@@ -210,7 +210,7 @@ export default function SignUpPage() {
                 <FormItem>
                   <FormLabel>Referral Code (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter a 5-digit code" {...field} />
+                    <Input placeholder="Enter a code" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
