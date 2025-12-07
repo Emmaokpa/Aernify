@@ -9,7 +9,6 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { WithId } from '@/firebase/firestore/use-collection';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CldImage } from 'next-cloudinary';
 
 type Game = {
   name: string;
@@ -39,7 +38,7 @@ export default function PlayPage() {
           <Link href={`/play/${game.id}`} key={game.id}>
             <Card className="overflow-hidden aspect-[3/4] relative group transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 rounded-2xl">
               {game.imageUrl ? (
-                <CldImage
+                <Image
                   src={game.imageUrl}
                   alt={game.name}
                   fill

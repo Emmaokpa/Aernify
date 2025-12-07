@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { CldImage } from 'next-cloudinary';
+import Image from 'next/image';
 
 const GameForm = dynamic(() => import('@/components/admin/forms/game-form').then(mod => mod.GameForm), { ssr: false });
 
@@ -126,12 +126,12 @@ export default function AdminGamesPage() {
                 <TableRow key={game.id}>
                   <TableCell>
                     {game.imageUrl ? (
-                        <CldImage
+                        <Image
                             src={game.imageUrl}
                             alt={game.name}
                             width={64}
                             height={64}
-                            className="rounded"
+                            className="rounded object-cover"
                         />
                     ) : (
                         <div className="w-16 h-16 rounded bg-muted flex items-center justify-center">

@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
 import React, { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -28,6 +29,12 @@ function RootLayoutContent({
 
   return (
     <html lang="en" className="dark">
+      <head>
+        <Script
+          src="https://upload-widget.cloudinary.com/global/all.js"
+          type="text/javascript"
+        />
+      </head>
       <body className={cn('font-body antialiased', inter.variable)}>
         <FirebaseClientProvider>
           {isAdminRoute ? children : <MainLayout>{children}</MainLayout>}

@@ -12,7 +12,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Gamepad2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CldImage } from 'next-cloudinary';
 
 type Game = {
   name: string;
@@ -46,7 +45,7 @@ export default function DashboardPage() {
           {heroGame && (
             <>
               {heroGame.imageUrl ? (
-                <CldImage
+                <Image
                   src={heroGame.imageUrl}
                   alt={heroGame.name}
                   fill
@@ -80,7 +79,7 @@ export default function DashboardPage() {
               <Link href={`/play/${game.id}`} key={game.id}>
                 <Card className="overflow-hidden aspect-[3/4] relative group transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 rounded-2xl">
                   {game.imageUrl ? (
-                     <CldImage
+                     <Image
                         src={game.imageUrl}
                         alt={game.name}
                         fill

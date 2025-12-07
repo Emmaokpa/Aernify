@@ -1,8 +1,16 @@
+
 'use client';
 
-import { CldUploadWidget, CldImage } from 'next-cloudinary';
+import { useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { ImagePlus, Trash2 } from 'lucide-react';
+
+declare global {
+  interface Window {
+    cloudinary: any;
+  }
+}
 
 interface ImageUploaderProps {
   value: string;
@@ -15,11 +23,26 @@ export function ImageUploader({
   onChange,
   onRemove,
 }: ImageUploaderProps) {
-  const handleUpload = (result: any) => {
-    onChange(result.info.secure_url);
-  };
-
+  const cloudinaryRef = useRef<any>();
+  const widgetRef = useRef<any>();
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+  useEffect(() => {
+    cloudinaryRef.current = window.cloudinary;
+    if (cloudinaryRef.current && cloudName) {
+      widgetRef.current = cloudinaryRef.current.createUploadWidget(
+        {
+          cloudName: cloudName,
+          uploadPreset: 'next-cloudinary-unsigned',
+        },
+        (error: any, result: any) => {
+          if (!error && result && result.event === 'success') {
+            onChange(result.info.secure_url);
+          }
+        }
+      );
+    }
+  }, [cloudName, onChange]);
 
   if (!cloudName) {
     console.error('Cloudinary cloud name is not configured. Please check your .env file.');
@@ -35,9 +58,8 @@ export function ImageUploader({
       <div className="mb-4 flex items-center gap-4">
         {value && (
           <div className="relative w-48 h-48 rounded-md overflow-hidden">
-            <CldImage
-              width="192"
-              height="192"
+            <Image
+              fill
               src={value}
               alt="Uploaded image"
               className="object-cover"
@@ -55,24 +77,14 @@ export function ImageUploader({
           </div>
         )}
       </div>
-      <CldUploadWidget
-        onSuccess={handleUpload}
-        uploadPreset="next-cloudinary-unsigned"
-        cloudName={cloudName}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => widgetRef.current?.open()}
       >
-        {({ open }) => {
-          return (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => open()}
-            >
-              <ImagePlus className="h-4 w-4 mr-2" />
-              Upload an Image
-            </Button>
-          );
-        }}
-      </CldUploadWidget>
+        <ImagePlus className="h-4 w-4 mr-2" />
+        Upload an Image
+      </Button>
     </div>
   );
 }
