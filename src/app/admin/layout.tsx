@@ -27,13 +27,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isAdmin = userData?.isAdmin === true;
 
   useEffect(() => {
-    // Wait until both user and user data have been checked.
-    // Redirect only if loading is complete and the user is definitely not an admin.
-    if (!isUserLoading && !isUserDataLoading && !isAdmin) {
-      router.push('/');
+    // This effect handles redirection once loading is complete.
+    // It will run when isLoading changes from true to false, or if isAdmin status changes.
+    if (!isLoading) {
+      if (!user || !isAdmin) {
+        router.push('/');
+      }
     }
-  }, [isUserLoading, isUserDataLoading, isAdmin, router]);
+  }, [isLoading, user, isAdmin, router]);
 
+  // While loading, show a full-screen spinner to prevent any content flash.
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -42,20 +45,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Only render the layout for admins. Otherwise, render nothing while redirecting.
-  if (!isAdmin) {
-    return null;
+  // After loading, if the user is an admin, render the full admin layout.
+  // If not, this will render `null` while the useEffect above handles the redirect.
+  // This prevents non-admins from seeing any part of the admin UI.
+  if (isAdmin && user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Sidebar isOpen={isSidebarOpen} setOpen={setSidebarOpen} />
+        <div className="md:pl-64 flex flex-col min-h-screen">
+          <Header onMenuClick={() => setSidebarOpen(true)} />
+          <main className="flex-grow p-4 md:p-8 pb-32 md:pb-8">
+            {children}
+          </main>
+        </div>
+      </div>
+    );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Sidebar isOpen={isSidebarOpen} setOpen={setSidebarOpen} />
-      <div className="md:pl-64 flex flex-col min-h-screen">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-grow p-4 md:p-8 pb-32 md:pb-8">
-          {children}
-        </main>
-      </div>
-    </div>
-  );
+  // If the user is not an admin, render nothing while the redirect happens.
+  return null;
 }
