@@ -25,9 +25,9 @@ export default function EarnPage() {
   const firestore = useFirestore();
 
   const userDocRef = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user?.uid || !firestore) return null;
     return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
+  }, [firestore, user?.uid]);
   
   const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef);
 
@@ -74,7 +74,7 @@ export default function EarnPage() {
     });
   }
 
-  const referralCode = userData?.referralCode || '...';
+  const referralCode = userData?.referralCode || '';
   const isLoading = isUserLoading || isUserDataLoading;
 
 
@@ -129,7 +129,7 @@ export default function EarnPage() {
             </p>
             <div>
               <p className="text-sm font-medium mb-2">Your referral code:</p>
-              {isLoading ? (
+              {isLoading && !referralCode ? (
                 <div className="flex gap-2">
                   <Skeleton className="h-10 w-full" />
                   <Skeleton className="h-10 w-24" />
@@ -137,7 +137,7 @@ export default function EarnPage() {
               ) : (
                 <div className="flex gap-2">
                   <Input readOnly value={referralCode} className="font-mono" />
-                  <Button onClick={handleCopyCode}>
+                  <Button onClick={handleCopyCode} disabled={!referralCode}>
                     <Copy className="w-4 h-4 mr-2" />
                     Copy
                   </Button>
