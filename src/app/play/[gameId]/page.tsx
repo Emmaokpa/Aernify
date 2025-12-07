@@ -49,7 +49,7 @@ export default function GamePage() {
           ) : game?.iframeUrl ? (
             <iframe
               src={game.iframeUrl}
-              className="w-full h-full"
+              className="w-full h-full min-h-[70vh]"
               allowFullScreen
               sandbox="allow-scripts allow-same-origin"
               title={game.name}
@@ -64,5 +64,3 @@ export default function GamePage() {
     </>
   );
 }
-
-    

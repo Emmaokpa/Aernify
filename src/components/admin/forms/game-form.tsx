@@ -1,4 +1,3 @@
-
 'use client';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -127,7 +126,7 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
                 <FormItem>
                   <FormLabel>iFrame URL</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="<iframe src=... >" {...field} />
+                    <Input placeholder="https://game-embed.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -174,5 +173,3 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
     </Dialog>
   );
 }
-
-    
