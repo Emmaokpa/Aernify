@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useParams } from 'next/navigation';
 import { products } from '@/lib/data';
-import { useDoc, useFirestore, useUser, updateDocumentNonBlocking } from '@/firebase';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc, increment, writeBatch } from 'firebase/firestore';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,8 +14,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Coins, Loader2, CheckCircle, XCircle } from 'lucide-react';
 
-export default function CheckoutPage({ params }: { params: { productId: string } }) {
-  const product = products.find((p) => p.id === params.productId);
+export default function CheckoutPage() {
+  const params = useParams();
+  const productId = Array.isArray(params.productId) ? params.productId[0] : params.productId;
+  const product = products.find((p) => p.id === productId);
   const router = useRouter();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
