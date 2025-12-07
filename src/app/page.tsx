@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { dailyChallenges, currentUser } from '@/lib/data';
-import type { DailyChallenge } from '@/lib/types';
+import { currentUser, games } from '@/lib/data';
 import DailyLoginModal from '@/components/daily-login-modal';
-import { Crown, Star, Coins } from 'lucide-react';
+import { Coins } from 'lucide-react';
 import PageHeader from '@/components/page-header';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,8 +22,8 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeader title="Dashboard" />
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="md:col-span-2 lg:col-span-3 bg-secondary/30 border-secondary">
+      <div className="grid gap-6">
+        <Card className="bg-secondary/30 border-secondary">
           <CardHeader>
             <div className="flex items-center gap-4">
               <div className="bg-primary rounded-full p-3">
@@ -39,48 +39,22 @@ export default function DashboardPage() {
           </CardHeader>
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Star className="text-primary" /> Daily Challenges
-              </CardTitle>
-              <Button variant="ghost" size="sm">View All</Button>
-            </div>
-            <CardDescription>Complete challenges to earn extra coins.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {dailyChallenges.slice(0, 3).map((challenge: DailyChallenge) => (
-                <div key={challenge.id} className="flex items-center justify-between p-3 bg-background rounded-lg">
-                  <div>
-                    <p className="font-semibold">{challenge.title}</p>
-                    <p className="text-sm text-muted-foreground">{challenge.description}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-primary flex items-center gap-1.5">
-                      <Coins className="w-4 h-4" /> +{challenge.reward}
-                    </p>
-                    <Button size="sm" className="mt-1">Start</Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-secondary to-purple-900 border-secondary">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Crown className="text-primary" /> Get VIP Access
-            </CardTitle>
-            <CardDescription className="text-purple-200">Earn 2x rewards and get exclusive perks!</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-white mb-4">$9.99/month</p>
-            <Button className="w-full font-bold">Upgrade to VIP</Button>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {games.map((game) => (
+            <Link href={`/play`} key={game.id}>
+              <Card className="overflow-hidden aspect-[3/4] relative group">
+                <Image
+                  src={game.imageUrl}
+                  alt={game.title}
+                  fill
+                  className="object-cover transition-transform group-hover:scale-105"
+                  data-ai-hint={game.imageHint}
+                />
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
       <DailyLoginModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} />
     </>
