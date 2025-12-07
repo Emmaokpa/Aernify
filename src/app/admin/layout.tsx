@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { doc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
@@ -26,6 +26,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isLoading = isUserLoading || isUserDataLoading;
   const isAdmin = userData?.isAdmin === true;
 
+  useEffect(() => {
+    // If loading is complete and the user is not an admin, redirect.
+    if (!isLoading && !isAdmin) {
+      router.push('/');
+    }
+  }, [isLoading, isAdmin, router]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -34,12 +41,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  // Only render the layout for admins. Otherwise, render nothing while redirecting.
   if (!isAdmin) {
-    // Using useEffect to handle redirection on the client side
-    React.useEffect(() => {
-      router.push('/');
-    }, [router]);
-    return null; // Render nothing while redirecting
+    return null;
   }
 
   return (
