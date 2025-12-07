@@ -22,8 +22,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
 import type { WithId } from '@/firebase/firestore/use-collection';
-import { doc, setDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { ImageUploader } from './image-uploader';
@@ -58,27 +58,35 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
     },
   });
   
-  const {formState: {isSubmitting}} = form;
+  const {formState: {isSubmitting, isSubmitSuccessful}, reset} = form;
 
   useEffect(() => {
     if (game) {
-      form.reset(game);
+      reset(game);
     } else {
-      form.reset({
+      reset({
         name: '',
         iframeUrl: '',
         imageUrl: '',
       });
     }
-  }, [game, form, isOpen]);
+  }, [game, reset, isOpen]);
+
+  useEffect(() => {
+    if(isSubmitSuccessful) {
+        reset();
+    }
+  }, [isSubmitSuccessful, reset]);
   
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!firestore) return;
+
     try {
       const docId = game ? game.id : crypto.randomUUID();
       const docRef = doc(firestore, 'games', docId);
 
-      await setDoc(docRef, { 
+      // Use the non-blocking write function
+      setDocumentNonBlocking(docRef, { 
         id: docId, 
         ...values,
        }, { merge: true });
@@ -87,12 +95,17 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
         title: game ? 'Game Updated' : 'Game Created',
         description: `The game "${values.name}" has been saved.`,
       });
+
       setOpen(false);
+      
     } catch (error) {
+       // This will catch immediate client-side errors, but not security rule denials.
+       // Security rule errors are now handled by the global error emitter inside setDocumentNonBlocking.
+       console.error("Error during form submission setup:", error);
        toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'There was a problem saving the game.',
+        title: 'Submission Error',
+        description: 'There was a problem submitting the game data.',
       });
     }
   };

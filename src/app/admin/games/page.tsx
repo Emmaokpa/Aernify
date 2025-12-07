@@ -1,6 +1,6 @@
 
 'use client';
-import { useState }from 'react';
+import { useState, useEffect }from 'react';
 import dynamic from 'next/dynamic';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
@@ -45,13 +45,28 @@ export default function AdminGamesPage() {
   const [selectedGame, setSelectedGame] = useState<WithId<Game> | undefined>(undefined);
   const firestore = useFirestore();
   const { toast } = useToast();
+  
+  // This state is to force re-render when a delete happens.
+  // The collection listener should handle adds/updates, but deletes can be tricky.
+  const [deleteTrigger, setDeleteTrigger] = useState(0);
 
   const gamesCollectionRef = useMemoFirebase(
     () => (firestore ? collection(firestore, 'games') : null),
-    [firestore]
+    [firestore, deleteTrigger]
   );
   
-  const { data: games, isLoading } = useCollection<Game>(gamesCollectionRef);
+  const { data: games, isLoading, error } = useCollection<Game>(gamesCollectionRef);
+  
+  useEffect(() => {
+    if (error) {
+        toast({
+            variant: "destructive",
+            title: "Error fetching games",
+            description: "You may not have permission to view this data.",
+        });
+    }
+  }, [error, toast]);
+
 
   const handleEdit = (game: WithId<Game>) => {
     setSelectedGame(game);
@@ -71,11 +86,14 @@ export default function AdminGamesPage() {
         title: 'Game Deleted',
         description: 'The game has been successfully deleted.',
       });
+      // Trigger a re-fetch of the collection
+      setDeleteTrigger(prev => prev + 1);
     } catch (error) {
+      console.error("Delete failed", error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'There was a problem deleting the game.',
+        description: 'There was a problem deleting the game. You may not have permission.',
       });
     }
   };
