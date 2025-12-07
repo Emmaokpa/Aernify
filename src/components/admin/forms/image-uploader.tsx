@@ -13,7 +13,6 @@ interface ImageUploaderProps {
   onRemove: () => void;
 }
 
-// Declare the Cloudinary object on the window
 declare global {
   interface Window {
     cloudinary: any;
@@ -25,19 +24,17 @@ export function ImageUploader({
   onChange,
   onRemove,
 }: ImageUploaderProps) {
-  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const [widgetInstance, setWidgetInstance] = useState<any>(null);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = 'next-cloudinary-unsigned';
 
-  // This function will be called by the `onLoad` prop of the `next/script` component
   const initializeCloudinaryWidget = () => {
-    if (window.cloudinary) {
+    if (window.cloudinary && cloudName) {
       const myWidget = window.cloudinary.createUploadWidget(
         {
           cloudName: cloudName,
-          uploadPreset: uploadPreset,
+          uploadPreset: 'ml_default', // Using the default unsigned preset
         },
         (error: any, result: any) => {
           if (!error && result && result.event === 'success') {
@@ -48,13 +45,13 @@ export function ImageUploader({
       setWidgetInstance(myWidget);
     }
   };
-  
+
   const openWidget = () => {
     if (widgetInstance) {
       widgetInstance.open();
     }
   };
-
+  
   if (!cloudName) {
     console.error('Cloudinary cloud name is not configured. Please check your .env file.');
     return (
@@ -67,11 +64,13 @@ export function ImageUploader({
   return (
     <>
       <Script
+        id="cloudinary-upload-widget"
         src="https://upload-widget.cloudinary.com/global/all.js"
         onLoad={() => {
           setIsScriptLoaded(true);
           initializeCloudinaryWidget();
         }}
+        onError={(e) => console.error("Cloudinary script failed to load", e)}
       />
       <div>
         <div className="mb-4 flex items-center gap-4">
@@ -100,7 +99,7 @@ export function ImageUploader({
           type="button"
           variant="outline"
           onClick={openWidget}
-          disabled={!isScriptLoaded}
+          disabled={!isScriptLoaded || !widgetInstance}
         >
           <ImagePlus className="h-4 w-4 mr-2" />
           Upload an Image
