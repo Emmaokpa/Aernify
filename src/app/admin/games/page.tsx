@@ -35,7 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 
 type Game = {
   name: string;
-  playgamaId: string;
+  iframeUrl: string;
   imageUrl: string;
   rewardAmount: number;
 }
@@ -86,7 +86,7 @@ export default function AdminGamesPage() {
     <>
       <PageHeader
         title="Manage Games"
-        description="Add, edit, or delete games available in the app."
+        description="Add, edit, or delete iframe games available in the app."
       />
       <div className="flex justify-end mb-4">
         <Button onClick={handleAddNew}>
@@ -108,7 +108,7 @@ export default function AdminGamesPage() {
               <TableRow>
                 <TableHead>Image</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Playgama ID</TableHead>
+                <TableHead>iFrame URL</TableHead>
                 <TableHead>Reward</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -119,7 +119,7 @@ export default function AdminGamesPage() {
                   <TableRow key={i}>
                     <TableCell><Skeleton className="w-16 h-16 rounded" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-20" /></TableCell>
                   </TableRow>
@@ -130,7 +130,7 @@ export default function AdminGamesPage() {
                     <Image src={game.imageUrl} alt={game.name} width={64} height={64} className="rounded" />
                   </TableCell>
                   <TableCell className="font-medium">{game.name}</TableCell>
-                  <TableCell>{game.playgamaId}</TableCell>
+                  <TableCell className='truncate max-w-xs'>{game.iframeUrl}</TableCell>
                   <TableCell>{game.rewardAmount}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(game)}>

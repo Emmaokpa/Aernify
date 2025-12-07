@@ -73,9 +73,10 @@
           "type": "string",
           "description": "The name of the game."
         },
-        "playgamaId": {
+        "iframeUrl": {
           "type": "string",
-          "description": "The ID of the game from Playgama."
+          "description": "The URL for the game's iframe.",
+          "format": "uri"
         },
         "imageUrl": {
           "type": "string",
@@ -90,7 +91,7 @@
       "required": [
         "id",
         "name",
-        "playgamaId",
+        "iframeUrl",
         "imageUrl",
         "rewardAmount"
       ]

@@ -26,19 +26,20 @@ import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 
 type Game = {
   name: string;
-  playgamaId: string;
+  iframeUrl: string;
   imageUrl: string;
   rewardAmount: number;
 };
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  playgamaId: z.string().min(1, 'Playgama ID is required'),
-  imageUrl: z.string().url('Must be a valid URL'),
+  iframeUrl: z.string().url('Must be a valid iFrame URL'),
+  imageUrl: z.string().url('Must be a valid image URL'),
   rewardAmount: z.coerce.number().min(0, 'Reward must be a positive number'),
 });
 
@@ -55,7 +56,7 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      playgamaId: '',
+      iframeUrl: '',
       imageUrl: '',
       rewardAmount: 0,
     },
@@ -69,7 +70,7 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
     } else {
       form.reset({
         name: '',
-        playgamaId: '',
+        iframeUrl: '',
         imageUrl: '',
         rewardAmount: 0,
       });
@@ -79,8 +80,11 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!firestore) return;
     try {
-      const docRef = game ? doc(firestore, 'games', game.id) : doc(firestore, 'games', crypto.randomUUID());
-      await setDoc(docRef, values, { merge: true });
+      const docId = game ? game.id : crypto.randomUUID();
+      const docRef = doc(firestore, 'games', docId);
+
+      await setDoc(docRef, { id: docId, ...values }, { merge: true });
+
       toast({
         title: game ? 'Game Updated' : 'Game Created',
         description: `The game "${values.name}" has been saved.`,
@@ -118,12 +122,12 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
             />
             <FormField
               control={form.control}
-              name="playgamaId"
+              name="iframeUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Playgama ID</FormLabel>
+                  <FormLabel>iFrame URL</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., galaxy-invaders" {...field} />
+                    <Textarea placeholder="<iframe src=... >" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
