@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Script from 'next/script';
 import { Button } from '@/components/ui/button';
 import { ImagePlus, Trash2 } from 'lucide-react';
@@ -22,17 +22,17 @@ export function ImageUploader({
   value,
   onChange,
 }: ImageUploaderProps) {
-  const [widgetInstance, setWidgetInstance] = useState<any>(null);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
-
+  const widgetRef = useRef<any>();
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = "qa4yjgs4";
 
-  const initializeCloudinaryWidget = () => {
-    if (window.cloudinary && cloudName) {
-      const myWidget = window.cloudinary.createUploadWidget(
+  useEffect(() => {
+    if (isScriptLoaded && window.cloudinary && !widgetRef.current) {
+      widgetRef.current = window.cloudinary.createUploadWidget(
         {
           cloudName: cloudName,
-          uploadPreset: 'qa4yjgs4', 
+          uploadPreset: uploadPreset,
         },
         (error: any, result: any) => {
           if (!error && result && result.event === 'success') {
@@ -40,13 +40,13 @@ export function ImageUploader({
           }
         }
       );
-      setWidgetInstance(myWidget);
     }
-  };
+  }, [isScriptLoaded, cloudName, uploadPreset, onChange]);
+
 
   const openWidget = () => {
-    if (widgetInstance) {
-      widgetInstance.open();
+    if (widgetRef.current) {
+      widgetRef.current.open();
     }
   };
 
@@ -68,11 +68,7 @@ export function ImageUploader({
       <Script
         id="cloudinary-upload-widget"
         src="https://upload-widget.cloudinary.com/global/all.js"
-        onLoad={() => {
-          setIsScriptLoaded(true);
-          initializeCloudinaryWidget();
-        }}
-        onError={(e) => console.error("Cloudinary script failed to load", e)}
+        onLoad={() => setIsScriptLoaded(true)}
       />
       <div>
         {value ? (
@@ -101,7 +97,7 @@ export function ImageUploader({
                 type="button"
                 variant="outline"
                 onClick={openWidget}
-                disabled={!isScriptLoaded || !widgetInstance}
+                disabled={!isScriptLoaded}
                 className="w-full"
               >
                 <ImagePlus className="h-4 w-4 mr-2" />
@@ -112,4 +108,3 @@ export function ImageUploader({
     </>
   );
 }
-
