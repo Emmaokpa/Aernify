@@ -14,31 +14,32 @@ export default function AdminAuthWrapper({
   const firestore = useFirestore();
   const router = useRouter();
 
-  // Memoize the document reference to prevent re-creation on every render
   const userDocRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
-  // Fetch the user's data from Firestore
   const { data: userData, isLoading: isUserDataLoading } = useDoc<{
     isAdmin?: boolean;
   }>(userDocRef);
 
+  // This is the critical change: combine both loading states.
+  // We are only finished loading when BOTH auth and the user's Firestore doc are done.
   const isStillLoading = isUserLoading || (user && isUserDataLoading);
-  const isConfirmedAdmin = !isStillLoading && user && userData?.isAdmin === true;
-  const isConfirmedNotAdmin = !isStillLoading && (!user || !userData?.isAdmin);
 
   useEffect(() => {
-    // This effect now has a very specific condition.
-    // It will ONLY redirect if all loading is complete and the user is confirmed to NOT be an admin.
-    if (isConfirmedNotAdmin) {
-      router.push('/');
+    // Only run this effect if we are NOT loading.
+    if (!isStillLoading) {
+      // If loading is finished and we determine the user is not an admin, then redirect.
+      const isConfirmedAdmin = user && userData?.isAdmin === true;
+      if (!isConfirmedAdmin) {
+        router.push('/');
+      }
     }
-  }, [isConfirmedNotAdmin, router]);
+  }, [isStillLoading, user, userData, router]);
 
   // While ANY data is loading, show a full-screen spinner.
-  // This prevents any child components from rendering prematurely.
+  // This prevents any child components from rendering or any logic from running prematurely.
   if (isStillLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -47,13 +48,13 @@ export default function AdminAuthWrapper({
     );
   }
 
-  // Only if loading is complete AND the user is a confirmed admin, render the children.
-  if (isConfirmedAdmin) {
+  // If loading is complete AND the user is a confirmed admin, render the children.
+  // The useEffect above will have already handled redirection for non-admins.
+  if (user && userData?.isAdmin === true) {
     return <>{children}</>;
   }
 
-  // If the user is confirmed not to be an admin, this renders nothing.
-  // The useEffect above is already handling the redirection.
-  // This prevents any flash of content before the redirect happens.
+  // In the brief moment after loading and before the redirect effect kicks in,
+  // render nothing to prevent a flash of content.
   return null;
 }
