@@ -31,17 +31,6 @@ export default function DashboardPage() {
             className="object-cover"
             data-ai-hint={heroGame.imageHint}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-8">
-            <h1 className="text-4xl md:text-6xl font-bold text-white drop-shadow-lg">
-              Time to Play & Earn
-            </h1>
-            <p className="text-lg text-white/80 mt-2 max-w-lg drop-shadow-md">
-              Jump into your favorite games and start earning rewards instantly.
-            </p>
-            <Button asChild size="lg" className="mt-6 w-fit">
-              <Link href="/play">Play Now</Link>
-            </Button>
-          </div>
         </div>
 
         <div>
@@ -60,11 +49,6 @@ export default function DashboardPage() {
                     data-ai-hint={game.imageHint}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                  <div className="absolute bottom-0 left-0 p-4">
-                    <h3 className="font-bold text-white text-lg leading-tight drop-shadow-md">
-                      {game.title}
-                    </h3>
-                  </div>
                 </Card>
               </Link>
             ))}

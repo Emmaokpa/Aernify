@@ -25,22 +25,27 @@ export default function BottomNav() {
 
   return (
     <div className="fixed bottom-0 left-0 z-30 w-full border-t bg-background/95 backdrop-blur-sm md:hidden">
-      <nav>
-        <ul className="grid grid-cols-5">
-          {navItems.map((item) => (
-            <li key={item.title}>
-              <Link
-                href={item.href}
-                className={cn(
-                  'flex flex-col items-center gap-1 p-2 text-muted-foreground',
-                  pathname === item.href ? 'text-primary' : 'hover:text-primary'
-                )}
-              >
-                <div className="h-6 w-6">{item.icon}</div>
-                <span className="text-xs font-medium">{item.title}</span>
-              </Link>
-            </li>
-          ))}
+      <nav className="p-2">
+        <ul className="grid grid-cols-5 gap-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <li key={item.title}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors duration-200',
+                    isActive
+                      ? 'bg-primary/20 text-primary font-semibold'
+                      : 'text-muted-foreground hover:text-primary'
+                  )}
+                >
+                  <div className="h-6 w-6">{item.icon}</div>
+                  <span className="text-xs font-medium">{item.title}</span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </nav>
     </div>
