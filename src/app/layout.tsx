@@ -30,10 +30,6 @@ function RootLayoutContent({
   return (
     <html lang="en" className="dark">
       <head>
-        <Script
-          src="https://upload-widget.cloudinary.com/global/all.js"
-          type="text/javascript"
-        />
       </head>
       <body className={cn('font-body antialiased', inter.variable)}>
         <FirebaseClientProvider>

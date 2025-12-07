@@ -1,16 +1,11 @@
 
 'use client';
 
-import { useEffect, useRef } from 'react';
-import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import Script from 'next/script';
 import { Button } from '@/components/ui/button';
 import { ImagePlus, Trash2 } from 'lucide-react';
-
-declare global {
-  interface Window {
-    cloudinary: any;
-  }
-}
+import Image from 'next/image';
 
 interface ImageUploaderProps {
   value: string;
@@ -18,22 +13,31 @@ interface ImageUploaderProps {
   onRemove: () => void;
 }
 
+// Declare the Cloudinary object on the window
+declare global {
+  interface Window {
+    cloudinary: any;
+  }
+}
+
 export function ImageUploader({
   value,
   onChange,
   onRemove,
 }: ImageUploaderProps) {
-  const cloudinaryRef = useRef<any>();
-  const widgetRef = useRef<any>();
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [widgetInstance, setWidgetInstance] = useState<any>(null);
 
-  useEffect(() => {
-    cloudinaryRef.current = window.cloudinary;
-    if (cloudinaryRef.current && cloudName) {
-      widgetRef.current = cloudinaryRef.current.createUploadWidget(
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = 'next-cloudinary-unsigned';
+
+  // This function will be called by the `onLoad` prop of the `next/script` component
+  const initializeCloudinaryWidget = () => {
+    if (window.cloudinary) {
+      const myWidget = window.cloudinary.createUploadWidget(
         {
           cloudName: cloudName,
-          uploadPreset: 'next-cloudinary-unsigned',
+          uploadPreset: uploadPreset,
         },
         (error: any, result: any) => {
           if (!error && result && result.event === 'success') {
@@ -41,8 +45,15 @@ export function ImageUploader({
           }
         }
       );
+      setWidgetInstance(myWidget);
     }
-  }, [cloudName, onChange]);
+  };
+  
+  const openWidget = () => {
+    if (widgetInstance) {
+      widgetInstance.open();
+    }
+  };
 
   if (!cloudName) {
     console.error('Cloudinary cloud name is not configured. Please check your .env file.');
@@ -54,37 +65,47 @@ export function ImageUploader({
   }
 
   return (
-    <div>
-      <div className="mb-4 flex items-center gap-4">
-        {value && (
-          <div className="relative w-48 h-48 rounded-md overflow-hidden">
-            <Image
-              fill
-              src={value}
-              alt="Uploaded image"
-              className="object-cover"
-            />
-            <div className="absolute top-2 right-2 z-10">
-              <Button
-                type="button"
-                onClick={onRemove}
-                variant="destructive"
-                size="icon"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+    <>
+      <Script
+        src="https://upload-widget.cloudinary.com/global/all.js"
+        onLoad={() => {
+          setIsScriptLoaded(true);
+          initializeCloudinaryWidget();
+        }}
+      />
+      <div>
+        <div className="mb-4 flex items-center gap-4">
+          {value && (
+            <div className="relative w-48 h-48 rounded-md overflow-hidden">
+              <Image
+                fill
+                src={value}
+                alt="Uploaded image"
+                className="object-cover"
+              />
+              <div className="absolute top-2 right-2 z-10">
+                <Button
+                  type="button"
+                  onClick={onRemove}
+                  variant="destructive"
+                  size="icon"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={openWidget}
+          disabled={!isScriptLoaded}
+        >
+          <ImagePlus className="h-4 w-4 mr-2" />
+          Upload an Image
+        </Button>
       </div>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => widgetRef.current?.open()}
-      >
-        <ImagePlus className="h-4 w-4 mr-2" />
-        Upload an Image
-      </Button>
-    </div>
+    </>
   );
 }
