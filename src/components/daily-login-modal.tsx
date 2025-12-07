@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar, Coins } from 'lucide-react';
-import { useUser, useFirestore, useMemoFirebase, useDoc, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, updateDocumentNonBlocking } from '@/firebase';
 import { doc, increment } from 'firebase/firestore';
 
 type DailyLoginModalProps = {
@@ -24,9 +24,10 @@ export default function DailyLoginModal({ isOpen, onOpenChange }: DailyLoginModa
   const { user } = useUser();
   const firestore = useFirestore();
   const [bonusClaimed, setBonusClaimed] = useState(false);
+  const [showReward, setShowReward] = useState(false);
+
 
   useEffect(() => {
-    // Only attempt to claim the bonus if the modal is open, a user is logged in, and it hasn't been claimed in this session.
     if (isOpen && user && !bonusClaimed) {
       const today = new Date().toISOString().split('T')[0]; // Get YYYY-MM-DD
       const lastLoginDate = localStorage.getItem(`lastLogin_${user.uid}`);
@@ -34,7 +35,6 @@ export default function DailyLoginModal({ isOpen, onOpenChange }: DailyLoginModa
       if (lastLoginDate !== today) {
         const userDocRef = doc(firestore, 'users', user.uid);
         
-        // Use non-blocking update to increment coins
         updateDocumentNonBlocking(userDocRef, {
           coins: increment(dailyReward),
           lastLogin: new Date().toISOString(),
@@ -42,17 +42,21 @@ export default function DailyLoginModal({ isOpen, onOpenChange }: DailyLoginModa
 
         localStorage.setItem(`lastLogin_${user.uid}`, today);
         setBonusClaimed(true);
+        setShowReward(true);
       } else {
-        // If they already logged in today, just close the modal.
-        // We can do this silently or after a short delay.
-        // For now, let's just not show the reward state.
-        // In a more robust app, we might not even open the modal.
+        // Bonus already claimed today, so close the modal.
+        onOpenChange(false);
       }
     }
-  }, [isOpen, user, firestore, bonusClaimed]);
+  }, [isOpen, user, firestore, bonusClaimed, onOpenChange]);
+
+  // Only render the dialog if we are showing the reward, otherwise it might flash empty
+  if (!showReward) {
+    return null;
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen && showReward} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] text-center">
         <DialogHeader>
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/20 mb-4">
