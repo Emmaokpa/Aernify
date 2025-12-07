@@ -34,7 +34,7 @@ export function ImageUploader({
       const myWidget = window.cloudinary.createUploadWidget(
         {
           cloudName: cloudName,
-          uploadPreset: 'ml_default', // Using the default unsigned preset
+          uploadPreset: 'qa4yjgs4',
         },
         (error: any, result: any) => {
           if (!error && result && result.event === 'success') {
