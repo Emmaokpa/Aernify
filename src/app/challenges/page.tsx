@@ -24,7 +24,7 @@ export default function ChallengesPage() {
           <Card
             key={challenge.id}
             className={cn(
-              'bg-card/80 overflow-hidden',
+              'bg-card/80 overflow-hidden rounded-2xl',
               challenge.isCompleted && 'opacity-60'
             )}
           >
