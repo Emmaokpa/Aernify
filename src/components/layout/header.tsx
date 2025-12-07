@@ -14,12 +14,20 @@ import {
 import { Coins, LogOut, Menu, User } from 'lucide-react';
 import { currentUser } from '@/lib/data';
 import Logo from '../icons/logo';
+import { usePathname } from 'next/navigation';
 
 type HeaderProps = {
   onMenuClick: () => void;
 };
 
 export default function Header({ onMenuClick }: HeaderProps) {
+  const pathname = usePathname();
+
+  // Do not render the header on the profile page
+  if (pathname === '/profile') {
+    return null;
+  }
+  
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur md:px-6 md:h-auto md:relative md:border-none md:bg-transparent md:backdrop-filter-none">
       <Button
@@ -52,9 +60,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <DropdownMenuLabel>{currentUser.name}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/account">
+              <Link href="/profile">
                 <User className="mr-2 h-4 w-4" />
-                <span>Account</span>
+                <span>Profile</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

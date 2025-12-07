@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
   { title: 'Shop', href: '/shop', icon: <ShoppingBag /> },
   { title: 'Redeem', href: '/redeem', icon: <Gift /> },
   { title: 'Leaderboard', href: '/leaderboard', icon: <Trophy /> },
-  { title: 'Account', href: '/account', icon: <User /> },
+  { title: 'Profile', href: '/profile', icon: <User /> },
 ];
 
 type SidebarProps = {
