@@ -19,6 +19,17 @@ export function ImageUploader({
     onChange(result.info.secure_url);
   };
 
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+  if (!cloudName) {
+    console.error('Cloudinary cloud name is not configured. Please check your .env file.');
+    return (
+        <div className='text-red-500'>
+            Image uploader is not configured.
+        </div>
+    )
+  }
+
   return (
     <div>
       <div className="mb-4 flex items-center gap-4">
@@ -47,6 +58,7 @@ export function ImageUploader({
       <CldUploadWidget
         onSuccess={handleUpload}
         uploadPreset="next-cloudinary-unsigned"
+        cloudName={cloudName}
       >
         {({ open }) => {
           return (
