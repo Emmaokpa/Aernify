@@ -47,8 +47,29 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   
   if (isUserLoading) {
      return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="h-16 w-16 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div className="min-h-screen bg-background p-4 md:p-8">
+        <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur md:px-6 md:h-auto md:relative md:border-none md:bg-transparent md:backdrop-filter-none">
+          <Skeleton className="h-8 w-24" />
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-24 rounded-full" />
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </div>
+        </header>
+        <main className="flex-grow p-4 md:p-8 pb-32 md:pb-8">
+          <div className="grid gap-8">
+             <Skeleton className="relative w-full h-64 md:h-96 rounded-2xl" />
+             <div>
+                <Skeleton className="h-8 w-48 mb-4" />
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  <Skeleton className="aspect-[3/4] rounded-2xl" />
+                  <Skeleton className="aspect-[3/4] rounded-2xl" />
+                  <Skeleton className="aspect-[3/4] rounded-2xl" />
+                  <Skeleton className="aspect-[3/4] rounded-2xl" />
+                  <Skeleton className="aspect-[3/4] rounded-2xl" />
+                </div>
+             </div>
+          </div>
+        </main>
       </div>
     );
   }

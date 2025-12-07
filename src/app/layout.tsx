@@ -8,7 +8,6 @@ import { Toaster } from '@/components/ui/toaster';
 import MainLayout from '@/components/layout/main-layout';
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
-import { usePathname } from 'next/navigation';
 import React from 'react';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -22,25 +21,14 @@ function RootLayoutContent({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = usePathname();
-  const isAdminRoute = pathname.startsWith('/admin');
-  const isAuthRoute = pathname === '/login' || pathname === '/signup';
-
-  const LayoutComponent = isAdminRoute || isAuthRoute ? React.Fragment : MainLayout;
-  const mainClassName = isAuthRoute ? "flex items-center justify-center min-h-screen" : "";
-
 
   return (
     <html lang="en" className="dark">
       <body className={cn('font-body antialiased', inter.variable)}>
         <FirebaseClientProvider>
-          {isAdminRoute ? (
-             children
-          ) : (
-            <MainLayout>
-              {children}
-            </MainLayout>
-          )}
+          <MainLayout>
+            {children}
+          </MainLayout>
         </FirebaseClientProvider>
         <Toaster />
       </body>

@@ -22,10 +22,6 @@ service cloud.firestore {
     function isOwnerOfExistingDoc(userId) {
       return isOwner(userId) && isExistingDoc();
     }
-    
-    function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
-    }
 
     function incomingIdMatchesUser(userId) {
       return request.resource.data.id == userId;
@@ -48,100 +44,100 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
+      allow get: if isOwner(userId);
+      allow list: if isSignedIn();
       allow create: if isOwner(userId) && incomingIdMatchesUser(userId);
-      allow update: if isOwnerOfExistingDoc(userId) || isAdmin();
-      allow delete: if isAdmin();
+      allow update: if isOwnerOfExistingDoc(userId);
+      allow delete: if isOwner(userId);
     }
 
     match /games/{gameId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if false; // Only admins could do this
     }
 
     match /users/{userId}/userGamePlays/{userGamePlayId} {
-      allow get, list: if isOwner(userId) || isAdmin();
+      allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
+      allow delete: if isOwnerOfExistingDoc(userId);
     }
 
     match /offers/{offerId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /users/{userId}/userOfferCompletions/{userOfferCompletionId} {
-      allow get, list: if isOwner(userId) || isAdmin();
+      allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
+      allow delete: if isOwnerOfExistingDoc(userId);
     }
 
     match /products/{productId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /users/{userId}/purchases/{purchaseId} {
-      allow get, list: if isOwner(userId) || isAdmin();
+      allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
+      allow delete: if isOwnerOfExistingDoc(userId);
     }
 
     match /giftCards/{giftCardId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /users/{userId}/redemptions/{redemptionId} {
-      allow get, list: if isOwner(userId) || isAdmin();
+      allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
+      allow delete: if isOwnerOfExistingDoc(userId);
     }
 
     match /dailyLoginBonuses/{dailyLoginBonusId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /users/{userId}/userDailyLogins/{userDailyLoginId} {
-      allow get, list: if isOwner(userId) || isAdmin();
+      allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
+      allow delete: if isOwnerOfExistingDoc(userId);
     }
 
     match /leaderboardEntries/{leaderboardEntryId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /weeklyPrizes/{weeklyPrizeId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /dailyChallenges/{dailyChallengeId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /users/{userId}/userDailyChallengeCompletions/{userDailyChallengeCompletionId} {
-      allow get, list: if isOwner(userId) || isAdmin();
+      allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
+      allow delete: if isOwnerOfExistingDoc(userId);
     }
 
     match /users/{userId}/vipSubscriptions/{vipSubscriptionId} {
-      allow get, list: if isOwner(userId) || isAdmin();
+      allow get, list: if isOwner(userId);
       allow create: if isOwner(userId) && incomingUserIdMatchesPath(userId);
       allow update: if isOwnerOfExistingDoc(userId) && userIdIsImmutable();
-      allow delete: if isOwnerOfExistingDoc(userId) || isAdmin();
+      allow delete: if isOwnerOfExistingDoc(userId);
     }
   }
 }

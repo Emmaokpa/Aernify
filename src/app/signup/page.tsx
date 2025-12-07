@@ -87,7 +87,6 @@ export default function SignUpPage() {
         lastLogin: new Date().toISOString(),
         coins: 10,
         referralCode: newReferralCode,
-        isAdmin: false,
         isVIP: false,
       };
 
