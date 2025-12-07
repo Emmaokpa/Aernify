@@ -22,9 +22,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import Link from 'next/link';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import Logo from '@/components/icons/logo';
@@ -73,8 +73,8 @@ export default function SignUpPage() {
       );
       const user = userCredential.user;
 
-      // Create a user profile document in Firestore
-      await setDoc(doc(firestore, 'users', user.uid), {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userData = {
         id: user.uid,
         username: values.username,
         email: values.email,
@@ -82,7 +82,10 @@ export default function SignUpPage() {
         lastLogin: new Date().toISOString(),
         coins: 10,
         isVIP: false,
-      });
+      };
+
+      // Create a user profile document in Firestore
+      setDocumentNonBlocking(userDocRef, userData, { merge: false });
 
       // Let the onAuthStateChanged listener handle the redirect
     } catch (error: any) {
