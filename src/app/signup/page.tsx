@@ -80,7 +80,7 @@ export default function SignUpPage() {
         email: values.email,
         registrationDate: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
-        coins: 0,
+        coins: 10,
         isVIP: false,
       });
 

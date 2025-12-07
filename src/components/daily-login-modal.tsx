@@ -14,7 +14,7 @@ type DailyLoginModalProps = {
 };
 
 export default function DailyLoginModal({ isOpen, onOpenChange }: DailyLoginModalProps) {
-  const dailyReward = 200;
+  const dailyReward = 20;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

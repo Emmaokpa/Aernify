@@ -84,7 +84,7 @@ export default function EarnPage() {
             <div className="flex items-center justify-center text-sm text-muted-foreground">
               <Info className="w-4 h-4 mr-2" />
               <span>
-                {adsWatched >= dailyAdLimit
+                {adsWatched >= dailyAdDatalimit
                   ? 'You have reached your daily limit.'
                   : 'You can watch more ads.'}
               </span>
