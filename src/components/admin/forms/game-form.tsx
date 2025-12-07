@@ -1,3 +1,4 @@
+
 'use client';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -25,21 +26,17 @@ import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-
 
 type Game = {
   name: string;
   iframeUrl: string;
   imageUrl: string;
-  rewardAmount: number;
 };
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   iframeUrl: z.string().url('Must be a valid iFrame URL'),
   imageUrl: z.string().url('Must be a valid image URL'),
-  rewardAmount: z.coerce.number().min(0, 'Reward must be a positive number'),
 });
 
 type GameFormProps = {
@@ -57,7 +54,6 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
       name: '',
       iframeUrl: '',
       imageUrl: '',
-      rewardAmount: 0,
     },
   });
   
@@ -71,7 +67,6 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
         name: '',
         iframeUrl: '',
         imageUrl: '',
-        rewardAmount: 0,
       });
     }
   }, [game, form, isOpen]);
@@ -145,19 +140,6 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="rewardAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Reward Amount</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
                 Cancel
@@ -173,3 +155,5 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
     </Dialog>
   );
 }
+
+    

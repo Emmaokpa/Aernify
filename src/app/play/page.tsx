@@ -13,7 +13,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 type Game = {
   name: string;
   imageUrl: string;
-  rewardAmount: number;
 };
 
 export default function PlayPage() {

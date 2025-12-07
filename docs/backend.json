@@ -82,18 +82,13 @@
           "type": "string",
           "description": "URL of the game's image.",
           "format": "uri"
-        },
-        "rewardAmount": {
-          "type": "number",
-          "description": "The amount of in-app coins awarded for playing the game."
         }
       },
       "required": [
         "id",
         "name",
         "iframeUrl",
-        "imageUrl",
-        "rewardAmount"
+        "imageUrl"
       ]
     },
     "UserGamePlay": {

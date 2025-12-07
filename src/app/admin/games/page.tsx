@@ -37,7 +37,6 @@ type Game = {
   name: string;
   iframeUrl: string;
   imageUrl: string;
-  rewardAmount: number;
 }
 
 
@@ -109,7 +108,6 @@ export default function AdminGamesPage() {
                 <TableHead>Image</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>iFrame URL</TableHead>
-                <TableHead>Reward</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -120,7 +118,6 @@ export default function AdminGamesPage() {
                     <TableCell><Skeleton className="w-16 h-16 rounded" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-48" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-8 w-20" /></TableCell>
                   </TableRow>
                 ))}
@@ -131,7 +128,6 @@ export default function AdminGamesPage() {
                   </TableCell>
                   <TableCell className="font-medium">{game.name}</TableCell>
                   <TableCell className='truncate max-w-xs'>{game.iframeUrl}</TableCell>
-                  <TableCell>{game.rewardAmount}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(game)}>
                       <Edit />
@@ -168,3 +164,5 @@ export default function AdminGamesPage() {
     </>
   );
 }
+
+    
