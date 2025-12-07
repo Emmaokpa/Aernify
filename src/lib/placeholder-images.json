@@ -1,3 +1,148 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "userAvatar1",
+      "description": "User avatar 1",
+      "imageUrl": "https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjUwMjYxNTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "game1",
+      "description": "Galaxy Invaders game",
+      "imageUrl": "https://images.unsplash.com/photo-1598520106798-b5dfe0af5026?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzcGFjZSUyMGFyY2FkZXxlbnwwfHx8fDE3NjUwOTUxNDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "space arcade"
+    },
+    {
+      "id": "game2",
+      "description": "Jungle Run game",
+      "imageUrl": "https://images.unsplash.com/photo-1675155498299-3a462d55f085?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxqdW5nbGUlMjBydW5uZXJ8ZW58MHx8fHwxNzY1MDk1MTQ5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "jungle runner"
+    },
+    {
+      "id": "game3",
+      "description": "Puzzle Blocks game",
+      "imageUrl": "https://images.unsplash.com/photo-1610213881011-ba006d40d5b4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y29sb3JmdWwlMjBibG9ja3N8ZW58MHx8fHwxNzY1MDE5NTEzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "colorful blocks"
+    },
+    {
+      "id": "game4",
+      "description": "Speed Racer game",
+      "imageUrl": "https://images.unsplash.com/photo-1610905376670-5e7e0e8a3cfb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxyYWNpbmclMjBjYXJ8ZW58MHx8fHwxNzY1MDIwMjYyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "racing car"
+    },
+    {
+      "id": "game5",
+      "description": "Pirate's Treasure game",
+      "imageUrl": "https://images.unsplash.com/photo-1632809199725-72a4245e846b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx0cmVhc3VyZSUyMGNoZXN0fGVufDB8fHx8MTc2NTA2ODg5OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "treasure chest"
+    },
+    {
+      "id": "game6",
+      "description": "Castle Defense game",
+      "imageUrl": "https://images.unsplash.com/photo-1553434320-e9f5757140b1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxmYW50YXN5JTIwY2FzdGxlfGVufDB8fHx8MTc2NTA2Njc3NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy castle"
+    },
+    {
+      "id": "offer1",
+      "description": "Survey Junkie offer",
+      "imageUrl": "https://images.unsplash.com/photo-1738737271801-d404a575d870?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YW5hbHl0aWNzJTIwY2hhcnR8ZW58MHx8fHwxNzY1MDI4Mjg5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "analytics chart"
+    },
+    {
+      "id": "offer2",
+      "description": "RAID: Shadow Legends offer",
+      "imageUrl": "https://images.unsplash.com/photo-1627732922021-e73df99d192e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxmYW50YXN5JTIwd2FycmlvcnxlbnwwfHx8fDE3NjUwNDYzNDJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy warrior"
+    },
+    {
+      "id": "offer3",
+      "description": "Cashback App offer",
+      "imageUrl": "https://images.unsplash.com/photo-1549187805-6079facea88d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxzaG9wcGluZyUyMGNhcnR8ZW58MHx8fHwxNzY1MDAzNTA4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "shopping cart"
+    },
+    {
+      "id": "offer4",
+      "description": "Finance Tracker offer",
+      "imageUrl": "https://images.unsplash.com/photo-1738737271801-d404a575d870?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxtb25leSUyMGdyYXBofGVufDB8fHx8MTc2NTA5NTE0OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "money graph"
+    },
+    {
+      "id": "product1",
+      "description": "Wireless earbuds",
+      "imageUrl": "https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3aXJlbGVzcyUyMGVhcmJ1ZHN8ZW58MHx8fHwxNzY1MDg5NjM4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "wireless earbuds"
+    },
+    {
+      "id": "product2",
+      "description": "Smartwatch",
+      "imageUrl": "https://images.unsplash.com/photo-1434494343833-76b479733705?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzbWFydHdhdGNofGVufDB8fHx8MTc2NTAxMTQ1Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "smartwatch"
+    },
+    {
+      "id": "product3",
+      "description": "Gaming mouse",
+      "imageUrl": "https://images.unsplash.com/photo-1632160871990-be30194885aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnYW1pbmclMjBtb3VzZXxlbnwwfHx8fDE3NjUwOTUxNDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gaming mouse"
+    },
+    {
+      "id": "product4",
+      "description": "Mechanical keyboard",
+      "imageUrl": "https://images.unsplash.com/photo-1626958390898-162d3577f293?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtZWNoYW5pY2FsJTIwa2V5Ym9hcmR8ZW58MHx8fHwxNzY1MDI1NTM4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mechanical keyboard"
+    },
+    {
+      "id": "product5",
+      "description": "Portable charger",
+      "imageUrl": "https://images.unsplash.com/photo-1706275400998-7fc21c8cd8ed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwb3dlciUyMGJhbmt8ZW58MHx8fHwxNzY1MDA4MjQ0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "power bank"
+    },
+    {
+      "id": "product6",
+      "description": "VR headset",
+      "imageUrl": "https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx2ciUyMGhlYWRzZXR8ZW58MHx8fHwxNzY1MDE4NTM5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "vr headset"
+    },
+    {
+      "id": "giftcard1",
+      "description": "Amazon gift card",
+      "imageUrl": "https://images.unsplash.com/photo-1628891439478-c613e85af7d6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxnaWZ0JTIwY2FyZHxlbnwwfHx8fDE3NjUwODY2NjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gift card"
+    },
+    {
+      "id": "giftcard2",
+      "description": "Google Play gift card",
+      "imageUrl": "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxnaWZ0JTIwY2FyZHxlbnwwfHx8fDE3NjUwODY2NjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gift card"
+    },
+    {
+      "id": "giftcard3",
+      "description": "Apple gift card",
+      "imageUrl": "https://images.unsplash.com/photo-1597463330912-eb868206b68e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxnaWZ0JTIwY2FyZHxlbnwwfHx8fDE3NjUwODY2NjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gift card"
+    },
+    {
+      "id": "giftcard4",
+      "description": "Steam gift card",
+      "imageUrl": "https://images.unsplash.com/photo-1549116917-bccf55924737?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxnaWZ0JTIwY2FyZHxlbnwwfHx8fDE3NjUwODY2NjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gift card"
+    },
+    {
+      "id": "leaderboardUser1",
+      "description": "Leaderboard user 1",
+      "imageUrl": "https://images.unsplash.com/photo-1598625873873-52f9aefd7d9d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx3b21hbiUyMHNtaWxpbmd8ZW58MHx8fHwxNzY1MDMzMzI1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman smiling"
+    },
+    {
+      "id": "leaderboardUser2",
+      "description": "Leaderboard user 2",
+      "imageUrl": "https://images.unsplash.com/photo-1714356590155-f896e15d21c9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxtYW4lMjBnbGFzc2VzfGVufDB8fHx8MTc2NTA4MjI4NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man glasses"
+    },
+    {
+      "id": "leaderboardUser3",
+      "description": "Leaderboard user 3",
+      "imageUrl": "https://images.unsplash.com/photo-1524494860062-9442631ee30e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBuYXR1cmV8ZW58MHx8fHwxNzY1MDA3NDkyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person nature"
+    }
+  ]
 }

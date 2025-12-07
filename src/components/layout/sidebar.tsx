@@ -1,0 +1,81 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  LayoutDashboard,
+  Gamepad2,
+  ListChecks,
+  ShoppingBag,
+  Gift,
+  Trophy,
+  User,
+  X,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { NavItem } from '@/lib/types';
+import Logo from '../icons/logo';
+import { Button } from '../ui/button';
+
+const navItems: NavItem[] = [
+  { title: 'Dashboard', href: '/', icon: <LayoutDashboard /> },
+  { title: 'Play Games', href: '/play', icon: <Gamepad2 /> },
+  { title: 'Offers', href: '/offers', icon: <ListChecks /> },
+  { title: 'Shop', href: '/shop', icon: <ShoppingBag /> },
+  { title: 'Redeem', href: '/redeem', icon: <Gift /> },
+  { title: 'Leaderboard', href: '/leaderboard', icon: <Trophy /> },
+  { title: 'Account', href: '/account', icon: <User /> },
+];
+
+type SidebarProps = {
+  isOpen: boolean;
+  setOpen: (isOpen: boolean) => void;
+};
+
+export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
+  const pathname = usePathname();
+
+  const content = (
+    <div className="flex h-full flex-col">
+       <div className="flex items-center justify-between p-4 border-b border-border md:border-none">
+          <Logo />
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen(false)}>
+            <X className="h-6 w-6" />
+          </Button>
+        </div>
+      <nav className="flex-grow p-4">
+        <ul className="space-y-2">
+          {navItems.map((item) => (
+            <li key={item.title}>
+              <Link
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10',
+                  pathname === item.href && 'bg-primary/20 text-primary font-semibold'
+                )}
+              >
+                {item.icon}
+                {item.title}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+  );
+
+  return (
+    <>
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r bg-card md:block">
+        {content}
+      </aside>
+      
+      {/* Mobile Sidebar */}
+      <div className={cn('fixed inset-0 z-50 bg-black/60 md:hidden', isOpen ? 'block' : 'hidden')} onClick={() => setOpen(false)} />
+      <aside className={cn('fixed inset-y-0 left-0 z-50 w-64 bg-card transition-transform md:hidden', isOpen ? 'translate-x-0' : '-translate-x-full')}>
+        {content}
+      </aside>
+    </>
+  );
+}

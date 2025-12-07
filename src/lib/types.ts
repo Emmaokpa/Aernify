@@ -1,0 +1,65 @@
+export type NavItem = {
+  title: string;
+  href: string;
+  icon: React.ReactNode;
+};
+
+export type User = {
+  name: string;
+  avatarUrl: string;
+  coins: number;
+  isVip: boolean;
+};
+
+export type DailyChallenge = {
+  id: number;
+  title: string;
+  description: string;
+  reward: number;
+  isCompleted: boolean;
+};
+
+export type Game = {
+  id: string;
+  title: string;
+  provider: string;
+  imageUrl: string;
+  imageHint: string;
+  reward: number;
+};
+
+export type Offer = {
+  id: string;
+  title: string;
+  company: string;
+  reward: number;
+  imageUrl: string;
+  imageHint: string;
+};
+
+export type Product = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  imageHint: string;
+};
+
+export type GiftCard = {
+  id:string;
+  name: string;
+  price: number;
+  imageUrl: string;
+  imageHint: string;
+  value: number;
+};
+
+export type LeaderboardEntry = {
+  rank: number;
+  user: {
+    name: string;
+    avatarUrl: string;
+  };
+  score: number;
+};
