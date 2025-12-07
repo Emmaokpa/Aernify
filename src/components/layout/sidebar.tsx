@@ -20,7 +20,7 @@ import { Button } from '../ui/button';
 const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/', icon: <LayoutDashboard /> },
   { title: 'Play Games', href: '/play', icon: <Gamepad2 /> },
-  { title: 'Offers', href: '/offers', icon: <ListChecks /> },
+  { title: 'Affiliate', href: '/offers', icon: <ListChecks /> },
   { title: 'Shop', href: '/shop', icon: <ShoppingBag /> },
   { title: 'Redeem', href: '/redeem', icon: <Gift /> },
   { title: 'Leaderboard', href: '/leaderboard', icon: <Trophy /> },
