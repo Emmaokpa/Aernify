@@ -58,7 +58,7 @@ service cloud.firestore {
 
     match /games/{gameId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isSignedIn();
     }
 
     match /users/{userId}/userGamePlays/{userGamePlayId} {
@@ -70,7 +70,7 @@ service cloud.firestore {
 
     match /offers/{offerId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /users/{userId}/userOfferCompletions/{userOfferCompletionId} {
@@ -82,7 +82,7 @@ service cloud.firestore {
 
     match /products/{productId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /users/{userId}/purchases/{purchaseId} {
@@ -94,7 +94,7 @@ service cloud.firestore {
 
     match /giftCards/{giftCardId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /users/{userId}/redemptions/{redemptionId} {
@@ -106,7 +106,7 @@ service cloud.firestore {
 
     match /dailyLoginBonuses/{dailyLoginBonusId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /users/{userId}/userDailyLogins/{userDailyLoginId} {
@@ -118,17 +118,17 @@ service cloud.firestore {
 
     match /leaderboardEntries/{leaderboardEntryId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /weeklyPrizes/{weeklyPrizeId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /dailyChallenges/{dailyChallengeId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /users/{userId}/userDailyChallengeCompletions/{userDailyChallengeCompletionId} {
@@ -146,5 +146,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
