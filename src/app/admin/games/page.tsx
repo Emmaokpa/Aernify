@@ -1,6 +1,7 @@
 
 'use client';
 import { useState }from 'react';
+import dynamic from 'next/dynamic';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import PageHeader from '@/components/page-header';
@@ -16,8 +17,6 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
-import Image from 'next/image';
-import { GameForm } from '@/components/admin/forms/game-form';
 import type { WithId } from '@/firebase/firestore/use-collection';
 import {
   AlertDialog,
@@ -28,11 +27,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { CldImage } from 'next-cloudinary';
 
+const GameForm = dynamic(() => import('@/components/admin/forms/game-form').then(mod => mod.GameForm), { ssr: false });
 
 type Game = {
   name: string;
@@ -94,11 +93,13 @@ export default function AdminGamesPage() {
         </Button>
       </div>
 
-      <GameForm 
-        isOpen={isFormOpen} 
-        setOpen={setFormOpen}
-        game={selectedGame}
-      />
+      {isFormOpen && (
+        <GameForm 
+          isOpen={isFormOpen} 
+          setOpen={setFormOpen}
+          game={selectedGame}
+        />
+      )}
 
       <Card>
         <CardContent className="p-0">
