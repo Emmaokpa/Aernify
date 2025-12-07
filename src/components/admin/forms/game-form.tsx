@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -27,6 +28,8 @@ import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { ImageUploader } from './image-uploader';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal } from 'lucide-react';
 
 type Game = {
   name: string;
@@ -51,6 +54,7 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,10 +65,11 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
     },
   });
   
-  const { reset } = form;
+  const { reset, control } = form;
 
   useEffect(() => {
     if (isOpen) {
+        setSubmissionError(null); // Clear errors when dialog opens
         if (game) {
           reset(game);
         } else {
@@ -79,14 +84,11 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!firestore) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Firestore is not available. Please try again later.',
-        });
+        setSubmissionError('Firestore is not available. Please try again later.');
         return;
     }
     setIsSubmitting(true);
+    setSubmissionError(null);
 
     try {
       const docId = game ? game.id : crypto.randomUUID();
@@ -97,28 +99,14 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
         ...values,
       };
 
-      // TRACE POINT 1 & 2
-      console.log('TRACE 1: Final Game Data Object:', gameData);
-      console.log('TRACE 2: Firestore Document Reference Path:', docRef.path);
-
       await setDoc(docRef, gameData, { merge: true });
 
       onSuccess();
       setOpen(false);
       
     } catch (error: any) {
-       // TRACE POINT 3
-       console.error('TRACE 3: FIRESTORE WRITE ERROR:', {
-        code: error.code,
-        message: error.message,
-        stack: error.stack
-      });
-
-       toast({
-        variant: 'destructive',
-        title: 'Submission Error',
-        description: error.message || 'There was a problem saving the game. Check the console for details.',
-      });
+       const errorMessage = error.message || 'An unknown error occurred.';
+       setSubmissionError(`Firestore Error: ${errorMessage} (Code: ${error.code || 'N/A'})`);
     } finally {
         setIsSubmitting(false);
     }
@@ -129,11 +117,27 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{game ? 'Edit Game' : 'Add New Game'}</DialogTitle>
+           {submissionError && (
+             <DialogDescription>
+                Please correct the issues below and try again.
+             </DialogDescription>
+           )}
         </DialogHeader>
+
+        {submissionError && (
+            <Alert variant="destructive">
+                <Terminal className="h-4 w-4" />
+                <AlertTitle>Submission Failed</AlertTitle>
+                <AlertDescription>
+                    {submissionError}
+                </AlertDescription>
+            </Alert>
+        )}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
-              control={form.control}
+              control={control}
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
@@ -149,7 +153,7 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
               )}
             />
             <FormField
-              control={form.control}
+              control={control}
               name="name"
               render={({ field }) => (
                 <FormItem>
@@ -162,7 +166,7 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
               )}
             />
             <FormField
-              control={form.control}
+              control={control}
               name="iframeUrl"
               render={({ field }) => (
                 <FormItem>

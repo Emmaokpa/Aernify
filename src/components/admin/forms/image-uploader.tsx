@@ -10,7 +10,6 @@ import Image from 'next/image';
 interface ImageUploaderProps {
   value: string;
   onChange: (src: string) => void;
-  onRemove: () => void;
 }
 
 declare global {
@@ -22,7 +21,6 @@ declare global {
 export function ImageUploader({
   value,
   onChange,
-  onRemove,
 }: ImageUploaderProps) {
   const [widgetInstance, setWidgetInstance] = useState<any>(null);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
@@ -34,7 +32,7 @@ export function ImageUploader({
       const myWidget = window.cloudinary.createUploadWidget(
         {
           cloudName: cloudName,
-          uploadPreset: 'qa4yjgs4',
+          uploadPreset: 'qa4yjgs4', 
         },
         (error: any, result: any) => {
           if (!error && result && result.event === 'success') {
@@ -51,6 +49,10 @@ export function ImageUploader({
       widgetInstance.open();
     }
   };
+
+  const handleRemoveImage = () => {
+    onChange('');
+  }
   
   if (!cloudName) {
     console.error('Cloudinary cloud name is not configured. Please check your .env file.');
@@ -73,8 +75,8 @@ export function ImageUploader({
         onError={(e) => console.error("Cloudinary script failed to load", e)}
       />
       <div>
-        <div className="mb-4 flex items-center gap-4">
-          {value && (
+        {value ? (
+           <div className="mb-4 flex items-center gap-4">
             <div className="relative w-48 h-48 rounded-md overflow-hidden">
               <Image
                 fill
@@ -85,7 +87,7 @@ export function ImageUploader({
               <div className="absolute top-2 right-2 z-10">
                 <Button
                   type="button"
-                  onClick={onRemove}
+                  onClick={handleRemoveImage}
                   variant="destructive"
                   size="icon"
                 >
@@ -93,18 +95,21 @@ export function ImageUploader({
                 </Button>
               </div>
             </div>
-          )}
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={openWidget}
-          disabled={!isScriptLoaded || !widgetInstance}
-        >
-          <ImagePlus className="h-4 w-4 mr-2" />
-          Upload an Image
-        </Button>
+          </div>
+        ) : (
+             <Button
+                type="button"
+                variant="outline"
+                onClick={openWidget}
+                disabled={!isScriptLoaded || !widgetInstance}
+                className="w-full"
+              >
+                <ImagePlus className="h-4 w-4 mr-2" />
+                Upload an Image
+              </Button>
+        )}
       </div>
     </>
   );
 }
+
