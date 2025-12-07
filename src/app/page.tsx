@@ -51,17 +51,17 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {games.map((game) => (
               <Link href={`/play`} key={game.id}>
-                <Card className="overflow-hidden aspect-[3/4] relative group transition-all hover:scale-105 hover:shadow-2xl hover:shadow-primary/20">
+                <Card className="overflow-hidden aspect-[3/4] relative group transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 rounded-2xl">
                   <Image
                     src={game.imageUrl}
                     alt={game.title}
                     fill
-                    className="object-cover"
+                    className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
                     data-ai-hint={game.imageHint}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                  <div className="absolute bottom-0 left-0 p-3">
-                    <h3 className="font-bold text-white text-md leading-tight">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                  <div className="absolute bottom-0 left-0 p-4">
+                    <h3 className="font-bold text-white text-lg leading-tight drop-shadow-md">
                       {game.title}
                     </h3>
                   </div>
