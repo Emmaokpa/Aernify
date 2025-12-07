@@ -14,25 +14,26 @@ export default function RedeemPage() {
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {giftCards.map((card) => (
-          <Card key={card.id} className="overflow-hidden flex flex-col text-center">
-            <CardHeader className="p-0 items-center justify-center">
-              <div className="relative aspect-[1.6] w-full">
+          <Card key={card.id} className="overflow-hidden flex flex-col rounded-2xl group">
+            <CardHeader className="p-0">
+              <div className="relative aspect-[1.6]">
                 <Image
                   src={card.imageUrl}
                   alt={card.name}
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
                   data-ai-hint={card.imageHint}
                 />
               </div>
             </CardHeader>
-            <CardContent className="p-4 flex-grow flex flex-col items-center justify-center">
+            <CardContent className="p-4 flex-grow">
               <h3 className="text-lg font-semibold">{card.name}</h3>
-              <p className="text-xl font-bold text-foreground">${card.value}</p>
+              <p className="text-xl font-bold text-foreground mt-1">${card.value}</p>
             </CardContent>
-            <CardFooter className="p-4 flex-col gap-2">
-              <div className="font-bold text-primary flex items-center gap-1.5">
-                <Coins className="w-4 h-4" /> {card.price.toLocaleString()}
+            <CardFooter className="p-4 flex flex-col items-start gap-3 bg-muted/30">
+              <div className="font-bold text-primary flex items-center gap-1.5 text-lg">
+                <Coins className="w-5 h-5" />
+                <span>{card.price.toLocaleString()}</span>
               </div>
               <Button className="w-full">Redeem</Button>
             </CardFooter>
