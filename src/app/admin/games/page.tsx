@@ -47,7 +47,7 @@ export default function AdminGamesPage() {
   const { toast } = useToast();
 
   const gamesCollectionRef = useMemoFirebase(
-    () => collection(firestore, 'games'),
+    () => (firestore ? collection(firestore, 'games') : null),
     [firestore]
   );
   
