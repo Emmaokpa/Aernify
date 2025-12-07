@@ -10,13 +10,8 @@ import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
 import React, { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
-import AdminLayout from './admin/layout';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-
-// Since we are using 'usePathname' hook, we can't export metadata from here.
-// We can move it to a layout file that is a server component or a page file.
-// For now, we will remove it.
 
 function RootLayoutContent({
   children,
@@ -26,15 +21,16 @@ function RootLayoutContent({
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
 
+  // The AdminLayout is now the direct child for /admin routes in the directory structure.
+  // We just need to render the children for admin routes,
+  // and wrap non-admin routes with the MainLayout.
+  const LayoutComponent = isAdminRoute ? React.Fragment : MainLayout;
+
   return (
     <html lang="en" className="dark">
       <body className={cn('font-body antialiased', inter.variable)}>
         <FirebaseClientProvider>
-          {isAdminRoute ? (
-            <AdminLayout>{children}</AdminLayout>
-          ) : (
-            <MainLayout>{children}</MainLayout>
-          )}
+          {isAdminRoute ? children : <MainLayout>{children}</MainLayout>}
         </FirebaseClientProvider>
         <Toaster />
       </body>
@@ -53,5 +49,3 @@ export default function RootLayout({
     </Suspense>
   );
 }
-
-    
