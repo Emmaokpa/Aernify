@@ -17,6 +17,12 @@ export type DailyChallenge = {
   description: string;
   reward: number;
   isCompleted: boolean;
+  isVip?: boolean;
+  progress: number;
+  currentValue: number;
+  targetValue: number;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  icon: React.ReactNode;
 };
 
 export type Game = {

@@ -10,14 +10,15 @@ import {
   Gift,
   Trophy,
   Coins,
+  Sparkles,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 import { Button } from '../ui/button';
 
 const navItems: NavItem[] = [
   { title: 'Play', href: '/play', icon: <Gamepad2 /> },
+  { title: 'Challenges', href: '/challenges', icon: <Sparkles /> },
   { title: 'Earn', href: '/earn', icon: <Coins /> },
-  { title: 'Shop', href: '/shop', icon: <ShoppingBag /> },
   { title: 'Top', href: '/leaderboard', icon: <Trophy /> },
 ];
 

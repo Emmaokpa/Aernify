@@ -12,6 +12,7 @@ import {
   User,
   X,
   Coins,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
@@ -21,6 +22,7 @@ import { Button } from '../ui/button';
 const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/', icon: <LayoutDashboard /> },
   { title: 'Play Games', href: '/play', icon: <Gamepad2 /> },
+  { title: 'Challenges', href: '/challenges', icon: <Sparkles /> },
   { title: 'Earn', href: '/earn', icon: <Coins /> },
   { title: 'Affiliate', href: '/offers', icon: <ListChecks /> },
   { title: 'Shop', href: '/shop', icon: <ShoppingBag /> },
