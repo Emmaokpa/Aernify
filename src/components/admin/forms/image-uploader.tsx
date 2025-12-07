@@ -47,7 +47,6 @@ export function ImageUploader({
       <CldUploadWidget
         onSuccess={handleUpload}
         uploadPreset="next-cloudinary-unsigned"
-        signatureEndpoint="/api/sign-image"
       >
         {({ open }) => {
           return (
