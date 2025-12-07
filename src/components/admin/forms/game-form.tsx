@@ -97,7 +97,9 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
         ...values,
       };
 
-      console.log('Saving data:', gameData);
+      // TRACE POINT 1 & 2
+      console.log('TRACE 1: Final Game Data Object:', gameData);
+      console.log('TRACE 2: Firestore Document Reference Path:', docRef.path);
 
       await setDoc(docRef, gameData, { merge: true });
 
@@ -105,11 +107,17 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
       setOpen(false);
       
     } catch (error: any) {
-       console.error("Error during form submission:", error);
+       // TRACE POINT 3
+       console.error('TRACE 3: FIRESTORE WRITE ERROR:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
+
        toast({
         variant: 'destructive',
         title: 'Submission Error',
-        description: error.message || 'There was a problem saving the game. You may not have permission.',
+        description: error.message || 'There was a problem saving the game. Check the console for details.',
       });
     } finally {
         setIsSubmitting(false);
@@ -134,7 +142,6 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
                     <ImageUploader
                       value={field.value}
                       onChange={field.onChange}
-                      onRemove={() => field.onChange('')}
                     />
                   </FormControl>
                   <FormMessage />
