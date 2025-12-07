@@ -4,8 +4,7 @@
 import { products } from '@/lib/data';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import PageHeader from '@/components/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Coins, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
