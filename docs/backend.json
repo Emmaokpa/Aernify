@@ -1,0 +1,899 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Earnify app.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The user's username."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "The date and time the user registered.",
+          "format": "date-time"
+        },
+        "lastLogin": {
+          "type": "string",
+          "description": "The date and time of the user's last login.",
+          "format": "date-time"
+        },
+        "coins": {
+          "type": "number",
+          "description": "The number of in-app coins the user has."
+        },
+        "referralCode": {
+          "type": "string",
+          "description": "The user's unique referral code."
+        },
+        "referredByUserId": {
+          "type": "string",
+          "description": "Reference to User who referred this user. (Relationship: User 1:N User)"
+        },
+        "isVIP": {
+          "type": "boolean",
+          "description": "Indicates whether the user has a VIP subscription."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "registrationDate"
+      ]
+    },
+    "Game": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Game",
+      "type": "object",
+      "description": "Represents an HTML5 game available in the app.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Game entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the game."
+        },
+        "playgamaId": {
+          "type": "string",
+          "description": "The ID of the game from Playgama."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the game's image.",
+          "format": "uri"
+        },
+        "rewardAmount": {
+          "type": "number",
+          "description": "The amount of in-app coins awarded for playing the game."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "playgamaId",
+        "imageUrl",
+        "rewardAmount"
+      ]
+    },
+    "UserGamePlay": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserGamePlay",
+      "type": "object",
+      "description": "Represents a user's play session for a specific game.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserGamePlay entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N UserGamePlay)"
+        },
+        "gameId": {
+          "type": "string",
+          "description": "Reference to Game. (Relationship: Game 1:N UserGamePlay)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The date and time the user started playing the game.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The date and time the user finished playing the game.",
+          "format": "date-time"
+        },
+        "rewardEarned": {
+          "type": "number",
+          "description": "The amount of in-app coins the user earned for playing the game."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "gameId",
+        "startTime"
+      ]
+    },
+    "Offer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Offer",
+      "type": "object",
+      "description": "Represents an affiliate or CPA offer.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Offer entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the offer."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the offer."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the offer's image.",
+          "format": "uri"
+        },
+        "rewardAmount": {
+          "type": "number",
+          "description": "The amount of in-app coins awarded for completing the offer."
+        },
+        "provider": {
+          "type": "string",
+          "description": "The provider of the offer (e.g., AdGateMedia, OfferToro)."
+        },
+        "requiredAction": {
+          "type": "string",
+          "description": "Specifies action needed to complete the offer, e.g download and install the app."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "imageUrl",
+        "rewardAmount",
+        "provider"
+      ]
+    },
+    "UserOfferCompletion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserOfferCompletion",
+      "type": "object",
+      "description": "Represents a user's completion of an offer.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserOfferCompletion entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N UserOfferCompletion)"
+        },
+        "offerId": {
+          "type": "string",
+          "description": "Reference to Offer. (Relationship: Offer 1:N UserOfferCompletion)"
+        },
+        "completionDate": {
+          "type": "string",
+          "description": "The date and time the user completed the offer.",
+          "format": "date-time"
+        },
+        "rewarded": {
+          "type": "boolean",
+          "description": "Indicates whether the user has been rewarded for completing the offer."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "offerId",
+        "completionDate"
+      ]
+    },
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product in the shop.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Product entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the product."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the product."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the product's image.",
+          "format": "uri"
+        },
+        "priceCoins": {
+          "type": "number",
+          "description": "The price of the product in in-app coins."
+        },
+        "priceUSD": {
+          "type": "number",
+          "description": "The price of the product in USD."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "imageUrl",
+        "priceCoins"
+      ]
+    },
+    "Purchase": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Purchase",
+      "type": "object",
+      "description": "Represents a user's purchase of a product.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Purchase entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Purchase)"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:N Purchase)"
+        },
+        "purchaseDate": {
+          "type": "string",
+          "description": "The date and time of the purchase.",
+          "format": "date-time"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "The payment method used for the purchase (e.g., coins, USD)."
+        },
+        "amountPaid": {
+          "type": "number",
+          "description": "The amount paid for the purchase."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "productId",
+        "purchaseDate",
+        "paymentMethod",
+        "amountPaid"
+      ]
+    },
+    "GiftCard": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GiftCard",
+      "type": "object",
+      "description": "Represents a gift card available for redemption.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the GiftCard entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the gift card (e.g., Amazon, Google Play)."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the gift card's image.",
+          "format": "uri"
+        },
+        "coinCost": {
+          "type": "number",
+          "description": "The number of in-app coins required to redeem the gift card."
+        },
+        "valueUSD": {
+          "type": "number",
+          "description": "The value of the gift card in USD."
+        },
+        "stock": {
+          "type": "number",
+          "description": "Amount of gift cards in stock."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "imageUrl",
+        "coinCost",
+        "valueUSD"
+      ]
+    },
+    "Redemption": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Redemption",
+      "type": "object",
+      "description": "Represents a user's redemption of a gift card.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Redemption entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Redemption)"
+        },
+        "giftCardId": {
+          "type": "string",
+          "description": "Reference to GiftCard. (Relationship: GiftCard 1:N Redemption)"
+        },
+        "redemptionDate": {
+          "type": "string",
+          "description": "The date and time of the redemption.",
+          "format": "date-time"
+        },
+        "giftCardCode": {
+          "type": "string",
+          "description": "The gift card code provided to the user."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "giftCardId",
+        "redemptionDate",
+        "giftCardCode"
+      ]
+    },
+    "DailyLoginBonus": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DailyLoginBonus",
+      "type": "object",
+      "description": "Represents a daily login bonus.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the DailyLoginBonus entity."
+        },
+        "day": {
+          "type": "number",
+          "description": "The day of the login bonus (e.g., 1 for the first day)."
+        },
+        "rewardAmount": {
+          "type": "number",
+          "description": "The amount of in-app coins awarded for the daily login bonus."
+        }
+      },
+      "required": [
+        "id",
+        "day",
+        "rewardAmount"
+      ]
+    },
+    "UserDailyLogin": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserDailyLogin",
+      "type": "object",
+      "description": "Represents a user's daily login.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserDailyLogin entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N UserDailyLogin)"
+        },
+        "loginDate": {
+          "type": "string",
+          "description": "The date of the login.",
+          "format": "date-time"
+        },
+        "dailyLoginBonusId": {
+          "type": "string",
+          "description": "Reference to DailyLoginBonus. (Relationship: DailyLoginBonus 1:N UserDailyLogin)"
+        },
+        "rewarded": {
+          "type": "boolean",
+          "description": "Indicates if the daily login has been rewarded."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "loginDate"
+      ]
+    },
+    "LeaderboardEntry": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LeaderboardEntry",
+      "type": "object",
+      "description": "Represents an entry in the weekly leaderboard.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LeaderboardEntry entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N LeaderboardEntry)"
+        },
+        "weekStartDate": {
+          "type": "string",
+          "description": "The start date of the week for the leaderboard.",
+          "format": "date-time"
+        },
+        "score": {
+          "type": "number",
+          "description": "The user's score for the week."
+        },
+        "rank": {
+          "type": "number",
+          "description": "The user's rank on the leaderboard for the week."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "weekStartDate",
+        "score",
+        "rank"
+      ]
+    },
+    "WeeklyPrize": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WeeklyPrize",
+      "type": "object",
+      "description": "Represents a prize awarded to the top users on the weekly leaderboard.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the WeeklyPrize entity."
+        },
+        "weekStartDate": {
+          "type": "string",
+          "description": "The start date of the week for which the prize is awarded.",
+          "format": "date-time"
+        },
+        "rank": {
+          "type": "number",
+          "description": "The rank of the user who receives the prize."
+        },
+        "prizeDescription": {
+          "type": "string",
+          "description": "A description of the prize."
+        },
+        "rewardAmount": {
+          "type": "number",
+          "description": "The amount of in-app coins awarded as the prize."
+        }
+      },
+      "required": [
+        "id",
+        "weekStartDate",
+        "rank",
+        "prizeDescription",
+        "rewardAmount"
+      ]
+    },
+    "DailyChallenge": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DailyChallenge",
+      "type": "object",
+      "description": "Represents a daily challenge.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the DailyChallenge entity."
+        },
+        "challengeDate": {
+          "type": "string",
+          "description": "The date of the daily challenge.",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the daily challenge."
+        },
+        "rewardAmount": {
+          "type": "number",
+          "description": "The amount of in-app coins awarded for completing the daily challenge."
+        }
+      },
+      "required": [
+        "id",
+        "challengeDate",
+        "description",
+        "rewardAmount"
+      ]
+    },
+    "UserDailyChallengeCompletion": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserDailyChallengeCompletion",
+      "type": "object",
+      "description": "Represents a user's completion of a daily challenge.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserDailyChallengeCompletion entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N UserDailyChallengeCompletion)"
+        },
+        "dailyChallengeId": {
+          "type": "string",
+          "description": "Reference to DailyChallenge. (Relationship: DailyChallenge 1:N UserDailyChallengeCompletion)"
+        },
+        "completionDate": {
+          "type": "string",
+          "description": "The date and time the user completed the daily challenge.",
+          "format": "date-time"
+        },
+        "rewarded": {
+          "type": "boolean",
+          "description": "Indicates whether the user has been rewarded for completing the daily challenge."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "dailyChallengeId",
+        "completionDate"
+      ]
+    },
+    "VIPSubscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "VIPSubscription",
+      "type": "object",
+      "description": "Represents a VIP subscription.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the VIPSubscription entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N VIPSubscription)"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The date the VIP subscription started.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The date the VIP subscription ends.",
+          "format": "date-time"
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the VIP subscription."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "startDate",
+        "endDate",
+        "price"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Path-based ownership. All documents in this collection can only be created by authenticated users. The id of the created user must match the `userId` parameter in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/games/{gameId}",
+        "definition": {
+          "entityName": "Game",
+          "schema": {
+            "$ref": "#/backend/entities/Game"
+          },
+          "description": "Stores game information. Publicly readable.",
+          "params": [
+            {
+              "name": "gameId",
+              "description": "The unique identifier of the game."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/userGamePlays/{userGamePlayId}",
+        "definition": {
+          "entityName": "UserGamePlay",
+          "schema": {
+            "$ref": "#/backend/entities/UserGamePlay"
+          },
+          "description": "Stores user game play sessions. Path-based ownership. The `userId` field must match the `userId` parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "userGamePlayId",
+              "description": "The unique identifier of the user game play session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/offers/{offerId}",
+        "definition": {
+          "entityName": "Offer",
+          "schema": {
+            "$ref": "#/backend/entities/Offer"
+          },
+          "description": "Stores offer information. Publicly readable.",
+          "params": [
+            {
+              "name": "offerId",
+              "description": "The unique identifier of the offer."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/userOfferCompletions/{userOfferCompletionId}",
+        "definition": {
+          "entityName": "UserOfferCompletion",
+          "schema": {
+            "$ref": "#/backend/entities/UserOfferCompletion"
+          },
+          "description": "Stores user offer completion records. Path-based ownership. The `userId` field must match the `userId` parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "userOfferCompletionId",
+              "description": "The unique identifier of the user offer completion."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product information. Publicly readable.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "The unique identifier of the product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/purchases/{purchaseId}",
+        "definition": {
+          "entityName": "Purchase",
+          "schema": {
+            "$ref": "#/backend/entities/Purchase"
+          },
+          "description": "Stores user purchase records. Path-based ownership. The `userId` field must match the `userId` parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "purchaseId",
+              "description": "The unique identifier of the purchase."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/giftCards/{giftCardId}",
+        "definition": {
+          "entityName": "GiftCard",
+          "schema": {
+            "$ref": "#/backend/entities/GiftCard"
+          },
+          "description": "Stores gift card information. Publicly readable.",
+          "params": [
+            {
+              "name": "giftCardId",
+              "description": "The unique identifier of the gift card."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/redemptions/{redemptionId}",
+        "definition": {
+          "entityName": "Redemption",
+          "schema": {
+            "$ref": "#/backend/entities/Redemption"
+          },
+          "description": "Stores user redemption records. Path-based ownership. The `userId` field must match the `userId` parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "redemptionId",
+              "description": "The unique identifier of the redemption."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/dailyLoginBonuses/{dailyLoginBonusId}",
+        "definition": {
+          "entityName": "DailyLoginBonus",
+          "schema": {
+            "$ref": "#/backend/entities/DailyLoginBonus"
+          },
+          "description": "Stores daily login bonus information. Publicly readable.",
+          "params": [
+            {
+              "name": "dailyLoginBonusId",
+              "description": "The unique identifier of the daily login bonus."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/userDailyLogins/{userDailyLoginId}",
+        "definition": {
+          "entityName": "UserDailyLogin",
+          "schema": {
+            "$ref": "#/backend/entities/UserDailyLogin"
+          },
+          "description": "Stores user daily login records. Path-based ownership. The `userId` field must match the `userId` parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "userDailyLoginId",
+              "description": "The unique identifier of the user daily login."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/leaderboardEntries/{leaderboardEntryId}",
+        "definition": {
+          "entityName": "LeaderboardEntry",
+          "schema": {
+            "$ref": "#/backend/entities/LeaderboardEntry"
+          },
+          "description": "Stores leaderboard entries. Write access restricted to backend or a trusted function. Read access Public.",
+          "params": [
+            {
+              "name": "leaderboardEntryId",
+              "description": "The unique identifier of the leaderboard entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/weeklyPrizes/{weeklyPrizeId}",
+        "definition": {
+          "entityName": "WeeklyPrize",
+          "schema": {
+            "$ref": "#/backend/entities/WeeklyPrize"
+          },
+          "description": "Stores weekly prize information. Publicly readable. Write access restricted to backend or a trusted function.",
+          "params": [
+            {
+              "name": "weeklyPrizeId",
+              "description": "The unique identifier of the weekly prize."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/dailyChallenges/{dailyChallengeId}",
+        "definition": {
+          "entityName": "DailyChallenge",
+          "schema": {
+            "$ref": "#/backend/entities/DailyChallenge"
+          },
+          "description": "Stores daily challenge information. Publicly readable.",
+          "params": [
+            {
+              "name": "dailyChallengeId",
+              "description": "The unique identifier of the daily challenge."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/userDailyChallengeCompletions/{userDailyChallengeCompletionId}",
+        "definition": {
+          "entityName": "UserDailyChallengeCompletion",
+          "schema": {
+            "$ref": "#/backend/entities/UserDailyChallengeCompletion"
+          },
+          "description": "Stores user daily challenge completion records. Path-based ownership. The `userId` field must match the `userId` parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "userDailyChallengeCompletionId",
+              "description": "The unique identifier of the user daily challenge completion."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/vipSubscriptions/{vipSubscriptionId}",
+        "definition": {
+          "entityName": "VIPSubscription",
+          "schema": {
+            "$ref": "#/backend/entities/VIPSubscription"
+          },
+          "description": "Stores VIP subscription information. Path-based ownership. The `userId` field must match the `userId` parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "vipSubscriptionId",
+              "description": "The unique identifier of the VIP subscription."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the Earnify app's core features, emphasizing security, scalability, and maintainability. The design adheres to the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs. Authorization independence is achieved through denormalization, avoiding `get()` calls in security rules. Structural Segregation ensures collections have homogeneous security postures, simplifying rules. Access Modeling standardizes authorization using path-based ownership for private data and membership maps for collaborative data.\n\n**Authorization Independence and Denormalization:**\n*   Many subcollections like `/users/{userId}/userGamePlays` and `/users/{userId}/purchases` will exist to record data for each user, these paths benefit from Path-Based ownership with easy to manage rules.\n\n*   No denormalization is needed because all relationships and access checks can be performed by checking `request.auth.uid`.\n\n**QAPs and Structural Segregation:**\n*   The structure supports secure `list` operations by segregating data based on ownership. For instance, listing games would not require filtering based on user roles, as the game collection itself is publicly readable."
+  }
+}
