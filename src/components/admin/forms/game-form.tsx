@@ -20,10 +20,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { WithId } from '@/firebase/firestore/use-collection';
-import { doc } from 'firebase/firestore';
-import { useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { ImageUploader } from './image-uploader';
@@ -44,11 +44,14 @@ type GameFormProps = {
   isOpen: boolean;
   setOpen: (isOpen: boolean) => void;
   game?: WithId<Game>;
+  onSuccess: () => void;
 };
 
-export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
+export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -58,57 +61,47 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
     },
   });
   
-  const {formState: {isSubmitting, isSubmitSuccessful}, reset} = form;
+  const { reset } = form;
 
   useEffect(() => {
-    if (game) {
-      reset(game);
-    } else {
-      reset({
-        name: '',
-        iframeUrl: '',
-        imageUrl: '',
-      });
+    if (isOpen) {
+        if (game) {
+          reset(game);
+        } else {
+          reset({
+            name: '',
+            iframeUrl: '',
+            imageUrl: '',
+          });
+        }
     }
   }, [game, reset, isOpen]);
 
-  // When the form successfully submits and the dialog closes, show the toast.
-  // This is a bit of a workaround to ensure the toast appears after the dialog is gone.
-  useEffect(() => {
-    if (isSubmitSuccessful && !isOpen) {
-        toast({
-            title: game ? 'Game Updated' : 'Game Created',
-            description: 'The game has been successfully saved.',
-        });
-        reset(); // Reset form after success
-    }
-  }, [isSubmitSuccessful, isOpen, game, toast, reset]);
-  
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!firestore) return;
+    setIsSubmitting(true);
 
     try {
       const docId = game ? game.id : crypto.randomUUID();
       const docRef = doc(firestore, 'games', docId);
 
-      // Use the non-blocking write function
-      setDocumentNonBlocking(docRef, { 
+      await setDoc(docRef, { 
         id: docId, 
         ...values,
        }, { merge: true });
 
-      // Close the form. The useEffect will handle the toast.
+      onSuccess();
       setOpen(false);
       
     } catch (error) {
-       // This will catch immediate client-side errors, but not security rule denials.
-       // Security rule errors are now handled by the global error emitter inside setDocumentNonBlocking.
-       console.error("Error during form submission setup:", error);
+       console.error("Error during form submission:", error);
        toast({
         variant: 'destructive',
         title: 'Submission Error',
-        description: 'There was a problem submitting the game data.',
+        description: 'There was a problem saving the game. You may not have permission.',
       });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 

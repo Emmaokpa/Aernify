@@ -82,7 +82,6 @@ export default function AdminGamesPage() {
         title: 'Game Deleted',
         description: 'The game has been successfully deleted.',
       });
-      // The real-time listener from useCollection will handle the UI update automatically
     } catch (error) {
       console.error("Delete failed", error);
       toast({
@@ -92,6 +91,13 @@ export default function AdminGamesPage() {
       });
     }
   };
+  
+  const handleFormSuccess = () => {
+    toast({
+        title: selectedGame ? 'Game Updated' : 'Game Created',
+        description: `The game has been successfully ${selectedGame ? 'updated' : 'created'}.`,
+    });
+  }
 
   return (
     <>
@@ -111,6 +117,7 @@ export default function AdminGamesPage() {
           isOpen={isFormOpen} 
           setOpen={setFormOpen}
           game={selectedGame}
+          onSuccess={handleFormSuccess}
         />
       )}
 
