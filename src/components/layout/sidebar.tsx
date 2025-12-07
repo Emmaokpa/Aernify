@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -15,16 +16,18 @@ import {
   Sparkles,
   LogOut,
   LogIn,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
 import Logo from '../icons/logo';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
 
-const loggedInNavItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   { title: 'Dashboard', href: '/', icon: <LayoutDashboard /> },
   { title: 'Play Games', href: '/play', icon: <Gamepad2 /> },
   { title: 'Challenges', href: '/challenges', icon: <Sparkles /> },
@@ -41,6 +44,13 @@ const loggedOutNavItems: NavItem[] = [
   { title: 'Sign Up', href: '/signup', icon: <User /> },
 ];
 
+const adminNavItem: NavItem = {
+  title: 'Admin',
+  href: '/admin',
+  icon: <Shield />,
+};
+
+
 type SidebarProps = {
   isOpen: boolean;
   setOpen: (isOpen: boolean) => void;
@@ -51,14 +61,33 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
   const router = useRouter();
   const auth = useAuth();
   const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userData } = useDoc<{ isAdmin?: boolean }>(userDocRef);
 
   const handleLogout = () => {
     signOut(auth);
     router.push('/login');
     setOpen(false);
   };
-
-  const navItems = user ? loggedInNavItems : loggedOutNavItems;
+  
+  const getNavItems = () => {
+    if (!user) {
+      return loggedOutNavItems;
+    }
+    const navItems = [...baseNavItems];
+    if (userData?.isAdmin) {
+      navItems.push(adminNavItem);
+    }
+    return navItems;
+  }
+  
+  const navItems = getNavItems();
 
   const content = (
     <div className="flex h-full flex-col">
