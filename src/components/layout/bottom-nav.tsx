@@ -9,14 +9,15 @@ import {
   ShoppingBag,
   Gift,
   Trophy,
+  Coins,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 import { Button } from '../ui/button';
 
 const navItems: NavItem[] = [
   { title: 'Play', href: '/play', icon: <Gamepad2 /> },
+  { title: 'Earn', href: '/earn', icon: <Coins /> },
   { title: 'Shop', href: '/shop', icon: <ShoppingBag /> },
-  { title: 'Redeem', href: '/redeem', icon: <Gift /> },
   { title: 'Top', href: '/leaderboard', icon: <Trophy /> },
 ];
 
@@ -52,12 +53,15 @@ export default function BottomNav({ onMenuClick }: BottomNavProps) {
                   className={cn(
                     'flex flex-col items-center justify-center gap-1 p-2 rounded-lg transition-colors duration-200',
                     'text-muted-foreground hover:text-primary',
-                    isActive && 'text-primary'
                   )}
                 >
-                  <div className='relative'>
-                    <div className="h-6 w-6">{item.icon}</div>
-                    {isActive && <div className='absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-primary rounded-full' />}
+                  <div className='relative w-full text-center'>
+                    <div className={cn(
+                      'inline-block p-1 rounded-full transition-all duration-300',
+                      isActive ? 'bg-primary/20' : ''
+                    )}>
+                      <div className={cn("h-6 w-6", isActive && "text-primary")}>{item.icon}</div>
+                    </div>
                   </div>
                   <span className={cn("text-xs font-medium", isActive && "text-primary")}>{item.title}</span>
                 </Link>
