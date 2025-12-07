@@ -31,7 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { getImage } from '@/lib/placeholder-images';
+import { CldImage } from 'next-cloudinary';
 
 
 type Game = {
@@ -81,8 +81,6 @@ export default function AdminGamesPage() {
     }
   };
 
-  const defaultGameImage = getImage('game1').imageUrl;
-
   return (
     <>
       <PageHeader
@@ -126,7 +124,19 @@ export default function AdminGamesPage() {
               {!isLoading && games?.map((game) => (
                 <TableRow key={game.id}>
                   <TableCell>
-                    <Image src={game.imageUrl || defaultGameImage} alt={game.name} width={64} height={64} className="rounded" />
+                    {game.imageUrl ? (
+                        <CldImage
+                            src={game.imageUrl}
+                            alt={game.name}
+                            width={64}
+                            height={64}
+                            className="rounded"
+                        />
+                    ) : (
+                        <div className="w-16 h-16 rounded bg-muted flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">No Image</span>
+                        </div>
+                    )}
                   </TableCell>
                   <TableCell className="font-medium">{game.name}</TableCell>
                   <TableCell className='truncate max-w-xs'>{game.iframeUrl}</TableCell>

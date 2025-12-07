@@ -9,7 +9,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { WithId } from '@/firebase/firestore/use-collection';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getImage } from '@/lib/placeholder-images';
+import { CldImage } from 'next-cloudinary';
 
 type Game = {
   name: string;
@@ -23,7 +23,6 @@ export default function PlayPage() {
     [firestore]
   );
   const { data: games, isLoading } = useCollection<Game>(gamesCollectionRef);
-  const defaultGameImage = getImage('game1').imageUrl;
 
   return (
     <>
@@ -39,12 +38,16 @@ export default function PlayPage() {
         {games?.map((game) => (
           <Link href={`/play/${game.id}`} key={game.id}>
             <Card className="overflow-hidden aspect-[3/4] relative group transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 rounded-2xl">
-              <Image
-                src={game.imageUrl || defaultGameImage}
-                alt={game.name}
-                fill
-                className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
-              />
+              {game.imageUrl ? (
+                <CldImage
+                  src={game.imageUrl}
+                  alt={game.name}
+                  fill
+                  className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+                />
+              ) : (
+                 <div className="w-full h-full bg-muted" />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
               <div className="absolute bottom-0 left-0 p-4">
                 <h3 className="font-bold text-white">{game.name}</h3>

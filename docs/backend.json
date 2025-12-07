@@ -80,14 +80,15 @@
         },
         "imageUrl": {
           "type": "string",
-          "description": "URL of the game's image.",
+          "description": "URL of the game's image, hosted on Cloudinary.",
           "format": "uri"
         }
       },
       "required": [
         "id",
         "name",
-        "iframeUrl"
+        "iframeUrl",
+        "imageUrl"
       ]
     },
     "UserGamePlay": {

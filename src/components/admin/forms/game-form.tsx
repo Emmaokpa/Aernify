@@ -26,17 +26,18 @@ import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { getImage } from '@/lib/placeholder-images';
+import { ImageUploader } from './image-uploader';
 
 type Game = {
   name: string;
   iframeUrl: string;
-  imageUrl?: string;
+  imageUrl: string;
 };
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   iframeUrl: z.string().url('Must be a valid iFrame URL'),
+  imageUrl: z.string().url('Image URL is required'),
 });
 
 type GameFormProps = {
@@ -53,6 +54,7 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
     defaultValues: {
       name: '',
       iframeUrl: '',
+      imageUrl: '',
     },
   });
   
@@ -65,6 +67,7 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
       form.reset({
         name: '',
         iframeUrl: '',
+        imageUrl: '',
       });
     }
   }, [game, form, isOpen]);
@@ -75,13 +78,9 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
       const docId = game ? game.id : crypto.randomUUID();
       const docRef = doc(firestore, 'games', docId);
 
-      // Always use a placeholder image for now
-      const defaultGameImage = getImage('game1').imageUrl;
-
       await setDoc(docRef, { 
         id: docId, 
         ...values,
-        imageUrl: game?.imageUrl || defaultGameImage,
        }, { merge: true });
 
       toast({
@@ -100,12 +99,29 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{game ? 'Edit Game' : 'Add New Game'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image</FormLabel>
+                  <FormControl>
+                    <ImageUploader
+                      value={field.value}
+                      onChange={field.onChange}
+                      onRemove={() => field.onChange('')}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="name"
