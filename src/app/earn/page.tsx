@@ -31,6 +31,13 @@ export default function EarnPage() {
   
   const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef);
 
+  console.log('Earn Page Debug:', {
+    isUserLoading,
+    isUserDataLoading,
+    user: user ? { uid: user.uid, email: user.email } : null,
+    userData,
+  });
+
   const [adsWatched, setAdsWatched] = useState(0);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
   const dailyAdLimit = 20;
