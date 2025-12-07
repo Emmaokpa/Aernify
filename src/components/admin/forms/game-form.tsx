@@ -72,11 +72,17 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
     }
   }, [game, reset, isOpen]);
 
+  // When the form successfully submits and the dialog closes, show the toast.
+  // This is a bit of a workaround to ensure the toast appears after the dialog is gone.
   useEffect(() => {
-    if(isSubmitSuccessful) {
-        reset();
+    if (isSubmitSuccessful && !isOpen) {
+        toast({
+            title: game ? 'Game Updated' : 'Game Created',
+            description: 'The game has been successfully saved.',
+        });
+        reset(); // Reset form after success
     }
-  }, [isSubmitSuccessful, reset]);
+  }, [isSubmitSuccessful, isOpen, game, toast, reset]);
   
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!firestore) return;
@@ -91,11 +97,7 @@ export function GameForm({ isOpen, setOpen, game }: GameFormProps) {
         ...values,
        }, { merge: true });
 
-      toast({
-        title: game ? 'Game Updated' : 'Game Created',
-        description: `The game "${values.name}" has been saved.`,
-      });
-
+      // Close the form. The useEffect will handle the toast.
       setOpen(false);
       
     } catch (error) {

@@ -46,13 +46,9 @@ export default function AdminGamesPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  // This state is to force re-render when a delete happens.
-  // The collection listener should handle adds/updates, but deletes can be tricky.
-  const [deleteTrigger, setDeleteTrigger] = useState(0);
-
   const gamesCollectionRef = useMemoFirebase(
     () => (firestore ? collection(firestore, 'games') : null),
-    [firestore, deleteTrigger]
+    [firestore]
   );
   
   const { data: games, isLoading, error } = useCollection<Game>(gamesCollectionRef);
@@ -86,8 +82,7 @@ export default function AdminGamesPage() {
         title: 'Game Deleted',
         description: 'The game has been successfully deleted.',
       });
-      // Trigger a re-fetch of the collection
-      setDeleteTrigger(prev => prev + 1);
+      // The real-time listener from useCollection will handle the UI update automatically
     } catch (error) {
       console.error("Delete failed", error);
       toast({
