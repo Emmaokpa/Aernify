@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Gamepad2,
@@ -13,14 +13,18 @@ import {
   X,
   Coins,
   Sparkles,
+  LogOut,
+  LogIn,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
 import Logo from '../icons/logo';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
-const navItems: NavItem[] = [
+const loggedInNavItems: NavItem[] = [
   { title: 'Dashboard', href: '/', icon: <LayoutDashboard /> },
   { title: 'Play Games', href: '/play', icon: <Gamepad2 /> },
   { title: 'Challenges', href: '/challenges', icon: <Sparkles /> },
@@ -32,6 +36,11 @@ const navItems: NavItem[] = [
   { title: 'Profile', href: '/profile', icon: <User /> },
 ];
 
+const loggedOutNavItems: NavItem[] = [
+  { title: 'Login', href: '/login', icon: <LogIn /> },
+  { title: 'Sign Up', href: '/signup', icon: <User /> },
+];
+
 type SidebarProps = {
   isOpen: boolean;
   setOpen: (isOpen: boolean) => void;
@@ -39,6 +48,17 @@ type SidebarProps = {
 
 export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const auth = useAuth();
+  const { user } = useUser();
+
+  const handleLogout = () => {
+    signOut(auth);
+    router.push('/login');
+    setOpen(false);
+  };
+
+  const navItems = user ? loggedInNavItems : loggedOutNavItems;
 
   const content = (
     <div className="flex h-full flex-col">
@@ -69,6 +89,14 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
           </ul>
         </nav>
       </ScrollArea>
+      {user && (
+        <div className="p-4 border-t">
+          <Button variant="outline" className="w-full" onClick={handleLogout}>
+            <LogOut className="mr-2" />
+            Logout
+          </Button>
+        </div>
+      )}
     </div>
   );
 

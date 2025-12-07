@@ -11,10 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Coins, LogOut, Menu, User } from 'lucide-react';
+import { Coins, LogIn, LogOut, Menu, User } from 'lucide-react';
 import { currentUser } from '@/lib/data';
 import Logo from '../icons/logo';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -22,9 +24,17 @@ type HeaderProps = {
 
 export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
 
-  // Do not render the header on the profile page
-  if (pathname === '/profile') {
+  const handleLogout = () => {
+    signOut(auth);
+    router.push('/login');
+  };
+
+  // Do not render the header on the profile page or auth pages
+  if (pathname === '/profile' || pathname === '/login' || pathname === '/signup') {
     return null;
   }
   
@@ -43,35 +53,47 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <Logo />
       </div>
       <div className="flex w-full items-center justify-end gap-4">
-        <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary">
-          <Coins className="h-5 w-5" />
-          <span>{currentUser.coins.toLocaleString()}</span>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Avatar>
-                <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
-                <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{currentUser.name}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/profile">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {user && (
+          <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary">
+            <Coins className="h-5 w-5" />
+            <span>{currentUser.coins.toLocaleString()}</span>
+          </div>
+        )}
+        
+        {isUserLoading ? null : !user ? (
+          <Button asChild>
+            <Link href="/login">
+              <LogIn className="mr-2" />
+              Login
+            </Link>
+          </Button>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar>
+                  <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+                  <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{user.displayName || user.email}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </header>
   );

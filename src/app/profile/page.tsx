@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   User,
   ShieldCheck,
@@ -19,10 +21,27 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { currentUser } from '@/lib/data';
 import PageHeader from '@/components/page-header';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
+  const handleLogout = () => {
+    signOut(auth);
+    router.push('/login');
+  };
+
   const menuItems = [
     { icon: <User />, text: 'Edit Profile' },
     { icon: <ShieldCheck />, text: 'Change Password' },
@@ -34,17 +53,41 @@ export default function ProfilePage() {
     { icon: <HelpCircle />, text: 'Support' },
   ];
 
+  if (isUserLoading || !user) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <PageHeader title="Profile" />
+        <div className="flex flex-col items-center text-center mt-4 mb-8">
+          <Skeleton className="w-24 h-24 rounded-full mb-4" />
+          <Skeleton className="h-6 w-32 mb-2" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <Card className="bg-primary/10 border border-primary/20 mb-8">
+          <CardContent className="p-6">
+            <Skeleton className="h-8 w-48 mb-4" />
+            <div className="space-y-3 mb-6">
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-full" />
+            </div>
+            <Skeleton className="h-11 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-md mx-auto">
       <PageHeader title="Profile" />
       
       <div className="flex flex-col items-center text-center mt-4 mb-8">
         <Avatar className="w-24 h-24 mb-4 border-4 border-primary">
-          <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
-          <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+          <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+          <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
-        <h2 className="text-xl font-semibold">{currentUser.name}</h2>
-        <p className="text-muted-foreground">anonymous</p>
+        <h2 className="text-xl font-semibold">{user.displayName || user.email}</h2>
+        <p className="text-muted-foreground">{user.email}</p>
       </div>
 
       <Card className="bg-primary/10 border border-primary/20 mb-8">
@@ -89,7 +132,7 @@ export default function ProfilePage() {
       </div>
       
       <div className="mt-8">
-        <Button variant="destructive" className="w-full bg-red-600/20 text-red-500 hover:bg-red-600/30 hover:text-red-400">
+        <Button onClick={handleLogout} variant="destructive" className="w-full bg-red-600/20 text-red-500 hover:bg-red-600/30 hover:text-red-400">
           <LogOut className="mr-2 h-5 w-5" />
           Logout
         </Button>
