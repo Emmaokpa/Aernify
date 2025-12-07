@@ -13,7 +13,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <Sidebar isOpen={isSidebarOpen} setOpen={setSidebarOpen} />
       <div className="md:pl-64 flex flex-col min-h-screen">
         <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-grow p-4 md:p-8 pt-20 md:pt-8">{children}</main>
+        <main className="flex-grow p-4 md:p-8 pt-20 md:pt-8 pb-20 md:pb-8">{children}</main>
       </div>
       <BottomNav />
     </div>
