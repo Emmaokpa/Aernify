@@ -78,27 +78,38 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
   }, [game, reset, isOpen]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!firestore) return;
+    if (!firestore) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Firestore is not available. Please try again later.',
+        });
+        return;
+    }
     setIsSubmitting(true);
 
     try {
       const docId = game ? game.id : crypto.randomUUID();
       const docRef = doc(firestore, 'games', docId);
 
-      await setDoc(docRef, { 
+      const gameData = { 
         id: docId, 
         ...values,
-       }, { merge: true });
+      };
+
+      console.log('Saving data:', gameData);
+
+      await setDoc(docRef, gameData, { merge: true });
 
       onSuccess();
       setOpen(false);
       
-    } catch (error) {
+    } catch (error: any) {
        console.error("Error during form submission:", error);
        toast({
         variant: 'destructive',
         title: 'Submission Error',
-        description: 'There was a problem saving the game. You may not have permission.',
+        description: error.message || 'There was a problem saving the game. You may not have permission.',
       });
     } finally {
         setIsSubmitting(false);
