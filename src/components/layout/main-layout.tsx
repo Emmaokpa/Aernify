@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -32,13 +33,29 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const isAuthPage = pathname === '/login' || pathname === '/signup';
 
   useEffect(() => {
+    if (!isUserLoading && !user && !isAuthPage) {
+      router.push('/login');
+    }
     if (!isUserLoading && user && isAuthPage) {
       router.push('/');
     }
-  }, [user, isUserLoading, isAuthPage, router]);
+  }, [user, isUserLoading, isAuthPage, router, pathname]);
 
   if (isAuthPage) {
     return <main className="flex items-center justify-center min-h-screen">{children}</main>;
+  }
+  
+  if (isUserLoading) {
+     return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-16 w-16 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    // This will be briefly rendered before the useEffect above redirects.
+    return null;
   }
 
   return (
