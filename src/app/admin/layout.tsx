@@ -27,16 +27,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isAdmin = userData?.isAdmin === true;
 
   useEffect(() => {
-    // If loading is complete and the user is not an admin, redirect.
-    if (!isLoading && !isAdmin) {
+    // Wait until both user and user data have been checked.
+    // Redirect only if loading is complete and the user is definitely not an admin.
+    if (!isUserLoading && !isUserDataLoading && !isAdmin) {
       router.push('/');
     }
-  }, [isLoading, isAdmin, router]);
+  }, [isUserLoading, isUserDataLoading, isAdmin, router]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Skeleton className="h-16 w-16" />
+        <div className="h-16 w-16 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
