@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
   AlertDialogFooter,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
+import { useToast } from "@/hooks/use-toast";
 
 export default function EarnPage() {
   const referralCode = 'YOURCODE123';
@@ -22,9 +23,24 @@ export default function EarnPage() {
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
   const [showReward, setShowReward] = useState(false);
   const dailyAdLimit = 20;
+  const [countdown, setCountdown] = useState(15);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isAdModalOpen && countdown > 0) {
+      timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+    } else if (isAdModalOpen && countdown === 0) {
+      handleVideoEnd();
+    }
+    return () => clearTimeout(timer);
+  }, [isAdModalOpen, countdown]);
 
   const handleWatchAd = () => {
     if (adsWatched < dailyAdLimit) {
+      setCountdown(15);
       setIsAdModalOpen(true);
     }
   };
@@ -32,7 +48,10 @@ export default function EarnPage() {
   const handleVideoEnd = () => {
     setIsAdModalOpen(false);
     setAdsWatched(adsWatched + 1);
-    setShowReward(true);
+    toast({
+      title: "Reward Claimed!",
+      description: "+10 Coins have been added to your balance.",
+    });
     // In a real app, you would add 10 coins to the user's balance here.
   };
 
@@ -107,46 +126,22 @@ export default function EarnPage() {
               Please watch the entire video to receive your reward.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="aspect-video w-full bg-black rounded-md overflow-hidden">
+          <div className="aspect-video w-full bg-black rounded-md overflow-hidden relative">
             {/* Placeholder for a 15-second video ad */}
             <video
               width="100%"
               height="100%"
               autoPlay
-              onEnded={handleVideoEnd}
               muted // Autoplay often requires the video to be muted
               playsInline
+              src="https://storage.googleapis.com/web-dev-assets/video-and-source-tags/chrome.mp4"
             >
-              <source src="https://storage.googleapis.com/web-dev-assets/video-and-source-tags/chrome.mp4" type="video/mp4" />
               Your browser does not support the video tag.
             </video>
+            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs font-bold rounded-full h-8 w-8 flex items-center justify-center">
+              {countdown}
+            </div>
           </div>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={showReward} onOpenChange={setShowReward}>
-        <AlertDialogContent className="sm:max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-center">
-              Reward Claimed!
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-center pt-4">
-              <div className="text-5xl font-bold text-primary">
-                +10 Coins
-              </div>
-              <p className="text-muted-foreground mt-2">
-                The coins have been added to your balance.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction
-              className="w-full"
-              onClick={() => setShowReward(false)}
-            >
-              Awesome!
-            </AlertDialogAction>
-          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
