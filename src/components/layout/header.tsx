@@ -12,11 +12,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Coins, LogIn, LogOut, Menu, User } from 'lucide-react';
-import { currentUser } from '@/lib/data';
 import Logo from '../icons/logo';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from '../ui/skeleton';
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -26,7 +27,15 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef);
 
   const handleLogout = () => {
     signOut(auth);
@@ -56,7 +65,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
         {user && (
           <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary">
             <Coins className="h-5 w-5" />
-            <span>{currentUser.coins.toLocaleString()}</span>
+            {isUserDataLoading ? (
+              <Skeleton className="h-5 w-10" />
+            ) : (
+              <span>{userData?.coins?.toLocaleString() || 0}</span>
+            )}
           </div>
         )}
         

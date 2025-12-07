@@ -7,16 +7,26 @@ import BottomNav from './bottom-nav';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Coins } from 'lucide-react';
-import { currentUser } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import Link from 'next/link';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from '../ui/skeleton';
+
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef);
 
   const isProfilePage = pathname === '/profile';
   const isAuthPage = pathname === '/login' || pathname === '/signup';
@@ -41,7 +51,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary">
                 <Coins className="h-5 w-5" />
-                <span>{currentUser.coins.toLocaleString()}</span>
+                {isUserDataLoading ? (
+                  <Skeleton className="h-5 w-10" />
+                ) : (
+                  <span>{userData?.coins?.toLocaleString() || 0}</span>
+                )}
               </div>
               <Link href="/profile">
                 <Avatar className='h-10 w-10'>
