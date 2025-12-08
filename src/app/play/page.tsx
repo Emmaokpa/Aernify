@@ -9,6 +9,7 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { WithId } from '@/firebase/firestore/use-collection';
 import { Skeleton } from '@/components/ui/skeleton';
+import { games as staticGames } from '@/lib/data';
 
 type Game = {
   name: string;
@@ -16,12 +17,7 @@ type Game = {
 };
 
 export default function PlayPage() {
-  const firestore = useFirestore();
-  const gamesCollectionRef = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'games') : null),
-    [firestore]
-  );
-  const { data: games, isLoading } = useCollection<Game>(gamesCollectionRef);
+  const { data: games, isLoading } = {data: staticGames, isLoading: false};
 
   return (
     <>
@@ -40,7 +36,7 @@ export default function PlayPage() {
               {game.imageUrl ? (
                 <Image
                   src={game.imageUrl}
-                  alt={game.name}
+                  alt={game.title}
                   fill
                   className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
                 />
@@ -49,7 +45,7 @@ export default function PlayPage() {
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
               <div className="absolute bottom-0 left-0 p-4">
-                <h3 className="font-bold text-white">{game.name}</h3>
+                <h3 className="font-bold text-white">{game.title}</h3>
               </div>
             </Card>
           </Link>
