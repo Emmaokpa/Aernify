@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,10 +14,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, XCircle } from 'lucide-react';
 import { ImageUploader } from './image-uploader';
-import type { WithId, Game } from '@/app/admin/games/page';
+import type { WithId } from '@/firebase';
+import type { Game } from '@/app/admin/games/page';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-// --- PHASE 2 & 3: ZOD SCHEMA FOR VALIDATION ---
+// --- ZOD SCHEMA FOR VALIDATION ---
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   provider: z.string().min(2, { message: 'Provider is required.' }),
@@ -41,19 +42,18 @@ export function GameForm({ game, onSuccess, onError, onCancel }: GameFormProps) 
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: game || {
       name: '',
       provider: '',
       iframeUrl: '',
       imageUrl: '',
       reward: 0,
-      ...game,
     },
   });
 
   const firestore = useFirestore();
 
-  // --- PHASE 2 & 3: CREATE/UPDATE HANDLER ---
+  // --- CREATE/UPDATE HANDLER ---
   const handleSaveGame: SubmitHandler<FormValues> = async (values) => {
     setIsLoading(true);
     setErrorMessage(null); // Clear previous errors
@@ -74,10 +74,9 @@ export function GameForm({ game, onSuccess, onError, onCancel }: GameFormProps) 
       }
     } catch (error: any) {
       // --- MOBILE DEBUGGING FEEDBACK (FAILURE) ---
-      const detailedError = `CRITICAL FAILURE: ${error.code} - ${error.message}`;
+      const detailedError = `SAVE FAILED: ${error.code} - ${error.message}`;
       setErrorMessage(detailedError);
-      // We explicitly call onError to potentially handle it in the parent as well
-      onError(detailedError);
+      onError(detailedError); // Pass error to parent if needed
     } finally {
       setIsLoading(false);
     }
@@ -91,87 +90,87 @@ export function GameForm({ game, onSuccess, onError, onCancel }: GameFormProps) 
         </SheetHeader>
         
         <ScrollArea className="flex-grow pr-6">
-        <Form {...form}>
-          <form id="game-form" className="space-y-6">
-            {/* --- PHASE 4: UI FEEDBACK MECHANISM --- */}
-            {errorMessage && (
-              <Alert variant="destructive">
-                <XCircle className="h-4 w-4" />
-                <AlertTitle>Save Failed</AlertTitle>
-                <AlertDescription>{errorMessage}</AlertDescription>
-              </Alert>
-            )}
+          <Form {...form}>
+            <form id="game-form" className="space-y-6">
+              {/* --- UI FEEDBACK MECHANISM --- */}
+              {errorMessage && (
+                <Alert variant="destructive">
+                  <XCircle className="h-4 w-4" />
+                  <AlertTitle>Save Failed</AlertTitle>
+                  <AlertDescription>{errorMessage}</AlertDescription>
+                </Alert>
+              )}
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Game Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Galaxy Invaders" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="provider"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Game Provider</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Playgama" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="reward"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Reward Coins</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="e.g., 50" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="iframeUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Game Iframe URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
+              <FormField
                 control={form.control}
-                name="imageUrl"
+                name="name"
                 render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Game Image</FormLabel>
-                        <FormControl>
-                            <ImageUploader 
-                                value={field.value} 
-                                onChange={field.onChange} 
-                            />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
+                  <FormItem>
+                    <FormLabel>Game Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Galaxy Invaders" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-            />
-          </form>
-        </Form>
+              />
+              <FormField
+                control={form.control}
+                name="provider"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Game Provider</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Playgama" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="reward"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Reward Coins</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="e.g., 50" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="iframeUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Game Iframe URL</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                  control={form.control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Game Image</FormLabel>
+                          <FormControl>
+                              <ImageUploader 
+                                  value={field.value} 
+                                  onChange={field.onChange} 
+                              />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                  )}
+              />
+            </form>
+          </Form>
         </ScrollArea>
 
         <SheetFooter className="pt-4">
