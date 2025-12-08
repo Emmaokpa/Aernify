@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import {
   User,
   ShieldCheck,
-  Moon,
   CreditCard,
   Languages,
   Bell,
@@ -22,14 +21,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import PageHeader from '@/components/page-header';
 import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const ProfileMenuItem = ({ icon, text, isSwitch, href }: { icon: React.ReactNode, text: string, isSwitch?: boolean, href?: string }) => {
+const ProfileMenuItem = ({ icon, text, href }: { icon: React.ReactNode, text: string, href?: string }) => {
   const content = (
     <div
       className="flex items-center justify-between p-4 bg-card rounded-lg cursor-pointer hover:bg-muted"
@@ -38,7 +36,7 @@ const ProfileMenuItem = ({ icon, text, isSwitch, href }: { icon: React.ReactNode
         <div className="text-muted-foreground">{icon}</div>
         <span className="font-medium text-foreground">{text}</span>
       </div>
-      {isSwitch ? <Switch defaultChecked /> : <ChevronRight className="text-muted-foreground" />}
+      <ChevronRight className="text-muted-foreground" />
     </div>
   );
 
@@ -76,7 +74,6 @@ export default function ProfilePage() {
   const menuItems = [
     { icon: <User />, text: 'Edit Profile' },
     { icon: <ShieldCheck />, text: 'Change Password' },
-    { icon: <Moon />, text: 'Dark/light themes', isSwitch: true },
     { icon: <CreditCard />, text: 'Payment history' },
     { icon: <Languages />, text: 'Language' },
     { icon: <Bell />, text: 'Notifications' },
