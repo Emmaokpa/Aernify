@@ -23,6 +23,7 @@ import { signOut } from 'firebase/auth';
 
 const adminNavItems: NavItem[] = [
   { title: 'Dashboard', href: '/admin', icon: <LayoutDashboard /> },
+  { title: 'Games', href: '/admin/games', icon: <Gamepad2 /> },
 ];
 
 type SidebarProps = {
