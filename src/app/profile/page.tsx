@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -22,20 +23,30 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import PageHeader from '@/components/page-header';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
   const router = useRouter();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const { user: authUser, isUserLoading } = useUser();
+
+  // Memoize the doc reference
+  const userDocRef = useMemoFirebase(() => {
+    if (!authUser || !firestore) return null;
+    return doc(firestore, 'users', authUser.uid);
+  }, [authUser, firestore]);
+
+  const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef);
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
+    if (!isUserLoading && !authUser) {
       router.push('/login');
     }
-  }, [user, isUserLoading, router]);
+  }, [authUser, isUserLoading, router]);
 
   const handleLogout = () => {
     signOut(auth);
@@ -53,7 +64,9 @@ export default function ProfilePage() {
     { icon: <HelpCircle />, text: 'Support' },
   ];
 
-  if (isUserLoading || !user) {
+  const isLoading = isUserLoading || isUserDataLoading;
+
+  if (isLoading || !authUser || !userData) {
     return (
       <div className="w-full max-w-md mx-auto">
         <PageHeader title="Profile" />
@@ -83,11 +96,11 @@ export default function ProfilePage() {
       
       <div className="flex flex-col items-center text-center mt-4 mb-8">
         <Avatar className="w-24 h-24 mb-4 border-4 border-primary">
-          <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
-          <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarImage src={userData.photoURL || authUser.photoURL || undefined} alt={userData.username || 'User'} />
+          <AvatarFallback>{userData.username?.charAt(0).toUpperCase() || authUser.email?.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
-        <h2 className="text-xl font-semibold">{user.displayName || user.email}</h2>
-        <p className="text-muted-foreground">{user.email}</p>
+        <h2 className="text-xl font-semibold">{userData.username || authUser.displayName}</h2>
+        <p className="text-muted-foreground">{authUser.email}</p>
       </div>
 
       <Card className="bg-primary/10 border border-primary/20 mb-8">
