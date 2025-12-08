@@ -27,7 +27,7 @@ function RootLayoutContent({
   const LayoutComponent = isAdminRoute ? React.Fragment : MainLayout;
 
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
       </head>
       <body className={cn('font-body antialiased', inter.variable)}>
