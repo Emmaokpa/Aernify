@@ -148,7 +148,6 @@ export default function LeaderboardPage() {
   const [currentUserRank, setCurrentUserRank] = useState<WithId<LeaderboardEntry> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Memoized query for top 10 leaderboard entries
   const leaderboardQuery = useMemoFirebase(
     () =>
       firestore
@@ -160,81 +159,86 @@ export default function LeaderboardPage() {
         : null,
     [firestore]
   );
-  
-  const { data: rawLeaderboardData, error: leaderboardError, isLoading: isLeaderboardLoading } = useCollection<LeaderboardEntry>(leaderboardQuery);
+  const { data: rawLeaderboardData, isLoading: isLeaderboardLoading } = useCollection<LeaderboardEntry>(leaderboardQuery);
 
-  // Memoized query for the current user's rank
   const currentUserRankQuery = useMemoFirebase(() => {
     if (!firestore || !currentUserAuth) return null;
     return query(collection(firestore, 'leaderboardEntries'), where('userId', '==', currentUserAuth.uid), limit(1));
   }, [firestore, currentUserAuth]);
-
-  const { data: rawCurrentUserRank, error: userRankError, isLoading: isUserRankLoading } = useCollection<LeaderboardEntry>(currentUserRankQuery);
+  const { data: rawCurrentUserRank, isLoading: isUserRankLoading } = useCollection<LeaderboardEntry>(currentUserRankQuery);
 
   useEffect(() => {
     const fetchAndCombineData = async () => {
-      if (!rawLeaderboardData && !rawCurrentUserRank) {
-        if (!isLeaderboardLoading && !isUserRankLoading) {
-           setIsLoading(false);
-        }
-        return;
-      };
-
-      const allEntries = [
-        ...(rawLeaderboardData || []),
-        ...(rawCurrentUserRank || [])
-      ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i); // Deduplicate
-
-      if (allEntries.length === 0) {
-        setLeaderboardData([]);
-        setCurrentUserRank(null);
-        setIsLoading(false);
-        return;
-      }
-      
-      const userIds = [...new Set(allEntries.map(e => e.userId))];
-      
-      if (userIds.length === 0 || !firestore) {
-         setIsLoading(false);
-         return;
-      }
-
-      const usersRef = collection(firestore, 'users');
-      // Correct way to query for multiple documents by their ID
-      const usersQuery = query(usersRef, where(documentId(), 'in', userIds));
-      
-      try {
-        const userDocs = await getDocs(usersQuery);
-        const usersMap = new Map<string, User>();
-        userDocs.forEach(doc => usersMap.set(doc.id, doc.data() as User));
-
-        const combinedData = allEntries.map(entry => ({
-          ...entry,
-          user: usersMap.get(entry.userId),
-        }));
-
-        if(rawLeaderboardData) {
-            setLeaderboardData(combinedData.filter(d => rawLeaderboardData.some(r => r.id === d.id)).sort((a, b) => a.rank - b.rank));
+        // Wait until both initial loads are complete and we have data to process
+        if (isLeaderboardLoading || isUserRankLoading) {
+            setIsLoading(true);
+            return;
         }
 
-        if (rawCurrentUserRank && rawCurrentUserRank.length > 0) {
-           const currentUserData = combinedData.find(d => d.id === rawCurrentUserRank[0].id);
-           if (currentUserData) {
-               setCurrentUserRank(currentUserData);
-           }
+        // Combine the top 10 list and the current user's rank (if they are not in the top 10)
+        // Then filter for unique entries.
+        const allEntries = [
+            ...(rawLeaderboardData || []),
+            ...(rawCurrentUserRank || []),
+        ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+
+        if (allEntries.length === 0) {
+            setLeaderboardData([]);
+            setCurrentUserRank(null);
+            setIsLoading(false);
+            return;
         }
-        
-      } catch (e) {
-          console.error("Failed to fetch user data for leaderboard:", e);
-      } finally {
-        setIsLoading(false);
-      }
+
+        const userIds = [...new Set(allEntries.map(e => e.userId))];
+
+        if (userIds.length === 0 || !firestore) {
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const usersRef = collection(firestore, 'users');
+            const usersQuery = query(usersRef, where(documentId(), 'in', userIds));
+            const userDocs = await getDocs(usersQuery);
+            const usersMap = new Map<string, User>();
+            userDocs.forEach(doc => usersMap.set(doc.id, doc.data() as User));
+
+            const combinedData = allEntries.map(entry => ({
+                ...entry,
+                user: usersMap.get(entry.userId),
+            })).filter(entry => entry.user); // Filter out entries where user data couldn't be found
+
+            // Set state for the top 10 leaderboard
+            if (rawLeaderboardData) {
+                const top10 = combinedData
+                    .filter(d => rawLeaderboardData.some(r => r.id === d.id))
+                    .sort((a, b) => a.rank - b.rank);
+                setLeaderboardData(top10);
+            } else {
+                setLeaderboardData([]);
+            }
+
+            // Set state for the current user's rank
+            if (rawCurrentUserRank && rawCurrentUserRank.length > 0) {
+                const currentUserData = combinedData.find(d => d.id === rawCurrentUserRank[0].id);
+                if (currentUserData) {
+                    setCurrentUserRank(currentUserData);
+                }
+            } else {
+                setCurrentUserRank(null);
+            }
+        } catch (e) {
+            console.error("Failed to fetch and combine user data for leaderboard:", e);
+            setLeaderboardData([]);
+            setCurrentUserRank(null);
+        } finally {
+            setIsLoading(false);
+        }
     };
-    
-    setIsLoading(isLeaderboardLoading || isUserRankLoading);
-    fetchAndCombineData();
 
-  }, [rawLeaderboardData, rawCurrentUserRank, firestore, isLeaderboardLoading, isUserRankLoading]);
+    fetchAndCombineData();
+}, [rawLeaderboardData, rawCurrentUserRank, isLeaderboardLoading, isUserRankLoading, firestore]);
+
 
   const topThree = leaderboardData.slice(0, 3);
   const rest = leaderboardData.slice(3);
