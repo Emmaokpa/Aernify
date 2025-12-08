@@ -81,7 +81,7 @@ export default function ProfilePage() {
     { icon: <Languages />, text: 'Language' },
     { icon: <Bell />, text: 'Notifications' },
     { icon: <FileText />, text: 'Terms and conditions', href: '/terms' },
-    { icon: <HelpCircle />, text: 'Support' },
+    { icon: <HelpCircle />, text: 'Support', href: '/support' },
   ];
 
   const isLoading = isUserLoading || isUserDataLoading;
