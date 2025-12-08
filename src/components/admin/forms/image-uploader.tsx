@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Script from 'next/script';
 import { Button } from '@/components/ui/button';
 import { ImagePlus, Trash2 } from 'lucide-react';
@@ -27,8 +26,9 @@ export function ImageUploader({
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = "qa4yjgs4";
 
-  useEffect(() => {
-    if (isScriptLoaded && window.cloudinary && !widgetRef.current) {
+  const handleOnLoad = () => {
+    setIsScriptLoaded(true);
+    if (!widgetRef.current) {
       widgetRef.current = window.cloudinary.createUploadWidget(
         {
           cloudName: cloudName,
@@ -41,8 +41,7 @@ export function ImageUploader({
         }
       );
     }
-  }, [isScriptLoaded, cloudName, uploadPreset, onChange]);
-
+  };
 
   const openWidget = () => {
     if (widgetRef.current) {
@@ -68,7 +67,7 @@ export function ImageUploader({
       <Script
         id="cloudinary-upload-widget"
         src="https://upload-widget.cloudinary.com/global/all.js"
-        onLoad={() => setIsScriptLoaded(true)}
+        onLoad={handleOnLoad}
       />
       <div>
         {value ? (
