@@ -9,7 +9,7 @@ import { giftCards } from '@/lib/data';
 import Image from 'next/image';
 import { Coins, Loader2 } from 'lucide-react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, writeBatch, increment } from 'firebase/firestore';
+import { doc, writeBatch, increment, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -64,22 +64,24 @@ export default function RedeemPage() {
     const userRef = doc(firestore, 'users', user.uid);
     batch.update(userRef, { coins: increment(-card.price) });
 
-    // 2. Create a redemption record for the admin to see
-    const redemptionRef = doc(firestore, 'users', user.uid, 'redemptions', crypto.randomUUID());
+    // 2. Create a redemption record in the new root /redemptions collection
+    const redemptionRef = doc(collection(firestore, 'redemptions'));
     batch.set(redemptionRef, {
       userId: user.uid,
+      userEmail: user.email, // Add user email for easier manual fulfillment
       giftCardId: card.id,
       giftCardName: card.name,
+      giftCardValue: card.value,
       coinCost: card.price,
-      status: 'pending_fulfillment', // For admin tracking
-      redemptionDate: new Date().toISOString(),
+      status: 'pending', // 'pending', 'fulfilled'
+      redemptionDate: serverTimestamp(),
     });
 
     try {
       await batch.commit();
       toast({
         title: 'Redemption Successful!',
-        description: `Your request for a ${card.name} gift card is being processed.`,
+        description: `Your request for a ${card.name} gift card is being processed. You will receive it by email.`,
       });
     } catch (error: any) {
       console.error('Redemption failed:', error);
