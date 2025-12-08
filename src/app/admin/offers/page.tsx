@@ -89,7 +89,7 @@ export default function AdminOffersPage() {
       console.error("Delete failed", error);
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: 'Error Deleting Offer',
         description: 'There was a problem deleting the offer. You may not have permission.',
       });
     }

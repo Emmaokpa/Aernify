@@ -86,7 +86,7 @@ export default function AdminGamesPage() {
       console.error("Delete failed", error);
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: 'Error Deleting Game',
         description: 'There was a problem deleting the game. You may not have permission.',
       });
     }

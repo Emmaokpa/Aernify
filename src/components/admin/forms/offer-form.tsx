@@ -73,7 +73,7 @@ export function OfferForm({ isOpen, setOpen, offer, onSuccess }: OfferFormProps)
     },
   });
   
-  const { reset, control } = form;
+  const { reset } = form;
 
   useEffect(() => {
     if (isOpen) {
@@ -101,21 +101,22 @@ export function OfferForm({ isOpen, setOpen, offer, onSuccess }: OfferFormProps)
     setIsSubmitting(true);
     setSubmissionError(null);
 
-    const docId = offer ? offer.id : crypto.randomUUID();
-    const docRef = doc(firestore, 'offers', docId);
-
-    const offerData = { 
-      id: docId, 
-      ...values,
-    };
-
     try {
+      const docId = offer ? offer.id : crypto.randomUUID();
+      const docRef = doc(firestore, 'offers', docId);
+
+      const offerData = { 
+        id: docId, 
+        ...values,
+      };
+      
       await setDoc(docRef, offerData, { merge: true });
       onSuccess();
       setOpen(false);
+
     } catch (error: any) {
-      console.error('Submission failed', error);
-      setSubmissionError(`Submission Failed: ${error.message} (Code: ${error.code})`);
+      console.error('Firestore Write Error:', error);
+      setSubmissionError(`CRITICAL FAILURE: ${error.code} - ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -142,11 +143,11 @@ export function OfferForm({ isOpen, setOpen, offer, onSuccess }: OfferFormProps)
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-            <ScrollArea className="overflow-y-auto">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 overflow-hidden">
+            <ScrollArea className="h-[60vh] overflow-y-auto">
               <div className='space-y-4 pr-6'>
                  <FormField
-                  control={control}
+                  control={form.control}
                   name="imageUrl"
                   render={({ field }) => (
                     <FormItem>
@@ -162,7 +163,7 @@ export function OfferForm({ isOpen, setOpen, offer, onSuccess }: OfferFormProps)
                   )}
                 />
                 <FormField
-                  control={control}
+                  control={form.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
@@ -175,7 +176,7 @@ export function OfferForm({ isOpen, setOpen, offer, onSuccess }: OfferFormProps)
                   )}
                 />
                  <FormField
-                  control={control}
+                  control={form.control}
                   name="provider"
                   render={({ field }) => (
                     <FormItem>
@@ -188,7 +189,7 @@ export function OfferForm({ isOpen, setOpen, offer, onSuccess }: OfferFormProps)
                   )}
                 />
                 <FormField
-                  control={control}
+                  control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem>
@@ -201,7 +202,7 @@ export function OfferForm({ isOpen, setOpen, offer, onSuccess }: OfferFormProps)
                   )}
                 />
                 <FormField
-                  control={control}
+                  control={form.control}
                   name="requiredAction"
                   render={({ field }) => (
                     <FormItem>
@@ -214,7 +215,7 @@ export function OfferForm({ isOpen, setOpen, offer, onSuccess }: OfferFormProps)
                   )}
                 />
                  <FormField
-                  control={control}
+                  control={form.control}
                   name="rewardAmount"
                   render={({ field }) => (
                     <FormItem>

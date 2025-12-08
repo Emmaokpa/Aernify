@@ -70,7 +70,7 @@ export function ProductForm({ isOpen, setOpen, product, onSuccess }: ProductForm
     },
   });
   
-  const { reset, control } = form;
+  const { reset } = form;
 
   useEffect(() => {
     if (isOpen) {
@@ -97,21 +97,21 @@ export function ProductForm({ isOpen, setOpen, product, onSuccess }: ProductForm
     setIsSubmitting(true);
     setSubmissionError(null);
 
-    const docId = product ? product.id : crypto.randomUUID();
-    const docRef = doc(firestore, 'products', docId);
-
-    const productData = { 
-      id: docId, 
-      ...values,
-    };
-
     try {
+      const docId = product ? product.id : crypto.randomUUID();
+      const docRef = doc(firestore, 'products', docId);
+
+      const productData = { 
+        id: docId, 
+        ...values,
+      };
+
       await setDoc(docRef, productData, { merge: true });
       onSuccess();
       setOpen(false);
     } catch (error: any) {
-      console.error('Submission failed', error);
-      setSubmissionError(`Submission Failed: ${error.message} (Code: ${error.code})`);
+      console.error('Firestore Write Error:', error);
+      setSubmissionError(`CRITICAL FAILURE: ${error.code} - ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -138,11 +138,11 @@ export function ProductForm({ isOpen, setOpen, product, onSuccess }: ProductForm
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
-             <ScrollArea className="overflow-y-auto">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 overflow-hidden">
+             <ScrollArea className="h-[60vh] overflow-y-auto">
                 <div className="space-y-4 pr-6">
                     <FormField
-                      control={control}
+                      control={form.control}
                       name="imageUrl"
                       render={({ field }) => (
                         <FormItem>
@@ -158,7 +158,7 @@ export function ProductForm({ isOpen, setOpen, product, onSuccess }: ProductForm
                       )}
                     />
                     <FormField
-                      control={control}
+                      control={form.control}
                       name="name"
                       render={({ field }) => (
                         <FormItem>
@@ -171,7 +171,7 @@ export function ProductForm({ isOpen, setOpen, product, onSuccess }: ProductForm
                       )}
                     />
                     <FormField
-                      control={control}
+                      control={form.control}
                       name="description"
                       render={({ field }) => (
                         <FormItem>
@@ -184,7 +184,7 @@ export function ProductForm({ isOpen, setOpen, product, onSuccess }: ProductForm
                       )}
                     />
                      <FormField
-                      control={control}
+                      control={form.control}
                       name="priceCoins"
                       render={({ field }) => (
                         <FormItem>
@@ -197,7 +197,7 @@ export function ProductForm({ isOpen, setOpen, product, onSuccess }: ProductForm
                       )}
                     />
                      <FormField
-                      control={control}
+                      control={form.control}
                       name="priceUSD"
                       render={({ field }) => (
                         <FormItem>

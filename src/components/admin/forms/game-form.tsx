@@ -62,20 +62,20 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
     },
   });
   
-  const { reset, control } = form;
+  const { reset } = form;
 
   useEffect(() => {
     if (isOpen) {
-        setSubmissionError(null);
-        if (game) {
-          reset(game);
-        } else {
-          reset({
-            name: '',
-            iframeUrl: '',
-            imageUrl: '',
-          });
-        }
+      setSubmissionError(null);
+      if (game) {
+        reset(game);
+      } else {
+        reset({
+          name: '',
+          iframeUrl: '',
+          imageUrl: '',
+        });
+      }
     }
   }, [game, reset, isOpen]);
 
@@ -87,19 +87,20 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
     setIsSubmitting(true);
     setSubmissionError(null);
 
-    const docId = game ? game.id : crypto.randomUUID();
-    const docRef = doc(firestore, 'games', docId);
-
-    const gameData = { 
-      id: docId, 
-      ...values,
-    };
-
     try {
+      const docId = game ? game.id : crypto.randomUUID();
+      const docRef = doc(firestore, 'games', docId);
+
+      const gameData = { 
+        id: docId, 
+        ...values,
+      };
+
       await setDoc(docRef, gameData, { merge: true });
       onSuccess();
       setOpen(false);
     } catch (error: any) {
+      console.error("Firestore Write Error:", error);
       setSubmissionError(`CRITICAL FAILURE: ${error.code} - ${error.message}`);
     } finally {
       setIsSubmitting(false);
@@ -129,7 +130,7 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
-              control={control}
+              control={form.control}
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
@@ -145,7 +146,7 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
               )}
             />
             <FormField
-              control={control}
+              control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
@@ -158,7 +159,7 @@ export function GameForm({ isOpen, setOpen, game, onSuccess }: GameFormProps) {
               )}
             />
             <FormField
-              control={control}
+              control={form.control}
               name="iframeUrl"
               render={({ field }) => (
                 <FormItem>

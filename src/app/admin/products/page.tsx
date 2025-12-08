@@ -88,7 +88,7 @@ export default function AdminProductsPage() {
       console.error("Delete failed", error);
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: 'Error Deleting Product',
         description: 'There was a problem deleting the product. You may not have permission.',
       });
     }
