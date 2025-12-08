@@ -21,10 +21,9 @@ function RootLayoutContent({
 }>) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
+  const isAuthRoute = pathname === '/login' || pathname === '/signup';
+  const isTermsRoute = pathname === '/terms';
 
-  // The AdminLayout is now the direct child for /admin routes in the directory structure.
-  // We just need to render the children for admin routes,
-  // and wrap non-admin routes with the MainLayout.
   const LayoutComponent = isAdminRoute ? React.Fragment : MainLayout;
 
   return (
@@ -33,7 +32,11 @@ function RootLayoutContent({
       </head>
       <body className={cn('font-body antialiased', inter.variable)}>
         <FirebaseClientProvider>
-          {isAdminRoute ? children : <MainLayout>{children}</MainLayout>}
+          {isAdminRoute || isAuthRoute || isTermsRoute ? (
+            children
+          ) : (
+            <MainLayout>{children}</MainLayout>
+          )}
         </FirebaseClientProvider>
         <Toaster />
       </body>

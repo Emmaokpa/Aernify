@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   User,
@@ -28,13 +29,32 @@ import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
+const ProfileMenuItem = ({ icon, text, isSwitch, href }: { icon: React.ReactNode, text: string, isSwitch?: boolean, href?: string }) => {
+  const content = (
+    <div
+      className="flex items-center justify-between p-4 bg-card rounded-lg cursor-pointer hover:bg-muted"
+    >
+      <div className="flex items-center gap-4">
+        <div className="text-muted-foreground">{icon}</div>
+        <span className="font-medium text-foreground">{text}</span>
+      </div>
+      {isSwitch ? <Switch defaultChecked /> : <ChevronRight className="text-muted-foreground" />}
+    </div>
+  );
+
+  if (href) {
+    return <Link href={href}>{content}</Link>;
+  }
+
+  return content;
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
   const { user: authUser, isUserLoading } = useUser();
 
-  // Memoize the doc reference
   const userDocRef = useMemoFirebase(() => {
     if (!authUser || !firestore) return null;
     return doc(firestore, 'users', authUser.uid);
@@ -60,7 +80,7 @@ export default function ProfilePage() {
     { icon: <CreditCard />, text: 'Payment history' },
     { icon: <Languages />, text: 'Language' },
     { icon: <Bell />, text: 'Notifications' },
-    { icon: <FileText />, text: 'Terms and conditions' },
+    { icon: <FileText />, text: 'Terms and conditions', href: '/terms' },
     { icon: <HelpCircle />, text: 'Support' },
   ];
 
@@ -131,16 +151,7 @@ export default function ProfilePage() {
 
       <div className="space-y-2">
         {menuItems.map((item, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-between p-4 bg-card rounded-lg cursor-pointer hover:bg-muted"
-          >
-            <div className="flex items-center gap-4">
-              <div className="text-muted-foreground">{item.icon}</div>
-              <span className="font-medium text-foreground">{item.text}</span>
-            </div>
-            {item.isSwitch ? <Switch defaultChecked /> : <ChevronRight className="text-muted-foreground" />}
-          </div>
+          <ProfileMenuItem key={index} {...item} />
         ))}
       </div>
       
