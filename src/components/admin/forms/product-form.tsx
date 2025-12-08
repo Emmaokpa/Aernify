@@ -29,6 +29,7 @@ import { Loader2, Terminal } from 'lucide-react';
 import { ImageUploader } from './image-uploader';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type Product = {
   name: string;
@@ -118,7 +119,7 @@ export function ProductForm({ isOpen, setOpen, product, onSuccess }: ProductForm
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{product ? 'Edit Product' : 'Add New Product'}</DialogTitle>
            <DialogDescription>
@@ -137,75 +138,79 @@ export function ProductForm({ isOpen, setOpen, product, onSuccess }: ProductForm
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image</FormLabel>
-                  <FormControl>
-                    <ImageUploader
-                      value={field.value}
-                      onChange={field.onChange}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+             <ScrollArea className="overflow-y-auto">
+                <div className="space-y-4 pr-6">
+                    <FormField
+                      control={control}
+                      name="imageUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Image</FormLabel>
+                          <FormControl>
+                            <ImageUploader
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Product Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Wireless Earbuds" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Describe the product" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={control}
-              name="priceCoins"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Price (Coins)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="e.g., 15000" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={control}
-              name="priceUSD"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Price (USD, Optional)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="e.g., 19.99" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormField
+                      control={control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Product Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Wireless Earbuds" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Describe the product" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={control}
+                      name="priceCoins"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Price (Coins)</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="e.g., 15000" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={control}
+                      name="priceUSD"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Price (USD, Optional)</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="e.g., 19.99" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
+            </ScrollArea>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
                 Cancel

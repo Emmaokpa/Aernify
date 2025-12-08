@@ -29,6 +29,7 @@ import { Loader2, Terminal } from 'lucide-react';
 import { ImageUploader } from './image-uploader';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type Offer = {
   name: string;
@@ -122,7 +123,7 @@ export function OfferForm({ isOpen, setOpen, offer, onSuccess }: OfferFormProps)
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{offer ? 'Edit Offer' : 'Add New Offer'}</DialogTitle>
            <DialogDescription>
@@ -141,88 +142,92 @@ export function OfferForm({ isOpen, setOpen, offer, onSuccess }: OfferFormProps)
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Image</FormLabel>
-                  <FormControl>
-                    <ImageUploader
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Offer Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Complete a Survey" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={control}
-              name="provider"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Provider</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., AdGateMedia" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Describe the offer" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={control}
-              name="requiredAction"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Required Action</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Download and install" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={control}
-              name="rewardAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Reward Amount (Coins)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="e.g., 1000" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+            <ScrollArea className="overflow-y-auto">
+              <div className='space-y-4 pr-6'>
+                 <FormField
+                  control={control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Image</FormLabel>
+                      <FormControl>
+                        <ImageUploader
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Offer Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Complete a Survey" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={control}
+                  name="provider"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Provider</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., AdGateMedia" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Describe the offer" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name="requiredAction"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Required Action</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Download and install" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={control}
+                  name="rewardAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Reward Amount (Coins)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 1000" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </ScrollArea>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
                 Cancel
