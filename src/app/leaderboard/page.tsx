@@ -13,7 +13,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Crown, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, where, getDocs, documentId } from 'firebase/firestore';
 import type { WithId } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
@@ -161,7 +161,7 @@ export default function LeaderboardPage() {
     [firestore]
   );
   
-  const { data: rawLeaderboardData, error: leaderboardError } = useCollection<LeaderboardEntry>(leaderboardQuery);
+  const { data: rawLeaderboardData, error: leaderboardError, isLoading: isLeaderboardLoading } = useCollection<LeaderboardEntry>(leaderboardQuery);
 
   // Memoized query for the current user's rank
   const currentUserRankQuery = useMemoFirebase(() => {
@@ -169,43 +169,72 @@ export default function LeaderboardPage() {
     return query(collection(firestore, 'leaderboardEntries'), where('userId', '==', currentUserAuth.uid), limit(1));
   }, [firestore, currentUserAuth]);
 
-  const { data: rawCurrentUserRank, error: userRankError } = useCollection<LeaderboardEntry>(currentUserRankQuery);
+  const { data: rawCurrentUserRank, error: userRankError, isLoading: isUserRankLoading } = useCollection<LeaderboardEntry>(currentUserRankQuery);
 
   useEffect(() => {
-    const fetchUsersForEntries = async (entries: WithId<LeaderboardEntry>[]) => {
-      if (!firestore || entries.length === 0) return [];
-      
-      const userIds = [...new Set(entries.map(e => e.userId))];
-      const usersRef = collection(firestore, 'users');
-      const usersQuery = query(usersRef, where('id', 'in', userIds));
-      
-      const { getDocs } = await import('firebase/firestore');
-      const userDocs = await getDocs(usersQuery);
-      const usersMap = new Map<string, User>();
-      userDocs.forEach(doc => usersMap.set(doc.id, doc.data() as User));
+    const fetchAndCombineData = async () => {
+      if (!rawLeaderboardData && !rawCurrentUserRank) {
+        if (!isLeaderboardLoading && !isUserRankLoading) {
+           setIsLoading(false);
+        }
+        return;
+      };
 
-      return entries.map(entry => ({
-        ...entry,
-        user: usersMap.get(entry.userId),
-      }));
+      const allEntries = [
+        ...(rawLeaderboardData || []),
+        ...(rawCurrentUserRank || [])
+      ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i); // Deduplicate
+
+      if (allEntries.length === 0) {
+        setLeaderboardData([]);
+        setCurrentUserRank(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      const userIds = [...new Set(allEntries.map(e => e.userId))];
+      
+      if (userIds.length === 0 || !firestore) {
+         setIsLoading(false);
+         return;
+      }
+
+      const usersRef = collection(firestore, 'users');
+      // Correct way to query for multiple documents by their ID
+      const usersQuery = query(usersRef, where(documentId(), 'in', userIds));
+      
+      try {
+        const userDocs = await getDocs(usersQuery);
+        const usersMap = new Map<string, User>();
+        userDocs.forEach(doc => usersMap.set(doc.id, doc.data() as User));
+
+        const combinedData = allEntries.map(entry => ({
+          ...entry,
+          user: usersMap.get(entry.userId),
+        }));
+
+        if(rawLeaderboardData) {
+            setLeaderboardData(combinedData.filter(d => rawLeaderboardData.some(r => r.id === d.id)).sort((a, b) => a.rank - b.rank));
+        }
+
+        if (rawCurrentUserRank && rawCurrentUserRank.length > 0) {
+           const currentUserData = combinedData.find(d => d.id === rawCurrentUserRank[0].id);
+           if (currentUserData) {
+               setCurrentUserRank(currentUserData);
+           }
+        }
+        
+      } catch (e) {
+          console.error("Failed to fetch user data for leaderboard:", e);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
-    setIsLoading(true);
+    setIsLoading(isLeaderboardLoading || isUserRankLoading);
+    fetchAndCombineData();
 
-    if (rawLeaderboardData) {
-      fetchUsersForEntries(rawLeaderboardData).then(data => {
-        setLeaderboardData(data);
-        setIsLoading(false);
-      });
-    }
-    
-    if (rawCurrentUserRank && rawCurrentUserRank.length > 0) {
-      fetchUsersForEntries(rawCurrentUserRank).then(data => {
-        setCurrentUserRank(data[0]);
-      });
-    }
-
-  }, [rawLeaderboardData, rawCurrentUserRank, firestore]);
+  }, [rawLeaderboardData, rawCurrentUserRank, firestore, isLeaderboardLoading, isUserRankLoading]);
 
   const topThree = leaderboardData.slice(0, 3);
   const rest = leaderboardData.slice(3);
@@ -261,10 +290,14 @@ export default function LeaderboardPage() {
                 />
                 </>
             )}
+            {!isLoading && leaderboardData.length === 0 && (
+              <div className="text-center text-muted-foreground py-10">
+                No leaderboard data available yet.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
     </>
   );
 }
-
