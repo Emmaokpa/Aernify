@@ -9,6 +9,7 @@ import {
   X,
   LogOut,
   ArrowLeft,
+  Gamepad2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
@@ -20,6 +21,7 @@ import { signOut } from 'firebase/auth';
 
 const adminNavItems: NavItem[] = [
   { title: 'Dashboard', href: '/admin', icon: <LayoutDashboard /> },
+  { title: 'Games', href: '/admin/games', icon: <Gamepad2 /> },
   { title: 'Redemptions', href: '/admin/redemptions', icon: <Gift /> },
 ];
 

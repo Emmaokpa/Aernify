@@ -18,13 +18,11 @@ import type { WithId } from '@/firebase';
 import type { Game } from '@/app/admin/games/page';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-// --- ZOD SCHEMA FOR VALIDATION ---
+// Zod schema for validation, matching the Game type
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  provider: z.string().min(2, { message: 'Provider is required.' }),
   iframeUrl: z.string().url({ message: 'Please enter a valid URL.' }),
   imageUrl: z.string().min(1, { message: 'An image is required.' }),
-  reward: z.coerce.number().min(0, { message: 'Reward must be a positive number.' }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -32,53 +30,46 @@ type FormValues = z.infer<typeof formSchema>;
 interface GameFormProps {
   game: WithId<Game> | null;
   onSuccess: (message: string) => void;
-  onError: (message: string) => void;
   onCancel: () => void;
 }
 
-export function GameForm({ game, onSuccess, onError, onCancel }: GameFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: game || {
       name: '',
-      provider: '',
       iframeUrl: '',
       imageUrl: '',
-      reward: 0,
     },
   });
 
   const firestore = useFirestore();
 
-  // --- CREATE/UPDATE HANDLER ---
-  const handleSaveGame: SubmitHandler<FormValues> = async (values) => {
-    setIsLoading(true);
-    setErrorMessage(null); // Clear previous errors
+  const onSubmit: SubmitHandler<FormValues> = async (values) => {
+    setIsSubmitting(true);
+    setFormError(null);
 
     try {
-      const gameData = { ...values };
-
       if (game) {
-        // --- UPDATE LOGIC ---
+        // Update existing game
         const gameDocRef = doc(firestore, 'games', game.id);
-        await updateDoc(gameDocRef, { ...gameData, updatedAt: serverTimestamp() });
+        await updateDoc(gameDocRef, { ...values, updatedAt: serverTimestamp() });
         onSuccess('Game updated successfully!');
       } else {
-        // --- CREATE LOGIC ---
+        // Create new game
         const gamesCollectionRef = collection(firestore, 'games');
-        await addDoc(gamesCollectionRef, { ...gameData, createdAt: serverTimestamp() });
+        await addDoc(gamesCollectionRef, { ...values, createdAt: serverTimestamp() });
         onSuccess('Game created successfully!');
       }
     } catch (error: any) {
-      // --- MOBILE DEBUGGING FEEDBACK (FAILURE) ---
-      const detailedError = `SAVE FAILED: ${error.code} - ${error.message}`;
-      setErrorMessage(detailedError);
-      onError(detailedError); // Pass error to parent if needed
+      console.error("Form submission failed:", error);
+      const errorMessage = `Save failed: ${error.code} - ${error.message}`;
+      setFormError(errorMessage);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -89,106 +80,81 @@ export function GameForm({ game, onSuccess, onError, onCancel }: GameFormProps) 
           <SheetTitle>{game ? 'Edit Game' : 'Add New Game'}</SheetTitle>
         </SheetHeader>
         
-        <ScrollArea className="flex-grow pr-6">
-          <Form {...form}>
-            <form id="game-form" className="space-y-6">
-              {/* --- UI FEEDBACK MECHANISM --- */}
-              {errorMessage && (
-                <Alert variant="destructive">
-                  <XCircle className="h-4 w-4" />
-                  <AlertTitle>Save Failed</AlertTitle>
-                  <AlertDescription>{errorMessage}</AlertDescription>
-                </Alert>
-              )}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} id="game-form" className="flex-1 flex flex-col">
+            <ScrollArea className="flex-grow pr-6 -mr-6">
+              <div className="space-y-6">
+                {formError && (
+                  <Alert variant="destructive">
+                    <XCircle className="h-4 w-4" />
+                    <AlertTitle>Save Failed</AlertTitle>
+                    <AlertDescription>{formError}</AlertDescription>
+                  </Alert>
+                )}
 
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Game Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Galaxy Invaders" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="provider"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Game Provider</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Playgama" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="reward"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Reward Coins</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="e.g., 50" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="iframeUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Game Iframe URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
+                <FormField
                   control={form.control}
-                  name="imageUrl"
+                  name="name"
                   render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Game Image</FormLabel>
-                          <FormControl>
-                              <ImageUploader 
-                                  value={field.value} 
-                                  onChange={field.onChange} 
-                              />
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
+                    <FormItem>
+                      <FormLabel>Game Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Galaxy Invaders" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-              />
-            </form>
-          </Form>
-        </ScrollArea>
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="iframeUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Game Iframe URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                    control={form.control}
+                    name="imageUrl"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Game Image</FormLabel>
+                            <FormControl>
+                                <ImageUploader 
+                                    value={field.value} 
+                                    onChange={field.onChange} 
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+              </div>
+            </ScrollArea>
 
-        <SheetFooter className="pt-4">
-          <SheetClose asChild>
-            <Button type="button" variant="outline">
-              Cancel
-            </Button>
-          </SheetClose>
-          <Button
-            type="submit"
-            form="game-form"
-            onClick={form.handleSubmit(handleSaveGame)}
-            disabled={isLoading}
-          >
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Game
-          </Button>
-        </SheetFooter>
+            <SheetFooter className="pt-6 mt-auto">
+              <SheetClose asChild>
+                <Button type="button" variant="outline">
+                  Cancel
+                </Button>
+              </SheetClose>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Game
+              </Button>
+            </SheetFooter>
+          </form>
+        </Form>
       </SheetContent>
     </Sheet>
   );

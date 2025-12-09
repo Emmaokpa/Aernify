@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Script from 'next/script';
 import { Button } from '@/components/ui/button';
 import { Image as ImageIcon, UploadCloud, X, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 
-// Define the Cloudinary and widget types for better type safety
 declare global {
   interface Window {
     cloudinary?: {
@@ -24,20 +23,20 @@ interface ImageUploaderProps {
 }
 
 export function ImageUploader({ value, onChange }: ImageUploaderProps) {
-  const [widget, setWidget] = useState<({ open: () => void; }) | null>(null);
   const [isScriptLoading, setIsScriptLoading] = useState(true);
+  const widgetRef = useRef<({ open: () => void; }) | null>(null);
 
   const handleScriptLoad = () => {
     setIsScriptLoading(false);
     if (window.cloudinary) {
-      const newWidget = window.cloudinary.createUploadWidget(
+      widgetRef.current = window.cloudinary.createUploadWidget(
         {
           cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-          uploadPreset: 'default', // Make sure you have a default preset in Cloudinary
+          uploadPreset: 'default',
           sources: ['local', 'url', 'camera'],
           multiple: false,
           cropping: true,
-          croppingAspectRatio: 1,
+          croppingAspectRatio: 16/9,
         },
         (error, result) => {
           if (!error && result && result.event === 'success') {
@@ -45,28 +44,22 @@ export function ImageUploader({ value, onChange }: ImageUploaderProps) {
           }
         }
       );
-      setWidget(newWidget);
     }
   };
 
   const handleUploadClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // prevent form submission
-    widget?.open();
+    e.preventDefault();
+    widgetRef.current?.open();
   };
 
   return (
     <>
-      {/* The Script component handles loading the external Cloudinary script */}
       <Script
-        id="cloudinary-upload-widget"
+        id="cloudinary-upload-widget-script"
         src="https://upload-widget.cloudinary.com/global/all.js"
         strategy="lazyOnload"
         onLoad={handleScriptLoad}
-        onError={() => {
-          setIsScriptLoading(false);
-          // In a real app, you might want to show a persistent error to the user
-          // For now, we just disable the button
-        }}
+        onError={() => setIsScriptLoading(false)}
       />
       
       <div>
@@ -76,8 +69,8 @@ export function ImageUploader({ value, onChange }: ImageUploaderProps) {
               src={value}
               alt="Uploaded image"
               width={400}
-              height={300}
-              className="rounded-md object-cover w-full aspect-[4/3]"
+              height={225}
+              className="rounded-md object-cover w-full aspect-[16/9]"
             />
             <Button
               type="button"
@@ -101,12 +94,12 @@ export function ImageUploader({ value, onChange }: ImageUploaderProps) {
               type="button"
               variant="outline"
               onClick={handleUploadClick}
-              disabled={isScriptLoading || !widget}
+              disabled={isScriptLoading || !widgetRef.current}
             >
               {isScriptLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isScriptLoading && 'Loading Uploader...'}
-              {!isScriptLoading && !widget && 'Uploader Failed'}
-              {!isScriptLoading && widget && (
+              {!isScriptLoading && !widgetRef.current && 'Uploader Failed'}
+              {!isScriptLoading && widgetRef.current && (
                 <>
                   <UploadCloud className="mr-2" />
                   Upload an Image

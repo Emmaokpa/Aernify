@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { collection, doc, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import type { WithId } from '@/firebase';
 
@@ -16,24 +16,18 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { XCircle, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Define the shape of a Game document
+// Define the shape of a Game document, matching backend.json
 export type Game = {
   name: string;
-  provider: string;
   iframeUrl: string;
   imageUrl: string;
-  reward: number;
-  createdAt?: any;
-  updatedAt?: any;
 };
 
 export default function ManageGamesPage() {
-  // --- STATE MANAGEMENT (Phase 4) ---
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState<WithId<Game> | null>(null);
-  const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // --- PHASE 1: CORE SETUP & READ OPERATION ---
   const firestore = useFirestore();
   const gamesCollectionRef = useMemoFirebase(() => collection(firestore, 'games'), [firestore]);
   const { data: games, isLoading: areGamesLoading, error: readError } = useCollection<Game>(gamesCollectionRef);
@@ -41,41 +35,36 @@ export default function ManageGamesPage() {
   const handleAddNew = () => {
     setSelectedGame(null);
     setIsFormOpen(true);
-    setFeedbackMessage(null);
+    setFeedback(null);
   };
 
   const handleEdit = (game: WithId<Game>) => {
     setSelectedGame(game);
     setIsFormOpen(true);
-    setFeedbackMessage(null);
+    setFeedback(null);
   };
   
-  // --- PHASE 3: DELETE OPERATION ---
   const handleDelete = async (gameId: string) => {
-    setFeedbackMessage(null);
+    setFeedback(null);
     try {
       const gameDocRef = doc(firestore, 'games', gameId);
       await deleteDoc(gameDocRef);
-      setFeedbackMessage({ type: 'success', message: 'Game deleted successfully!' });
+      setFeedback({ type: 'success', message: 'Game deleted successfully!' });
     } catch (error: any) {
       console.error("Delete failed:", error);
-      setFeedbackMessage({ type: 'error', message: `DELETE FAILED: ${error.code} - ${error.message}` });
+      setFeedback({ type: 'error', message: `Delete failed: ${error.message}` });
     }
   };
 
   const handleFormSuccess = (message: string) => {
     setIsFormOpen(false);
-    setFeedbackMessage({ type: 'success', message });
+    setFeedback({ type: 'success', message });
   };
   
-  const handleFormError = (message: string) => {
-    // Keep form open to show the error
-    setFeedbackMessage({ type: 'error', message });
-  };
-
   const handleFormCancel = () => {
     setIsFormOpen(false);
-    setFeedbackMessage(null);
+    setSelectedGame(null);
+    setFeedback(null);
   }
 
   return (
@@ -85,14 +74,13 @@ export default function ManageGamesPage() {
         description="Add, edit, or remove games from your application."
       />
 
-      {/* --- PHASE 4: UI FEEDBACK MECHANISM --- */}
-      {feedbackMessage && (
-        <Alert variant={feedbackMessage.type === 'error' ? 'destructive' : 'default'} className="mb-4">
-          {feedbackMessage.type === 'error' 
+      {feedback && (
+        <Alert variant={feedback.type === 'error' ? 'destructive' : 'default'} className="mb-4">
+          {feedback.type === 'error' 
              ? <XCircle className="h-4 w-4" /> 
              : <CheckCircle className="h-4 w-4" />}
-          <AlertTitle>{feedbackMessage.type === 'error' ? 'Error' : 'Success'}</AlertTitle>
-          <AlertDescription>{feedbackMessage.message}</AlertDescription>
+          <AlertTitle>{feedback.type === 'error' ? 'Error' : 'Success'}</AlertTitle>
+          <AlertDescription>{feedback.message}</AlertDescription>
         </Alert>
       )}
 
@@ -101,7 +89,7 @@ export default function ManageGamesPage() {
             <XCircle className="h-4 w-4" />
             <AlertTitle>Read Error</AlertTitle>
             <AlertDescription>
-              Could not load games from the database. Please check your connection and permissions.
+              Could not load games. Please check your connection and security rules.
               <br />
               Details: {readError.message}
             </AlertDescription>
@@ -109,7 +97,7 @@ export default function ManageGamesPage() {
         )}
 
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-6">
           <div className="flex justify-end mb-4">
             <Button onClick={handleAddNew}>
               <PlusCircle className="mr-2" />
@@ -122,7 +110,7 @@ export default function ManageGamesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead className="hidden md:table-cell">Provider</TableHead>
+                  <TableHead className="hidden md:table-cell">Iframe URL</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -131,15 +119,15 @@ export default function ManageGamesPage() {
                   Array.from({ length: 3 }).map((_, i) => (
                     <TableRow key={i}>
                       <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-48" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-10 w-24 ml-auto" /></TableCell>
                     </TableRow>
                   ))
                 ) : games && games.length > 0 ? (
                   games.map((game) => (
                     <TableRow key={game.id}>
                       <TableCell className="font-medium">{game.name}</TableCell>
-                      <TableCell className="hidden md:table-cell">{game.provider}</TableCell>
+                      <TableCell className="hidden md:table-cell max-w-xs truncate">{game.iframeUrl}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
                            <Button variant="outline" size="icon" onClick={() => handleEdit(game)}>
@@ -173,7 +161,7 @@ export default function ManageGamesPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center h-24">
-                      No games found.
+                      No games found. Click "Add New Game" to start.
                     </TableCell>
                   </TableRow>
                 )}
@@ -187,7 +175,6 @@ export default function ManageGamesPage() {
         <GameForm 
           game={selectedGame}
           onSuccess={handleFormSuccess}
-          onError={handleFormError}
           onCancel={handleFormCancel}
         />
       )}
