@@ -5,14 +5,13 @@ import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useFirestore } from '@/firebase';
-import { collection, doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose } from '@/components/ui/sheet';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, XCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { ImageUploader } from './image-uploader';
 import type { WithId } from '@/firebase';
 import type { Game } from '@/app/admin/games/page';
@@ -49,7 +48,6 @@ export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
   const firestore = useFirestore();
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    console.log('[GameForm] onSubmit function triggered.');
     setIsSubmitting(true);
     setFormError(null);
     console.log('[GameForm] Submitting values:', values);
@@ -59,25 +57,21 @@ export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
         // Update existing game
         console.log(`[GameForm] Attempting to update document with ID: ${game.id}`);
         const gameDocRef = doc(firestore, 'games', game.id);
-        await updateDoc(gameDocRef, values).then(() => {
-          console.log('[GameForm] Update successful!');
-          console.log('[GameForm] Calling onSuccess callback for update...');
-          onSuccess('Game updated successfully!');
-        });
+        await updateDoc(gameDocRef, values);
+        console.log('[GameForm] Update successful!');
+        onSuccess('Game updated successfully!');
       } else {
         // Create new game
-        const gamesCollectionRef = collection(firestore, 'games');
-        const newGameRef = doc(gamesCollectionRef);
+        const newGameRef = doc(collection(firestore, 'games'));
         console.log(`[GameForm] Attempting to create new document in "games" collection with ID: ${newGameRef.id}`);
-        await setDoc(newGameRef, values).then(() => {
-          console.log(`[GameForm] Create successful! New document ID: ${newGameRef.id}`);
-          console.log('[GameForm] Calling onSuccess callback for create...');
-          onSuccess('Game created successfully!');
-        });
+        await setDoc(newGameRef, values);
+        console.log(`[GameForm] Create successful! New document ID: ${newGameRef.id}`);
+        onSuccess('Game created successfully!');
       }
     } catch (error: any) {
       console.error("[GameForm] Form submission failed. Full error object:", error);
       const errorMessage = `Save failed: ${error.code} - ${error.message}`;
+      console.error(errorMessage); // Log the formatted error message
       setFormError(errorMessage);
     } finally {
       setIsSubmitting(false);

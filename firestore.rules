@@ -65,6 +65,7 @@ service cloud.firestore {
 
     match /games/{gameId} {
       allow get, list: if true;
+      // Temporarily changed for debugging. ANY signed-in user can write.
       allow create, update, delete: if isSignedIn();
     }
 
