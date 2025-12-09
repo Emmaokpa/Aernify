@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return doc(firestore, 'users', user.uid);
   }, [user, firestore]);
 
-  const { data: profile } = useDoc<UserProfile>(userDocRef);
+  const { data: profile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, 
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = { 
     user, 
     profile,
-    isUserLoading, 
+    isUserLoading: isUserLoading || (!!user && isProfileLoading), 
     isAuthenticated: !!user,
     isAdmin: profile?.isAdmin ?? false,
     userError 
