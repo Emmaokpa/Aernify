@@ -47,7 +47,7 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
 
   const handleLogout = async () => {
     await auth.signOut();
-    router.push('/login');
+    // The redirect is handled by MainLayout
     setOpen(false);
   };
 

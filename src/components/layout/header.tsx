@@ -30,7 +30,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   const handleLogout = async () => {
     await auth.signOut();
-    router.push('/login');
+    // The redirect is handled by MainLayout
   };
 
   // Do not render the header on the profile page or auth pages
