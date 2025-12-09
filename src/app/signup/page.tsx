@@ -30,7 +30,7 @@ const generateReferralCode = () => {
 
 async function createUserProfile(db: any, user: User, referralCode: string | null) {
   const userRef = doc(db, 'users', user.uid);
-  const newUserProfile: Omit<UserProfile, 'uid'> & { uid: string } = {
+  const newUserProfile: UserProfile = {
     uid: user.uid,
     displayName: user.displayName || '',
     email: user.email || '',

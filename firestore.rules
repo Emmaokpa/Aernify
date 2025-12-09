@@ -21,7 +21,11 @@ service cloud.firestore {
     // Rules for the users collection
     match /users/{userId} {
       // A user can create their own profile, but they cannot assign themselves as admin.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.isAdmin == false;
+      // The document must not exist yet.
+      allow create: if isSignedIn() 
+                    && isOwner(userId) 
+                    && request.resource.data.isAdmin == false
+                    && !exists(/databases/$(database)/documents/users/$(userId));
       
       // Any signed-in user can read public user data (needed for referral checks)
       allow get: if isSignedIn();
