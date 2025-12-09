@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Game } from '@/lib/types';
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
