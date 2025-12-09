@@ -14,19 +14,23 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return request.auth.token.isAdmin == true;
+      // Check for the custom claim 'isAdmin' on the auth token
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
     // Rules for the users collection
     match /users/{userId} {
-      // An owner or an admin can create a user profile
-      allow create: if isOwner(userId) || isAdmin();
+      // Any signed-in user can create their own document.
+      allow create: if isSignedIn() && isOwner(userId);
       
       // Any signed-in user can read public user data (needed for referral checks)
       allow get: if isSignedIn();
       
       // An owner can update their own profile, but cannot change their coins or admin status
       allow update: if isOwner(userId) && !("coins" in request.resource.data) && !("isAdmin" in request.resource.data);
+
+      // Only admins can delete user documents
+      allow delete: if isAdmin();
     }
 
     // Fallback rule to deny all other access
