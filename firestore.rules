@@ -30,12 +30,25 @@ service cloud.firestore {
       // Any signed-in user can read public user data (needed for referral checks)
       allow get: if isSignedIn();
       
-      // An owner can update their own profile, but cannot change their coins or admin status
-      allow update: if isOwner(userId) && !("coins" in request.resource.data) && !("isAdmin" in request.resource.data);
+      // An owner can update their own profile, but cannot change their admin status
+      // They can update their coins via approved mechanisms (like daily login)
+      allow update: if isOwner(userId) && !("isAdmin" in request.resource.data);
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
     }
+    
+    // Rules for the daily_logins collection
+    match /daily_logins/{loginId} {
+        // A user can create a login record for themselves for the current day.
+        // The document ID must be in the format 'userId_YYYY-MM-DD'.
+        allow create: if isSignedIn() && request.resource.data.size() == 1 && request.resource.data.claimedAt == request.time && loginId.split('_')[0] == request.auth.uid;
+        // Nobody can update or delete login records.
+        allow update, delete: if false;
+        // Only the owner can read their login records.
+        allow get: if isSignedIn() && isOwner(loginId.split('_')[0]);
+    }
+
 
     // Fallback rule to deny all other access
     match /{document=**} {

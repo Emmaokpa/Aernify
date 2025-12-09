@@ -4,7 +4,7 @@ import { useState } from 'react';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { giftCards, currentUser } from '@/lib/data';
+import { giftCards } from '@/lib/data';
 import Image from 'next/image';
 import { Coins, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -21,35 +21,51 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { GiftCard } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUser, useFirestore } from '@/firebase';
+import { doc, updateDoc, increment } from 'firebase/firestore';
 
 export default function RedeemPage() {
   const { toast } = useToast();
   const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const { user, profile, isUserLoading } = useUser();
+  const firestore = useFirestore();
 
   const handleRedeem = async (card: GiftCard) => {
+    if (!user || !profile) return;
+
     setIsRedeeming(card.id);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    if (currentUser.coins < card.price) {
+    if (profile.coins < card.price) {
       toast({
         variant: 'destructive',
         title: 'Insufficient Coins',
-        description: `You need ${card.price.toLocaleString()} coins, but you only have ${currentUser.coins.toLocaleString()}.`,
+        description: `You need ${card.price.toLocaleString()} coins, but you only have ${profile.coins.toLocaleString()}.`,
       });
       setIsRedeeming(null);
       return;
     }
     
-    currentUser.coins -= card.price;
-    toast({
-      title: 'Redemption Successful!',
-      description: `Your request for a ${card.name} gift card is being processed. You will receive it by email.`,
-    });
-    
-    setIsRedeeming(null);
+    const userDocRef = doc(firestore, 'users', user.uid);
+    try {
+      await updateDoc(userDocRef, {
+        coins: increment(-card.price)
+      });
+
+      toast({
+        title: 'Redemption Successful!',
+        description: `Your request for a ${card.name} gift card is being processed. You will receive it by email.`,
+      });
+
+    } catch(error) {
+      console.error("Error redeeming gift card: ", error);
+      toast({
+        variant: 'destructive',
+        title: 'Redemption Failed',
+        description: 'An unexpected error occurred. Please try again.',
+      });
+    } finally {
+      setIsRedeeming(null);
+    }
   };
   
   return (
@@ -62,10 +78,10 @@ export default function RedeemPage() {
           <div className="inline-flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary border">
             <Coins className="h-5 w-5" />
             <span>Your Balance:</span>
-            {isLoading ? (
+            {isUserLoading ? (
               <Skeleton className="h-5 w-12" />
             ) : (
-              <span>{currentUser.coins.toLocaleString()}</span>
+              <span>{profile?.coins?.toLocaleString() ?? 0}</span>
             )}
           </div>
         </div>
@@ -94,7 +110,7 @@ export default function RedeemPage() {
               </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button className="w-full" disabled={isRedeeming === card.id || isLoading}>
+                  <Button className="w-full" disabled={isRedeeming === card.id || isUserLoading}>
                     {isRedeeming === card.id ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}

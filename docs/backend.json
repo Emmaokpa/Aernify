@@ -37,6 +37,19 @@
         }
       },
       "required": ["uid", "email", "coins", "referralCode"]
+    },
+    "DailyLogin": {
+      "title": "Daily Login Record",
+      "description": "Records when a user claims their daily login bonus.",
+      "type": "object",
+      "properties": {
+        "claimedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The server timestamp when the bonus was claimed."
+        }
+      },
+      "required": ["claimedAt"]
     }
   },
   "auth": {
@@ -48,6 +61,12 @@
         "$ref": "#/entities/UserProfile"
       },
       "description": "Stores public and private user profile information."
+    },
+    "/daily_logins/{loginId}": {
+        "schema": {
+            "$ref": "#/entities/DailyLogin"
+        },
+        "description": "Tracks daily login bonus claims. The document ID is a composite of 'userId_YYYY-MM-DD'."
     }
   }
 }

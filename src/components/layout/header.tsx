@@ -16,7 +16,6 @@ import Logo from '../icons/logo';
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { Skeleton } from '../ui/skeleton';
-import { currentUser as staticUser } from '@/lib/data';
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -24,9 +23,8 @@ type HeaderProps = {
 
 export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user, profile, isUserLoading } = useUser();
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -55,7 +53,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
       <div className="flex w-full items-center justify-end gap-4">
         <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary">
           <Coins className="h-5 w-5" />
-          <span>{staticUser.coins.toLocaleString() || 0}</span>
+          {isUserLoading ? (
+            <Skeleton className="h-5 w-12" />
+          ) : (
+            <span>{profile?.coins?.toLocaleString() ?? 0}</span>
+          )}
         </div>
         
         {isUserLoading && <Skeleton className="h-10 w-10 rounded-full" />}

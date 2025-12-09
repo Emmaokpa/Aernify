@@ -30,18 +30,22 @@ const generateReferralCode = () => {
 
 async function createUserProfile(db: any, user: User, referralCode: string | null) {
   const userRef = doc(db, 'users', user.uid);
-  const newUserProfile: UserProfile = {
+  const newUserProfile: Omit<UserProfile, 'isAdmin'> = {
     uid: user.uid,
     displayName: user.displayName || '',
     email: user.email || '',
     photoURL: user.photoURL,
-    coins: 0, // Start with 0 coins
+    coins: 10, // Start with 10 coins
     referralCode: generateReferralCode(),
-    isAdmin: false,
   };
 
+  const finalProfile = {
+      ...newUserProfile,
+      isAdmin: false,
+  }
+
   try {
-    await setDoc(userRef, newUserProfile);
+    await setDoc(userRef, finalProfile);
     
     // If a referral code was used, apply it
     if (referralCode) {
@@ -68,7 +72,7 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
     errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: userRef.path,
         operation: 'create',
-        requestResourceData: newUserProfile
+        requestResourceData: finalProfile
     }));
   }
 }
