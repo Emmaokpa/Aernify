@@ -5,11 +5,11 @@ import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useFirestore } from '@/firebase';
-import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose } from '@/components/ui/sheet';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, XCircle } from 'lucide-react';
@@ -49,6 +49,7 @@ export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
   const firestore = useFirestore();
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
+    console.log('[GameForm] onSubmit function triggered.');
     setIsSubmitting(true);
     setFormError(null);
     console.log('[GameForm] Submitting values:', values);
@@ -58,16 +59,21 @@ export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
         // Update existing game
         console.log(`[GameForm] Attempting to update document with ID: ${game.id}`);
         const gameDocRef = doc(firestore, 'games', game.id);
-        await updateDoc(gameDocRef, { ...values, updatedAt: serverTimestamp() });
-        console.log('[GameForm] Update successful!');
-        onSuccess('Game updated successfully!');
+        await updateDoc(gameDocRef, values).then(() => {
+          console.log('[GameForm] Update successful!');
+          console.log('[GameForm] Calling onSuccess callback for update...');
+          onSuccess('Game updated successfully!');
+        });
       } else {
         // Create new game
-        console.log('[GameForm] Attempting to create new document in "games" collection.');
         const gamesCollectionRef = collection(firestore, 'games');
-        const docRef = await addDoc(gamesCollectionRef, { ...values, createdAt: serverTimestamp() });
-        console.log(`[GameForm] Create successful! New document ID: ${docRef.id}`);
-        onSuccess('Game created successfully!');
+        const newGameRef = doc(gamesCollectionRef);
+        console.log(`[GameForm] Attempting to create new document in "games" collection with ID: ${newGameRef.id}`);
+        await setDoc(newGameRef, values).then(() => {
+          console.log(`[GameForm] Create successful! New document ID: ${newGameRef.id}`);
+          console.log('[GameForm] Calling onSuccess callback for create...');
+          onSuccess('Game created successfully!');
+        });
       }
     } catch (error: any) {
       console.error("[GameForm] Form submission failed. Full error object:", error);
@@ -83,19 +89,13 @@ export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
       <SheetContent className="sm:max-w-lg w-full flex flex-col">
         <SheetHeader>
           <SheetTitle>{game ? 'Edit Game' : 'Add New Game'}</SheetTitle>
+          <SheetDescription>Fill in the details for the game. Click save when you're done.</SheetDescription>
         </SheetHeader>
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} id="game-form" className="flex-1 flex flex-col">
             <ScrollArea className="flex-grow pr-6 -mr-6">
               <div className="space-y-6">
-                {formError && (
-                  <Alert variant="destructive">
-                    <XCircle className="h-4 w-4" />
-                    <AlertTitle>Save Failed</AlertTitle>
-                    <AlertDescription>{formError}</AlertDescription>
-                  </Alert>
-                )}
 
                 <FormField
                   control={form.control}

@@ -57,8 +57,10 @@ export default function ManageGamesPage() {
   };
 
   const handleFormSuccess = (message: string) => {
-    setIsFormOpen(false);
     setFeedback({ type: 'success', message });
+    setTimeout(() => {
+      setIsFormOpen(false);
+    }, 1500); // Keep form open for 1.5 seconds to show success
   };
   
   const handleFormCancel = () => {

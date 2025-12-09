@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -33,9 +34,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    setIsLoading(true);
-
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setIsLoading(true); // Set loading true at the start of auth change
       if (firebaseUser) {
         setUser(firebaseUser);
         setIsAuthenticated(true);
@@ -50,21 +50,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } catch (err: any) {
           console.error("Error fetching admin status:", err);
           setError(err);
-          setIsAdmin(false);
+          setIsAdmin(false); // Ensure isAdmin is false on error
+        } finally {
+           setIsLoading(false); // Stop loading after user and admin status are resolved
         }
       } else {
         // User is signed out
         setUser(null);
         setIsAuthenticated(false);
         setIsAdmin(false);
+        setIsLoading(false); // Stop loading
       }
-      
-      // CRUCIAL: Stop loading ONLY after auth check AND Firestore fetch are complete
-      setIsLoading(false);
     }, (err) => {
         console.error("Auth state change error:", err);
         setError(err);
-        setIsLoading(false);
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsAdmin(false);
+        setIsLoading(false); // Stop loading on error
     });
 
     return () => unsubscribe();

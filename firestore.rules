@@ -65,7 +65,7 @@ service cloud.firestore {
 
     match /games/{gameId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isSignedIn();
     }
 
     match /users/{userId}/userGamePlays/{userGamePlayId} {
