@@ -55,7 +55,7 @@ export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
     try {
       if (game) {
         // Update existing game
-        console.log(`[GameForm] Attempting to update document with ID: ${game.id}`);
+        console.log(`[GameForm] Attempting to UPDATE document with ID: ${game.id}`);
         const gameDocRef = doc(firestore, 'games', game.id);
         await updateDoc(gameDocRef, values);
         console.log('[GameForm] Update successful!');
@@ -63,15 +63,16 @@ export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
       } else {
         // Create new game
         const newGameRef = doc(collection(firestore, 'games'));
-        console.log(`[GameForm] Attempting to create new document in "games" collection with ID: ${newGameRef.id}`);
+        console.log(`[GameForm] Attempting to CREATE new document with ID: ${newGameRef.id}`);
         await setDoc(newGameRef, values);
         console.log(`[GameForm] Create successful! New document ID: ${newGameRef.id}`);
         onSuccess('Game created successfully!');
       }
     } catch (error: any) {
-      console.error("[GameForm] Form submission failed. Full error object:", error);
+      console.error("[GameForm] Submission failed. Error Code:", error.code);
+      console.error("[GameForm] Submission failed. Error Message:", error.message);
+      console.error("[GameForm] Full error object:", error);
       const errorMessage = `Save failed: ${error.code} - ${error.message}`;
-      console.error(errorMessage); // Log the formatted error message
       setFormError(errorMessage);
     } finally {
       setIsSubmitting(false);
