@@ -17,7 +17,7 @@ import Logo from '@/components/icons/logo';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, User } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, increment } from 'firebase/firestore';
 import { applyReferralCode } from '@/ai/flows/referral-flow';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -30,7 +30,8 @@ const generateReferralCode = () => {
 
 async function createUserProfile(db: any, user: User, referralCode: string | null) {
   const userRef = doc(db, 'users', user.uid);
-  const newUserProfile: Omit<UserProfile, 'isAdmin'> = {
+  // Base profile with starting coins
+  const newUserProfile: Omit<UserProfile, 'isAdmin' | 'coins'> & { coins: number } = {
     uid: user.uid,
     displayName: user.displayName || '',
     email: user.email || '',
@@ -45,28 +46,21 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
   }
 
   try {
-    await setDoc(userRef, finalProfile);
-    
-    // If a referral code was used, apply it
+    // If a referral code was used, apply it first.
     if (referralCode) {
         const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
         if (referralResult.success) {
-            // Award coins to the new user on the client-side representation
-            // The flow handles the referrer's reward
-            const userDocRef = doc(db, 'users', user.uid);
-            // Non-blocking update
-            setDoc(userDocRef, { coins: 100 }, { merge: true }).catch(e => {
-                console.error("Failed to apply bonus coins to new user", e);
-                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: userDocRef.path,
-                    operation: 'update',
-                    requestResourceData: { coins: 100 }
-                }));
-            });
+            // The referral flow handles the referrer's reward.
+            // We add the bonus to the new user's starting coins.
+            finalProfile.coins += 100;
+             console.log(`Referral success! New user coins: ${finalProfile.coins}`);
         } else {
             console.warn("Referral code application failed:", referralResult.message);
         }
     }
+    
+    await setDoc(userRef, finalProfile);
+
   } catch (e: any) {
     console.error('Error creating user profile:', e);
     errorEmitter.emit('permission-error', new FirestorePermissionError({
