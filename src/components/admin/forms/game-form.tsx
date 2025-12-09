@@ -70,7 +70,7 @@ export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
         onSuccess('Game created successfully!');
       }
     } catch (error: any) {
-      console.error("[GameForm] Form submission failed:", error);
+      console.error("[GameForm] Form submission failed. Full error object:", error);
       const errorMessage = `Save failed: ${error.code} - ${error.message}`;
       setFormError(errorMessage);
     } finally {
