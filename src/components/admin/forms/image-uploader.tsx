@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -32,7 +33,7 @@ export function ImageUploader({ value, onChange }: ImageUploaderProps) {
       widgetRef.current = window.cloudinary.createUploadWidget(
         {
           cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-          uploadPreset: 'default',
+          uploadPreset: 'qa4yjgs4',
           sources: ['local', 'url', 'camera'],
           multiple: false,
           cropping: true,
