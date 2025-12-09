@@ -30,12 +30,11 @@ service cloud.firestore {
       // Any signed-in user can read public user data (needed for referral checks)
       allow get: if isSignedIn();
       
-      // An owner can update their own profile, but cannot change their admin status
-      // They can update their coins via approved mechanisms (like daily login)
+      // An owner can update their own profile, but cannot change their admin status.
+      // The new coin value must be greater than or equal to the existing one.
       allow update: if isOwner(userId) && 
-                    (!("isAdmin" in request.resource.data)) &&
-                    (request.resource.data.coins >= resource.data.coins);
-
+                    request.resource.data.isAdmin == resource.data.isAdmin &&
+                    request.resource.data.coins >= resource.data.coins;
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
