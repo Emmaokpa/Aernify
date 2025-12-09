@@ -8,7 +8,6 @@ export const currentUser: User = {
   avatarUrl: getImage('userAvatar1').imageUrl,
   coins: 12580,
   isVip: false,
-  isAdmin: true, // Make the mock user an admin
 };
 
 export const dailyChallenges: DailyChallenge[] = [

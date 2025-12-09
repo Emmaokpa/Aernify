@@ -17,7 +17,6 @@ function RootLayoutContent({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const isAdminRoute = pathname.startsWith('/admin');
   const isAuthRoute = pathname === '/login' || pathname === '/signup';
   const isTermsRoute = pathname === '/terms';
 
@@ -26,7 +25,7 @@ function RootLayoutContent({
       <head>
       </head>
       <body className={cn('font-body antialiased', inter.variable)}>
-        {isAdminRoute || isAuthRoute || isTermsRoute ? (
+        {isAuthRoute || isTermsRoute ? (
           children
         ) : (
           <MainLayout>{children}</MainLayout>

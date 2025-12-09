@@ -21,7 +21,6 @@ import type { NavItem } from '@/lib/types';
 import Logo from '../icons/logo';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
-import { currentUser } from '@/lib/data';
 
 const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/', icon: <LayoutDashboard /> },
@@ -34,13 +33,6 @@ const navItems: NavItem[] = [
   { title: 'Leaderboard', href: '/leaderboard', icon: <Trophy /> },
   { title: 'Profile', href: '/profile', icon: <User /> },
 ];
-
-const adminNavItem: NavItem = {
-  title: 'Admin',
-  href: '/admin',
-  icon: <Shield />,
-};
-
 
 type SidebarProps = {
   isOpen: boolean;
@@ -55,11 +47,6 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
     router.push('/login');
     setOpen(false);
   };
-  
-  const finalNavItems = [...navItems];
-  if (currentUser.isAdmin) {
-    finalNavItems.push(adminNavItem);
-  }
 
   const content = (
     <div className="flex h-full flex-col">
@@ -72,7 +59,7 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
       <ScrollArea className="flex-grow">
         <nav className="p-4">
           <ul className="space-y-2">
-            {finalNavItems.map((item) => (
+            {navItems.map((item) => (
               <li key={item.title}>
                 <Link
                   href={item.href}
