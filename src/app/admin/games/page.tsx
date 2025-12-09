@@ -92,25 +92,6 @@ export default function ManageGamesPage() {
     );
   }
 
-  if (!isAuthenticated || !isAdmin) {
-    return (
-      <>
-        <PageHeader
-          title="Manage Games"
-          description="Add, edit, or remove games from your application."
-        />
-        <Alert variant="destructive" className="mt-6">
-          <ShieldOff className="h-4 w-4" />
-          <AlertTitle>Access Denied</AlertTitle>
-          <AlertDescription>
-            You must be logged in as an administrator to access and manage games.
-          </AlertDescription>
-        </Alert>
-      </>
-    );
-  }
-
-
   return (
     <>
       <PageHeader
@@ -128,92 +109,103 @@ export default function ManageGamesPage() {
         </Alert>
       )}
 
-      {readError && (
-          <Alert variant="destructive" className="mb-4">
-            <XCircle className="h-4 w-4" />
-            <AlertTitle>Read Error</AlertTitle>
-            <AlertDescription>
-              Could not load games. Please check your connection and security rules.
-              <br />
-              Details: {readError.message}
-            </AlertDescription>
-          </Alert>
-        )}
-
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex justify-end mb-4">
-            <Button onClick={handleAddNew} disabled={isPageLoading}>
-              <PlusCircle className="mr-2" />
-              Add New Game
-            </Button>
-          </div>
-          
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="hidden md:table-cell">Iframe URL</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {areGamesLoading ? (
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-48" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-10 w-24 ml-auto" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : games && games.length > 0 ? (
-                  games.map((game) => (
-                    <TableRow key={game.id}>
-                      <TableCell className="font-medium">{game.name}</TableCell>
-                      <TableCell className="hidden md:table-cell max-w-xs truncate">{game.iframeUrl}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
-                          <Button variant="outline" size="icon" onClick={() => handleEdit(game)} disabled={isPageLoading}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="icon" disabled={isPageLoading}>
-                                <Trash2 className="h-4 w-4" />
+      {!isAuthenticated || !isAdmin ? (
+         <Alert variant="destructive" className="mt-6">
+          <ShieldOff className="h-4 w-4" />
+          <AlertTitle>Access Denied</AlertTitle>
+          <AlertDescription>
+            You must be logged in as an administrator to access and manage games.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <>
+          {readError && (
+              <Alert variant="destructive" className="mb-4">
+                <XCircle className="h-4 w-4" />
+                <AlertTitle>Read Error</AlertTitle>
+                <AlertDescription>
+                  Could not load games. Please check your connection and security rules.
+                  <br />
+                  Details: {readError.message}
+                </AlertDescription>
+              </Alert>
+            )}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-end mb-4">
+                <Button onClick={handleAddNew} disabled={isPageLoading}>
+                  <PlusCircle className="mr-2" />
+                  Add New Game
+                </Button>
+              </div>
+              
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="hidden md:table-cell">Iframe URL</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {areGamesLoading ? (
+                      Array.from({ length: 3 }).map((_, i) => (
+                        <TableRow key={i}>
+                          <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                          <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-48" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-10 w-24 ml-auto" /></TableCell>
+                        </TableRow>
+                      ))
+                    ) : games && games.length > 0 ? (
+                      games.map((game) => (
+                        <TableRow key={game.id}>
+                          <TableCell className="font-medium">{game.name}</TableCell>
+                          <TableCell className="hidden md:table-cell max-w-xs truncate">{game.iframeUrl}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-2 justify-end">
+                              <Button variant="outline" size="icon" onClick={() => handleEdit(game)} disabled={isPageLoading}>
+                                <Edit className="h-4 w-4" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete the game "{game.name}". This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(game.id)}>
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center h-24">
-                      No games found. Click "Add New Game" to start.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" size="icon" disabled={isPageLoading}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete the game "{game.name}". This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(game.id)}>
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center h-24">
+                          No games found. Click "Add New Game" to start.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {isFormOpen && (
         <GameForm 
