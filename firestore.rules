@@ -32,7 +32,10 @@ service cloud.firestore {
       
       // An owner can update their own profile, but cannot change their admin status
       // They can update their coins via approved mechanisms (like daily login)
-      allow update: if isOwner(userId) && !("isAdmin" in request.resource.data);
+      allow update: if isOwner(userId) && 
+                    (!("isAdmin" in request.resource.data)) &&
+                    (request.resource.data.coins >= resource.data.coins);
+
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
@@ -45,7 +48,7 @@ service cloud.firestore {
         // The document should only contain the 'claimedAt' field.
         allow create: if isSignedIn() 
                       && request.resource.data.size() == 1 
-                      && request.resource.data.claimedAt == request.time 
+                      && "claimedAt" in request.resource.data
                       && loginId.split('_')[0] == request.auth.uid;
 
         // Nobody can update or delete login records.
