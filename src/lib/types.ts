@@ -81,6 +81,5 @@ export interface UserProfile {
     photoURL: string | null;
     coins: number;
     referralCode: string;
-    isAdmin?: boolean;
-    createdAt: string;
+    isAdmin: boolean;
 }
