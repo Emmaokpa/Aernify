@@ -40,7 +40,12 @@ export function ImageUploader({ value, onChange }: ImageUploaderProps) {
           croppingAspectRatio: 16/9,
         },
         (error, result) => {
-          if (!error && result && result.event === 'success') {
+          if (error) {
+            console.error('[ImageUploader] Cloudinary Error:', error);
+            return;
+          }
+          if (result && result.event === 'success') {
+            console.log('[ImageUploader] Upload successful, result info:', result.info);
             onChange(result.info.secure_url);
           }
         }
