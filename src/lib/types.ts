@@ -9,6 +9,7 @@ export type User = {
   avatarUrl: string;
   coins: number;
   isVip: boolean;
+  isAdmin?: boolean;
 };
 
 export type DailyChallenge = {
@@ -31,6 +32,7 @@ export type Game = {
   provider: string;
   imageUrl: string;
   imageHint: string;
+  iframeUrl: string;
   reward: number;
 };
 
@@ -69,3 +71,5 @@ export type LeaderboardEntry = {
   };
   score: number;
 };
+
+export type WithId<T> = T & { id: string };

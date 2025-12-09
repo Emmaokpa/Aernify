@@ -1,19 +1,15 @@
-
 'use client';
 
 import { useState } from 'react';
-import { collection, doc, writeBatch, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
-import { useFirestore, useCollection, useMemoFirebase, type WithId } from '@/firebase';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { XCircle, CheckCircle, Loader2 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { WithId } from '@/lib/types';
 
 // Define the shape of a Redemption document
 export type Redemption = {
@@ -24,35 +20,54 @@ export type Redemption = {
   giftCardValue: number;
   coinCost: number;
   status: 'pending' | 'fulfilled';
-  redemptionDate: {
-    seconds: number;
-    nanoseconds: number;
-  };
+  redemptionDate: Date;
 };
+
+const staticRedemptions: WithId<Redemption>[] = [
+    {
+        id: 'r1',
+        userId: 'u1',
+        userEmail: 'user1@example.com',
+        giftCardId: 'gc1',
+        giftCardName: 'Amazon Gift Card',
+        giftCardValue: 10,
+        coinCost: 10000,
+        status: 'pending',
+        redemptionDate: new Date('2024-07-25T10:00:00Z'),
+    },
+    {
+        id: 'r2',
+        userId: 'u2',
+        userEmail: 'user2@example.com',
+        giftCardId: 'gc2',
+        giftCardName: 'Google Play Gift Card',
+        giftCardValue: 15,
+        coinCost: 15000,
+        status: 'pending',
+        redemptionDate: new Date('2024-07-25T11:30:00Z'),
+    },
+    {
+        id: 'r3',
+        userId: 'u3',
+        userEmail: 'user3@example.com',
+        giftCardId: 'gc3',
+        giftCardName: 'Apple Gift Card',
+        giftCardValue: 25,
+        coinCost: 25000,
+        status: 'fulfilled',
+        redemptionDate: new Date('2024-07-24T14:00:00Z'),
+    }
+]
 
 function RedemptionList({ 
   redemptions, 
-  isLoading, 
   onFulfill,
   fulfillingId 
 }: { 
   redemptions: WithId<Redemption>[] | null, 
-  isLoading: boolean, 
-  onFulfill: (id: string) => Promise<void>,
+  onFulfill: (id: string) => void,
   fulfillingId: string | null,
 }) {
-  if (isLoading) {
-    return Array.from({ length: 5 }).map((_, i) => (
-      <TableRow key={i}>
-        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-        <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
-      </TableRow>
-    ));
-  }
-
   if (!redemptions || redemptions.length === 0) {
     return (
       <TableRow>
@@ -66,7 +81,7 @@ function RedemptionList({
   return redemptions.map((redemption) => (
     <TableRow key={redemption.id}>
       <TableCell className="font-medium">
-        {redemption.redemptionDate ? format(new Date(redemption.redemptionDate.seconds * 1000), 'MMM d, yyyy, h:mm a') : 'Date N/A'}
+        {format(redemption.redemptionDate, 'MMM d, yyyy, h:mm a')}
       </TableCell>
       <TableCell>{redemption.userEmail}</TableCell>
       <TableCell>{redemption.giftCardName} (${redemption.giftCardValue})</TableCell>
@@ -94,36 +109,19 @@ function RedemptionList({
 
 
 export default function ManageRedemptionsPage() {
-  const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [redemptions, setRedemptions] = useState(staticRedemptions);
   const [activeTab, setActiveTab] = useState<'pending' | 'fulfilled'>('pending');
   const [fulfillingId, setFulfillingId] = useState<string | null>(null);
 
-  const firestore = useFirestore();
-  const redemptionsCollectionRef = useMemoFirebase(() => collection(firestore, 'redemptions'), [firestore]);
+  const pendingRedemptions = redemptions.filter(r => r.status === 'pending');
+  const fulfilledRedemptions = redemptions.filter(r => r.status === 'fulfilled');
 
-  const pendingQuery = useMemoFirebase(() => query(redemptionsCollectionRef, where('status', '==', 'pending'), orderBy('redemptionDate', 'desc')), [redemptionsCollectionRef]);
-  const fulfilledQuery = useMemoFirebase(() => query(redemptionsCollectionRef, where('status', '==', 'fulfilled'), orderBy('redemptionDate', 'desc')), [redemptionsCollectionRef]);
-
-  const { data: pendingRedemptions, isLoading: arePendingLoading, error: pendingReadError } = useCollection<Redemption>(pendingQuery);
-  const { data: fulfilledRedemptions, isLoading: areFulfilledLoading, error: fulfilledReadError } = useCollection<Redemption>(fulfilledQuery);
-
-  const readError = pendingReadError || fulfilledReadError;
-
-  const handleFulfill = async (id: string) => {
-    setFeedbackMessage(null);
+  const handleFulfill = (id: string) => {
     setFulfillingId(id);
-    try {
-      const redemptionDocRef = doc(firestore, 'redemptions', id);
-      const batch = writeBatch(firestore);
-      batch.update(redemptionDocRef, { status: 'fulfilled' });
-      await batch.commit();
-      setFeedbackMessage({ type: 'success', message: 'Redemption marked as fulfilled!' });
-    } catch (error: any) {
-      console.error("Fulfill failed:", error);
-      setFeedbackMessage({ type: 'error', message: `FULFILL FAILED: ${error.code} - ${error.message}` });
-    } finally {
-      setFulfillingId(null);
-    }
+    setTimeout(() => {
+        setRedemptions(redemptions.map(r => r.id === id ? { ...r, status: 'fulfilled' } : r));
+        setFulfillingId(null);
+    }, 1000);
   };
 
   return (
@@ -132,28 +130,6 @@ export default function ManageRedemptionsPage() {
         title="Manage Redemptions"
         description="View and fulfill gift card redemption requests from users."
       />
-
-      {feedbackMessage && (
-        <Alert variant={feedbackMessage.type === 'error' ? 'destructive' : 'default'} className="mb-4">
-          {feedbackMessage.type === 'error' 
-             ? <XCircle className="h-4 w-4" /> 
-             : <CheckCircle className="h-4 w-4" />}
-          <AlertTitle>{feedbackMessage.type === 'error' ? 'Error' : 'Success'}</AlertTitle>
-          <AlertDescription>{feedbackMessage.message}</AlertDescription>
-        </Alert>
-      )}
-
-      {readError && (
-          <Alert variant="destructive" className="mb-4">
-            <XCircle className="h-4 w-4" />
-            <AlertTitle>Read Error</AlertTitle>
-            <AlertDescription>
-              Could not load redemption requests. Please check your connection and security rules.
-              <br />
-              Details: {readError.message}
-            </AlertDescription>
-          </Alert>
-        )}
 
       <Card>
         <CardContent className="p-4">
@@ -177,7 +153,6 @@ export default function ManageRedemptionsPage() {
                     <TableBody>
                         <RedemptionList
                         redemptions={pendingRedemptions}
-                        isLoading={arePendingLoading}
                         onFulfill={handleFulfill}
                         fulfillingId={fulfillingId}
                         />
@@ -200,7 +175,6 @@ export default function ManageRedemptionsPage() {
                     <TableBody>
                         <RedemptionList
                         redemptions={fulfilledRedemptions}
-                        isLoading={areFulfilledLoading}
                         onFulfill={handleFulfill}
                         fulfillingId={fulfillingId}
                         />

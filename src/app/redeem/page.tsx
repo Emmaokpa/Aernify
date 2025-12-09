@@ -1,15 +1,12 @@
-
 'use client';
 
 import { useState } from 'react';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { giftCards } from '@/lib/data';
+import { giftCards, currentUser } from '@/lib/data';
 import Image from 'next/image';
 import { Coins, Loader2 } from 'lucide-react';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, writeBatch, increment, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -26,77 +23,35 @@ import type { GiftCard } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function RedeemPage() {
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
   const { toast } = useToast();
   const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
-
-  const userDocRef = useMemoFirebase(
-    () => (user ? doc(firestore, 'users', user.uid) : null),
-    [firestore, user]
-  );
-  const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleRedeem = async (card: GiftCard) => {
-    if (!user || !userData || !firestore) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'You must be logged in to redeem.',
-      });
-      return;
-    }
+    setIsRedeeming(card.id);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    if (userData.coins < card.price) {
+    if (currentUser.coins < card.price) {
       toast({
         variant: 'destructive',
         title: 'Insufficient Coins',
-        description: `You need ${card.price.toLocaleString()} coins, but you only have ${userData.coins.toLocaleString()}.`,
+        description: `You need ${card.price.toLocaleString()} coins, but you only have ${currentUser.coins.toLocaleString()}.`,
       });
+      setIsRedeeming(null);
       return;
     }
-
-    setIsRedeeming(card.id);
-
-    const batch = writeBatch(firestore);
-
-    // 1. Deduct coins from user
-    const userRef = doc(firestore, 'users', user.uid);
-    batch.update(userRef, { coins: increment(-card.price) });
-
-    // 2. Create a redemption record in the new root /redemptions collection
-    const redemptionRef = doc(collection(firestore, 'redemptions'));
-    batch.set(redemptionRef, {
-      userId: user.uid,
-      userEmail: user.email, // Add user email for easier manual fulfillment
-      giftCardId: card.id,
-      giftCardName: card.name,
-      giftCardValue: card.value,
-      coinCost: card.price,
-      status: 'pending', // 'pending', 'fulfilled'
-      redemptionDate: serverTimestamp(),
+    
+    currentUser.coins -= card.price;
+    toast({
+      title: 'Redemption Successful!',
+      description: `Your request for a ${card.name} gift card is being processed. You will receive it by email.`,
     });
-
-    try {
-      await batch.commit();
-      toast({
-        title: 'Redemption Successful!',
-        description: `Your request for a ${card.name} gift card is being processed. You will receive it by email.`,
-      });
-    } catch (error: any) {
-      console.error('Redemption failed:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Uh oh! Something went wrong.',
-        description: error.message || 'Could not process your redemption.',
-      });
-    } finally {
-      setIsRedeeming(null);
-    }
+    
+    setIsRedeeming(null);
   };
   
-  const isLoading = isUserLoading || (user && isUserDataLoading);
-
   return (
     <>
       <PageHeader
@@ -110,7 +65,7 @@ export default function RedeemPage() {
             {isLoading ? (
               <Skeleton className="h-5 w-12" />
             ) : (
-              <span>{userData?.coins?.toLocaleString() ?? 0}</span>
+              <span>{currentUser.coins.toLocaleString()}</span>
             )}
           </div>
         </div>

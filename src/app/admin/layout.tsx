@@ -1,12 +1,10 @@
-
 'use client';
 
 import React, { useState } from 'react';
 import { Sidebar } from '@/components/admin/sidebar';
 import { Header } from '@/components/admin/header';
-import AdminAuthWrapper from './AdminAuthWrapper';
 
-function AdminLayoutContent({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -19,16 +17,5 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         </main>
       </div>
     </div>
-  );
-}
-
-
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AdminAuthWrapper>
-      <AdminLayoutContent>
-        {children}
-      </AdminLayoutContent>
-    </AdminAuthWrapper>
   );
 }

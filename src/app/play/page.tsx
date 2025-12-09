@@ -1,23 +1,24 @@
-
 'use client';
 
 import PageHeader from '@/components/page-header';
 import { Card } from '@/components/ui/card';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import type { WithId } from '@/firebase/firestore/use-collection';
 import { Skeleton } from '@/components/ui/skeleton';
-import { games as staticGames } from '@/lib/data';
-
-type Game = {
-  name: string;
-  imageUrl: string;
-};
+import { games as staticGames, type Game } from '@/lib/data';
+import { useEffect, useState } from 'react';
 
 export default function PlayPage() {
-  const { data: games, isLoading } = {data: staticGames, isLoading: false};
+    const [games, setGames] = useState<Game[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        // Simulate fetching data
+        setTimeout(() => {
+            setGames(staticGames);
+            setIsLoading(false);
+        }, 1000);
+    }, []);
 
   return (
     <>

@@ -1,29 +1,32 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { WithId } from '@/firebase/firestore/use-collection';
 import DailyLoginModal from '@/components/daily-login-modal';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Gamepad2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { games as staticGames } from '@/lib/data';
+import { games as staticGames, type Game } from '@/lib/data';
 
-type Game = {
-  name: string;
-  imageUrl: string;
-};
 
 export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  const { data: games, isLoading } = {data: staticGames, isLoading: false};
+  const [games, setGames] = useState<Game[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate fetching data
+    setTimeout(() => {
+      setGames(staticGames);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
 
 
   useEffect(() => {
+    // Simulate checking for daily login after a short delay
     const timer = setTimeout(() => {
       setIsModalOpen(true);
     }, 1500);

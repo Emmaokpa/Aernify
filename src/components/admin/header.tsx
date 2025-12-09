@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -15,8 +14,6 @@ import {
 import { LogOut, Menu, User, Shield } from 'lucide-react';
 import Logo from '../icons/logo';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser } from '@/firebase';
-import { signOut } from 'firebase/auth';
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -24,12 +21,8 @@ type HeaderProps = {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter();
-  const auth = useAuth();
-  const { user } = useUser();
 
   const handleLogout = () => {
-    if (!auth) return;
-    signOut(auth);
     router.push('/login');
   };
 
@@ -48,18 +41,17 @@ export function Header({ onMenuClick }: HeaderProps) {
         <Logo />
       </div>
       <div className="flex w-full items-center justify-end gap-4">
-        {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar>
-                  <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
-                  <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src="https://images.unsplash.com/photo-1590086782792-42dd2350140d?w=100&h=100&fit=crop" alt="Admin" />
+                  <AvatarFallback>A</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+              <DropdownMenuLabel>admin@example.com</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link href="/">
@@ -74,10 +66,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
       </div>
     </header>
   );
 }
-
-    

@@ -1,7 +1,5 @@
-
 'use client';
 
-import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -22,10 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/page-header';
-import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { signOut } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
-import { Skeleton } from '@/components/ui/skeleton';
+import { currentUser } from '@/lib/data';
 
 const ProfileMenuItem = ({ icon, text, href }: { icon: React.ReactNode, text: string, href?: string }) => {
   const content = (
@@ -49,25 +44,8 @@ const ProfileMenuItem = ({ icon, text, href }: { icon: React.ReactNode, text: st
 
 export default function ProfilePage() {
   const router = useRouter();
-  const auth = useAuth();
-  const firestore = useFirestore();
-  const { user: authUser, isUserLoading } = useUser();
-
-  const userDocRef = useMemoFirebase(() => {
-    if (!authUser || !firestore) return null;
-    return doc(firestore, 'users', authUser.uid);
-  }, [authUser, firestore]);
-
-  const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef);
-
-  useEffect(() => {
-    if (!isUserLoading && !authUser) {
-      router.push('/login');
-    }
-  }, [authUser, isUserLoading, router]);
 
   const handleLogout = () => {
-    signOut(auth);
     router.push('/login');
   };
 
@@ -81,43 +59,17 @@ export default function ProfilePage() {
     { icon: <HelpCircle />, text: 'Support', href: '/support' },
   ];
 
-  const isLoading = isUserLoading || isUserDataLoading;
-
-  if (isLoading || !authUser || !userData) {
-    return (
-      <div className="w-full max-w-md mx-auto">
-        <PageHeader title="Profile" />
-        <div className="flex flex-col items-center text-center mt-4 mb-8">
-          <Skeleton className="w-24 h-24 rounded-full mb-4" />
-          <Skeleton className="h-6 w-32 mb-2" />
-          <Skeleton className="h-4 w-24" />
-        </div>
-        <Card className="bg-primary/10 border border-primary/20 mb-8">
-          <CardContent className="p-6">
-            <Skeleton className="h-8 w-48 mb-4" />
-            <div className="space-y-3 mb-6">
-              <Skeleton className="h-5 w-full" />
-              <Skeleton className="h-5 w-full" />
-              <Skeleton className="h-5 w-full" />
-            </div>
-            <Skeleton className="h-11 w-full" />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full max-w-md mx-auto">
       <PageHeader title="Profile" />
       
       <div className="flex flex-col items-center text-center mt-4 mb-8">
         <Avatar className="w-24 h-24 mb-4 border-4 border-primary">
-          <AvatarImage src={userData.photoURL || authUser.photoURL || undefined} alt={userData.username || 'User'} />
-          <AvatarFallback>{userData.username?.charAt(0).toUpperCase() || authUser.email?.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
+          <AvatarFallback>{currentUser.name.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
-        <h2 className="text-xl font-semibold">{userData.username || authUser.displayName}</h2>
-        <p className="text-muted-foreground">{authUser.email}</p>
+        <h2 className="text-xl font-semibold">{currentUser.name}</h2>
+        <p className="text-muted-foreground">alex.doe@example.com</p>
       </div>
 
       <Card className="bg-primary/10 border border-primary/20 mb-8">

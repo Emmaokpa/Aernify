@@ -1,4 +1,3 @@
-
 'use client';
 
 import PageHeader from '@/components/page-header';
@@ -12,24 +11,10 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Crown, Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit, where, getDocs, documentId } from 'firebase/firestore';
-import type { WithId } from '@/firebase';
+import { leaderboard as staticLeaderboard, currentUser } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect, useState } from 'react';
-
-type User = {
-  username: string;
-  photoURL?: string;
-  email?: string;
-};
-
-type LeaderboardEntry = {
-  userId: string;
-  score: number;
-  rank: number;
-  user?: User; // This will be populated after fetching
-};
+import type { LeaderboardEntry } from '@/lib/types';
+import { useState, useEffect } from 'react';
 
 const getTrophyColor = (rank: number) => {
   if (rank === 1) return 'text-amber-400 fill-amber-400';
@@ -50,7 +35,7 @@ function TopPlayerCard({
   entry,
   isLoading,
 }: {
-  entry?: WithId<LeaderboardEntry>;
+  entry?: LeaderboardEntry;
   isLoading: boolean;
 }) {
   if (isLoading || !entry) {
@@ -95,10 +80,10 @@ function TopPlayerCard({
             rank === 3 && 'border-orange-600',
           )}
         >
-          <AvatarImage src={user?.photoURL} alt={user?.username} />
-          <AvatarFallback>{user?.username?.charAt(0) ?? '?'}</AvatarFallback>
+          <AvatarImage src={user.avatarUrl} alt={user.name} />
+          <AvatarFallback>{user.name?.charAt(0) ?? '?'}</AvatarFallback>
         </Avatar>
-        <p className="text-xl font-bold">{user?.username}</p>
+        <p className="text-xl font-bold">{user.name}</p>
         <p className="text-2xl font-bold text-primary mt-2 flex items-center justify-center gap-2">
           <Coins className="w-6 h-6" /> {score.toLocaleString()}
         </p>
@@ -113,7 +98,7 @@ function RankedUser({
   entry,
   isCurrentUser,
 }: {
-  entry: WithId<LeaderboardEntry>;
+  entry: LeaderboardEntry;
   isCurrentUser: boolean;
 }) {
   const { rank, score, user } = entry;
@@ -129,10 +114,10 @@ function RankedUser({
         #{rank}
       </div>
       <Avatar className="w-10 h-10 mx-4">
-        <AvatarImage src={user?.photoURL} alt={user?.username} />
-        <AvatarFallback>{user?.username?.charAt(0) ?? '?'}</AvatarFallback>
+        <AvatarImage src={user.avatarUrl} alt={user.name} />
+        <AvatarFallback>{user.name?.charAt(0) ?? '?'}</AvatarFallback>
       </Avatar>
-      <p className="font-semibold flex-grow">{user?.username}</p>
+      <p className="font-semibold flex-grow">{user.name}</p>
       <div className="font-bold text-primary flex items-center gap-1.5">
         <Coins className="w-4 h-4" /> {score.toLocaleString()}
       </div>
@@ -142,107 +127,20 @@ function RankedUser({
 
 // --- Main Leaderboard Page Component ---
 export default function LeaderboardPage() {
-  const firestore = useFirestore();
-  const { user: currentUserAuth } = useUser();
-  const [leaderboardData, setLeaderboardData] = useState<WithId<LeaderboardEntry>[]>([]);
-  const [currentUserRank, setCurrentUserRank] = useState<WithId<LeaderboardEntry> | null>(null);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const leaderboardQuery = useMemoFirebase(
-    () =>
-      firestore
-        ? query(
-            collection(firestore, 'leaderboardEntries'),
-            orderBy('rank', 'asc'),
-            limit(10)
-          )
-        : null,
-    [firestore]
-  );
-  const { data: rawLeaderboardData, isLoading: isLeaderboardLoading } = useCollection<LeaderboardEntry>(leaderboardQuery);
-
-  const currentUserRankQuery = useMemoFirebase(() => {
-    if (!firestore || !currentUserAuth) return null;
-    return query(collection(firestore, 'leaderboardEntries'), where('userId', '==', currentUserAuth.uid), limit(1));
-  }, [firestore, currentUserAuth]);
-  const { data: rawCurrentUserRank, isLoading: isUserRankLoading } = useCollection<LeaderboardEntry>(currentUserRankQuery);
-
   useEffect(() => {
-    const fetchAndCombineData = async () => {
-        // Wait until both initial loads are complete and we have data to process
-        if (isLeaderboardLoading || isUserRankLoading) {
-            setIsLoading(true);
-            return;
-        }
-
-        // Combine the top 10 list and the current user's rank (if they are not in the top 10)
-        // Then filter for unique entries.
-        const allEntries = [
-            ...(rawLeaderboardData || []),
-            ...(rawCurrentUserRank || []),
-        ].filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-
-        if (allEntries.length === 0) {
-            setLeaderboardData([]);
-            setCurrentUserRank(null);
-            setIsLoading(false);
-            return;
-        }
-
-        const userIds = [...new Set(allEntries.map(e => e.userId))];
-
-        if (userIds.length === 0 || !firestore) {
-            setIsLoading(false);
-            return;
-        }
-
-        try {
-            const usersRef = collection(firestore, 'users');
-            const usersQuery = query(usersRef, where(documentId(), 'in', userIds));
-            const userDocs = await getDocs(usersQuery);
-            const usersMap = new Map<string, User>();
-            userDocs.forEach(doc => usersMap.set(doc.id, doc.data() as User));
-
-            const combinedData = allEntries.map(entry => ({
-                ...entry,
-                user: usersMap.get(entry.userId),
-            })).filter(entry => entry.user); // Filter out entries where user data couldn't be found
-
-            // Set state for the top 10 leaderboard
-            if (rawLeaderboardData) {
-                const top10 = combinedData
-                    .filter(d => rawLeaderboardData.some(r => r.id === d.id))
-                    .sort((a, b) => a.rank - b.rank);
-                setLeaderboardData(top10);
-            } else {
-                setLeaderboardData([]);
-            }
-
-            // Set state for the current user's rank
-            if (rawCurrentUserRank && rawCurrentUserRank.length > 0) {
-                const currentUserData = combinedData.find(d => d.id === rawCurrentUserRank[0].id);
-                if (currentUserData) {
-                    setCurrentUserRank(currentUserData);
-                }
-            } else {
-                setCurrentUserRank(null);
-            }
-        } catch (e) {
-            console.error("Failed to fetch and combine user data for leaderboard:", e);
-            setLeaderboardData([]);
-            setCurrentUserRank(null);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    fetchAndCombineData();
-}, [rawLeaderboardData, rawCurrentUserRank, isLeaderboardLoading, isUserRankLoading, firestore]);
-
+    // Simulate fetching data
+    setTimeout(() => {
+      setLeaderboardData(staticLeaderboard);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
 
   const topThree = leaderboardData.slice(0, 3);
   const rest = leaderboardData.slice(3);
-  const isCurrentUserInTop10 = leaderboardData.some(e => e.userId === currentUserAuth?.uid);
+  const currentUserRank = leaderboardData.find(e => e.user.name === 'CurrentUser');
 
   return (
     <>
@@ -277,24 +175,13 @@ export default function LeaderboardPage() {
             ) : (
                rest.map((entry) => (
                 <RankedUser 
-                  key={entry.id} 
+                  key={entry.rank} 
                   entry={entry} 
-                  isCurrentUser={entry.userId === currentUserAuth?.uid}
+                  isCurrentUser={entry.user.name === 'CurrentUser'}
                 />
               ))
             )}
-             {/* Show current user's rank if they are not in the top 10 */}
-             {!isLoading && currentUserRank && !isCurrentUserInTop10 && (
-                <>
-                <div className="text-center text-muted-foreground py-4">...</div>
-                <RankedUser 
-                    key={currentUserRank.id} 
-                    entry={currentUserRank} 
-                    isCurrentUser={true}
-                />
-                </>
-            )}
-            {!isLoading && leaderboardData.length === 0 && (
+             {!isLoading && leaderboardData.length === 0 && (
               <div className="text-center text-muted-foreground py-10">
                 No leaderboard data available yet.
               </div>

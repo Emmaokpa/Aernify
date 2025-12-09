@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -16,8 +15,6 @@ import type { NavItem } from '@/lib/types';
 import Logo from '@/components/icons/logo';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAuth } from '@/firebase';
-import { signOut } from 'firebase/auth';
 
 const adminNavItems: NavItem[] = [
   { title: 'Dashboard', href: '/admin', icon: <LayoutDashboard /> },
@@ -33,11 +30,8 @@ type SidebarProps = {
 export function Sidebar({ isOpen, setOpen }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const auth = useAuth();
 
   const handleLogout = () => {
-    if (!auth) return;
-    signOut(auth);
     router.push('/login');
     setOpen(false);
   };

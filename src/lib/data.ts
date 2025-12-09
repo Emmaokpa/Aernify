@@ -8,6 +8,7 @@ export const currentUser: User = {
   avatarUrl: getImage('userAvatar1').imageUrl,
   coins: 12580,
   isVip: false,
+  isAdmin: true, // Make the mock user an admin
 };
 
 export const dailyChallenges: DailyChallenge[] = [
@@ -124,12 +125,12 @@ export const dailyChallenges: DailyChallenge[] = [
 ];
 
 export const games: Game[] = [
-  { id: 'g1', title: 'Galaxy Invaders', provider: 'Playgama', reward: 50, ...getImage('game1') },
-  { id: 'g2', title: 'Jungle Run', provider: 'Playgama', reward: 40, ...getImage('game2') },
-  { id: 'g3', title: 'Puzzle Blocks', provider: 'Playgama', reward: 60, ...getImage('game3') },
-  { id: 'g4', title: 'Speed Racer', provider: 'Playgama', reward: 75, ...getImage('game4') },
-  { id: 'g5', title: 'Pirate\'s Treasure', provider: 'Playgama', reward: 55, ...getImage('game5') },
-  { id: 'g6', title: 'Castle Defense', provider: 'Playgama', reward: 80, ...getImage('game6') },
+  { id: 'g1', title: 'Galaxy Invaders', provider: 'Playgama', reward: 50, ...getImage('game1'), iframeUrl: 'https://playgama.com/game/1' },
+  { id: 'g2', title: 'Jungle Run', provider: 'Playgama', reward: 40, ...getImage('game2'), iframeUrl: 'https://playgama.com/game/2' },
+  { id: 'g3', title: 'Puzzle Blocks', provider: 'Playgama', reward: 60, ...getImage('game3'), iframeUrl: 'https://playgama.com/game/3' },
+  { id: 'g4', title: 'Speed Racer', provider: 'Playgama', reward: 75, ...getImage('game4'), iframeUrl: 'https://playgama.com/game/4' },
+  { id: 'g5', title: 'Pirate\'s Treasure', provider: 'Playgama', reward: 55, ...getImage('game5'), iframeUrl: 'https://playgama.com/game/5' },
+  { id: 'g6', title: 'Castle Defense', provider: 'Playgama', reward: 80, ...getImage('game6'), iframeUrl: 'https://playgama.com/game/6' },
 ];
 
 export const offers: Offer[] = [

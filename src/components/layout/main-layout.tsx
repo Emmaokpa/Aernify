@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -10,75 +9,19 @@ import { cn } from '@/lib/utils';
 import { Coins } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import Link from 'next/link';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import { Skeleton } from '../ui/skeleton';
-
+import { currentUser } from '@/lib/data';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
-
-  const userDocRef = useMemoFirebase(() => {
-    if (!user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
-
-  const { data: userData, isLoading: isUserDataLoading } = useDoc(userDocRef);
 
   const isProfilePage = pathname === '/profile';
   const isAuthPage = pathname === '/login' || pathname === '/signup';
-
-  useEffect(() => {
-    if (!isUserLoading && !user && !isAuthPage) {
-      router.push('/login');
-    }
-    if (!isUserLoading && user && isAuthPage) {
-      router.push('/');
-    }
-  }, [user, isUserLoading, isAuthPage, router, pathname]);
 
   if (isAuthPage) {
     return <main className="flex items-center justify-center min-h-screen">{children}</main>;
   }
   
-  if (isUserLoading) {
-     return (
-      <div className="min-h-screen bg-background p-4 md:p-8">
-        <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur md:px-6 md:h-auto md:relative md:border-none md:bg-transparent md:backdrop-filter-none">
-          <Skeleton className="h-8 w-24" />
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-10 w-24 rounded-full" />
-            <Skeleton className="h-10 w-10 rounded-full" />
-          </div>
-        </header>
-        <main className="flex-grow p-4 md:p-8 pb-32 md:pb-8">
-          <div className="grid gap-8">
-             <Skeleton className="relative w-full h-64 md:h-96 rounded-2xl" />
-             <div>
-                <Skeleton className="h-8 w-48 mb-4" />
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  <Skeleton className="aspect-[3/4] rounded-2xl" />
-                  <Skeleton className="aspect-[3/4] rounded-2xl" />
-                  <Skeleton className="aspect-[3/4] rounded-2xl" />
-                  <Skeleton className="aspect-[3/4] rounded-2xl" />
-                  <Skeleton className="aspect-[3/4] rounded-2xl" />
-                </div>
-             </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (!user) {
-    // This will be briefly rendered before the useEffect above redirects.
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Sidebar isOpen={isSidebarOpen} setOpen={setSidebarOpen} />
@@ -89,16 +32,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary">
                 <Coins className="h-5 w-5" />
-                {isUserDataLoading ? (
-                  <Skeleton className="h-5 w-10" />
-                ) : (
-                  <span>{userData?.coins?.toLocaleString() || 0}</span>
-                )}
+                <span>{currentUser.coins.toLocaleString() || 0}</span>
               </div>
               <Link href="/profile">
                 <Avatar className='h-10 w-10'>
-                  <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || 'User'} />
-                  <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
+                  <AvatarFallback>{currentUser.name.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
               </Link>
             </div>
