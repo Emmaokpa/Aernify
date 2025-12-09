@@ -21,6 +21,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { applyReferralCode } from '@/ai/flows/referral-flow';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import type { UserProfile } from '@/lib/types';
 
 // Function to generate a random referral code
 const generateReferralCode = () => {
@@ -29,14 +30,15 @@ const generateReferralCode = () => {
 
 async function createUserProfile(db: any, user: User, referralCode: string | null) {
   const userRef = doc(db, 'users', user.uid);
-  const newUserProfile = {
+  const newUserProfile: UserProfile = {
     uid: user.uid,
-    displayName: user.displayName,
-    email: user.email,
+    displayName: user.displayName || '',
+    email: user.email || '',
     photoURL: user.photoURL,
     coins: 0, // Start with 0 coins
     referralCode: generateReferralCode(),
     createdAt: new Date().toISOString(),
+    isAdmin: false,
   };
 
   try {

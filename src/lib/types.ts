@@ -73,3 +73,14 @@ export type LeaderboardEntry = {
 };
 
 export type WithId<T> = T & { id: string };
+
+export interface UserProfile {
+    uid: string;
+    displayName: string;
+    email: string;
+    photoURL: string | null;
+    coins: number;
+    referralCode: string;
+    isAdmin?: boolean;
+    createdAt: string;
+}

@@ -9,16 +9,24 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Only allow users to read/write their own data
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return request.auth.token.isAdmin == true;
+    }
+
+    // Rules for the users collection
     match /users/{userId} {
-      // A user can create their own profile
-      allow create: if request.auth.uid == userId;
+      // An owner or an admin can create a user profile
+      allow create: if isOwner(userId) || isAdmin();
       
       // Any signed-in user can read public user data (needed for referral checks)
       allow get: if isSignedIn();
       
-      // A user can update their own profile, but cannot change their coins or admin status
-      allow update: if request.auth.uid == userId && !("coins" in request.resource.data) && !("isAdmin" in request.resource.data);
+      // An owner can update their own profile, but cannot change their coins or admin status
+      allow update: if isOwner(userId) && !("coins" in request.resource.data) && !("isAdmin" in request.resource.data);
     }
 
     // Fallback rule to deny all other access
