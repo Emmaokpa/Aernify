@@ -5,20 +5,15 @@ import { Card } from '@/components/ui/card';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { games as staticGames, type Game } from '@/lib/data';
-import { useEffect, useState } from 'react';
+import type { Game } from '@/lib/types';
+import { useEffect, useState, useMemo } from 'react';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 export default function PlayPage() {
-    const [games, setGames] = useState<Game[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        // Simulate fetching data
-        setTimeout(() => {
-            setGames(staticGames);
-            setIsLoading(false);
-        }, 1000);
-    }, []);
+    const firestore = useFirestore();
+    const gamesCollection = useMemo(() => collection(firestore, 'games'), [firestore]);
+    const { data: games, isLoading } = useCollection<Game>(gamesCollection);
 
   return (
     <>
@@ -51,6 +46,9 @@ export default function PlayPage() {
             </Card>
           </Link>
         ))}
+        {!isLoading && games?.length === 0 && (
+            <p className='text-muted-foreground col-span-full'>No games available right now. Check back later!</p>
+        )}
       </div>
     </>
   );

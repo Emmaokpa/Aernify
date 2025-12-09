@@ -33,8 +33,7 @@ service cloud.firestore {
       // An owner can update their own profile, but cannot change their admin status.
       // The new coin value must be greater than or equal to the existing one.
       allow update: if isOwner(userId) && 
-                    request.resource.data.isAdmin == resource.data.isAdmin &&
-                    request.resource.data.coins >= resource.data.coins;
+                    request.resource.data.isAdmin == resource.data.isAdmin;
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
@@ -55,6 +54,15 @@ service cloud.firestore {
 
         // Only the owner can read their login records.
         allow get: if isSignedIn() && isOwner(loginId.split('_')[0]);
+    }
+
+    // Rules for the games collection
+    match /games/{gameId} {
+        // Any signed in user can read game data
+        allow read: if isSignedIn();
+
+        // Only admins can create, update, or delete games
+        allow write: if isAdmin();
     }
 
 

@@ -29,7 +29,7 @@ export type DailyChallenge = {
 export type Game = {
   id: string;
   title: string;
-  provider: string;
+  description: string;
   imageUrl: string;
   imageHint: string;
   iframeUrl: string;

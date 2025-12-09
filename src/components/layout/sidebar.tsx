@@ -21,7 +21,7 @@ import type { NavItem } from '@/lib/types';
 import Logo from '../icons/logo';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 
 const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/', icon: <LayoutDashboard /> },
@@ -35,6 +35,10 @@ const navItems: NavItem[] = [
   { title: 'Profile', href: '/profile', icon: <User /> },
 ];
 
+const adminNavItems: NavItem[] = [
+    { title: 'Admin Games', href: '/admin/games', icon: <Shield /> },
+];
+
 type SidebarProps = {
   isOpen: boolean;
   setOpen: (isOpen: boolean) => void;
@@ -42,12 +46,11 @@ type SidebarProps = {
 
 export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const auth = useAuth();
+  const { profile } = useUser();
 
   const handleLogout = async () => {
     await auth.signOut();
-    // The redirect is handled by MainLayout
     setOpen(false);
   };
 
@@ -77,6 +80,26 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
                 </Link>
               </li>
             ))}
+             {profile?.isAdmin && (
+                <>
+                    <li className='px-3 py-2 text-xs font-semibold text-muted-foreground uppercase'>Admin</li>
+                    {adminNavItems.map((item) => (
+                    <li key={item.title}>
+                        <Link
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10',
+                            pathname === item.href && 'bg-primary/20 text-primary font-semibold'
+                        )}
+                        >
+                        {item.icon}
+                        {item.title}
+                        </Link>
+                    </li>
+                    ))}
+                </>
+            )}
           </ul>
         </nav>
       </ScrollArea>

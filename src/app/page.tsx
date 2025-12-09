@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DailyLoginModal from '@/components/daily-login-modal';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,27 +8,24 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { games as staticGames, type Game } from '@/lib/data';
+import type { Game } from '@/lib/types';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 
 export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [games, setGames] = useState<Game[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate fetching data
-    setTimeout(() => {
-      setGames(staticGames);
-      setIsLoading(false);
-    }, 1000);
-  }, []);
-
+  const firestore = useFirestore();
+  const gamesCollection = useMemo(() => collection(firestore, 'games'), [firestore]);
+  const { data: games, isLoading } = useCollection<Game>(gamesCollection);
 
   useEffect(() => {
     // Simulate checking for daily login after a short delay
     const timer = setTimeout(() => {
-      setIsModalOpen(true);
+      // Don't show modal if there's no user.
+      if (localStorage.getItem('user')) {
+        setIsModalOpen(true);
+      }
     }, 1500);
     return () => clearTimeout(timer);
   }, []);

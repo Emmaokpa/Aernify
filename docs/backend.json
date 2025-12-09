@@ -50,6 +50,34 @@
         }
       },
       "required": ["claimedAt"]
+    },
+    "Game": {
+      "title": "Game",
+      "description": "Represents a game that users can play.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "imageHint": {
+            "type": "string"
+        },
+        "iframeUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "reward": {
+            "type": "number"
+        }
+      },
+      "required": ["title", "description", "imageUrl", "iframeUrl", "reward"]
     }
   },
   "auth": {
@@ -67,6 +95,12 @@
             "$ref": "#/entities/DailyLogin"
         },
         "description": "Tracks daily login bonus claims. The document ID is a composite of 'userId_YYYY-MM-DD'."
+    },
+    "/games/{gameId}": {
+        "schema": {
+            "$ref": "#/entities/Game"
+        },
+        "description": "Stores information about playable games."
     }
   }
 }
