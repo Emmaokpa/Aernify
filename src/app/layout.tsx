@@ -1,4 +1,3 @@
-
 'use client';
 
 import './globals.css';
@@ -7,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import MainLayout from '@/components/layout/main-layout';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -19,7 +19,9 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head></head>
       <body className={cn('font-body antialiased', inter.variable)}>
-        <MainLayout>{children}</MainLayout>
+        <FirebaseClientProvider>
+          <MainLayout>{children}</MainLayout>
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>

@@ -20,7 +20,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/page-header';
-import { currentUser } from '@/lib/data';
+import { useUser, useAuth } from '@/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ProfileMenuItem = ({ icon, text, href }: { icon: React.ReactNode, text: string, href?: string }) => {
   const content = (
@@ -44,8 +45,11 @@ const ProfileMenuItem = ({ icon, text, href }: { icon: React.ReactNode, text: st
 
 export default function ProfilePage() {
   const router = useRouter();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await auth.signOut();
     router.push('/login');
   };
 
@@ -58,6 +62,19 @@ export default function ProfilePage() {
     { icon: <FileText />, text: 'Terms and conditions', href: '/terms' },
     { icon: <HelpCircle />, text: 'Support', href: '/support' },
   ];
+  
+  if (isUserLoading) {
+    return (
+       <div className="w-full max-w-md mx-auto">
+        <PageHeader title="Profile" />
+        <div className="flex flex-col items-center text-center mt-4 mb-8">
+          <Skeleton className="w-24 h-24 rounded-full mb-4" />
+          <Skeleton className="h-6 w-32 mb-2" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -65,11 +82,11 @@ export default function ProfilePage() {
       
       <div className="flex flex-col items-center text-center mt-4 mb-8">
         <Avatar className="w-24 h-24 mb-4 border-4 border-primary">
-          <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
-          <AvatarFallback>{currentUser.name.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
+          <AvatarFallback>{user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
-        <h2 className="text-xl font-semibold">{currentUser.name}</h2>
-        <p className="text-muted-foreground">alex.doe@example.com</p>
+        <h2 className="text-xl font-semibold">{user?.displayName || 'Welcome'}</h2>
+        <p className="text-muted-foreground">{user?.email}</p>
       </div>
 
       <Card className="bg-primary/10 border border-primary/20 mb-8">

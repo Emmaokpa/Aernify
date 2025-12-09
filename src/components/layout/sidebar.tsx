@@ -21,6 +21,7 @@ import type { NavItem } from '@/lib/types';
 import Logo from '../icons/logo';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
+import { useAuth } from '@/firebase';
 
 const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/', icon: <LayoutDashboard /> },
@@ -42,8 +43,10 @@ type SidebarProps = {
 export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const auth = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await auth.signOut();
     router.push('/login');
     setOpen(false);
   };

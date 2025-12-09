@@ -14,9 +14,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import Logo from '@/components/icons/logo';
+import { useAuth } from '@/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function LoginPage() {
   const router = useRouter();
+  const auth = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,11 +27,24 @@ export default function LoginPage() {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // Simulate successful login
-    router.push('/');
-    setIsLoading(false);
+
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged in AuthProvider will handle the redirect
+      router.push('/');
+    } catch (err: any) {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError('Invalid email or password. Please try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+        console.error(err);
+      }
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -50,11 +66,11 @@ export default function LoginPage() {
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="name@example.com" required />
+              <Input id="email" name="email" type="email" placeholder="name@example.com" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required />
+              <Input id="password" name="password" type="password" required />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

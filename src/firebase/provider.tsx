@@ -1,10 +1,11 @@
 'use client';
 
-import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
+import { Auth } from 'firebase/auth';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import { useAuthContext } from './auth-provider';
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -26,7 +27,6 @@ export const FirebaseContext = createContext<FirebaseContextState | undefined>(u
 
 /**
  * FirebaseProvider manages and provides Firebase services.
- * User authentication state is now handled by AuthProvider.
  */
 export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   children,
@@ -95,24 +95,10 @@ export const useFirebaseApp = (): FirebaseApp => {
   return firebaseApp;
 };
 
-type MemoFirebase <T> = T & {__memo?: boolean};
-
-export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (MemoFirebase<T>) {
-  const memoized = useMemo(factory, deps);
-  
-  if(typeof memoized !== 'object' || memoized === null) return memoized;
-  (memoized as MemoFirebase<T>).__memo = true;
-  
-  return memoized;
-}
-
 /**
- * Hook specifically for accessing the authenticated user's state.
- * This is now delegated to the new useAuthContext hook.
- * @returns {UserHookResult} Object with user, isUserLoading, userError.
+ * Hook for accessing the authenticated user's state.
  */
-import { useAuthContext, type UserHookResult } from './auth-provider';
-export const useUser = (): UserHookResult => {
-  const { user, isLoading, error } = useAuthContext();
-  return { user, isUserLoading: isLoading, userError: error };
+export const useUser = () => {
+  const { user, isUserLoading, userError } = useAuthContext();
+  return { user, isUserLoading, userError };
 };

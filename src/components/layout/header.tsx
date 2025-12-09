@@ -11,11 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Coins, LogIn, LogOut, Menu, User } from 'lucide-react';
+import { Coins, LogOut, Menu, User, LogIn } from 'lucide-react';
 import Logo from '../icons/logo';
 import { usePathname, useRouter } from 'next/navigation';
-import { currentUser } from '@/lib/data';
+import { useUser, useAuth } from '@/firebase';
 import { Skeleton } from '../ui/skeleton';
+import { currentUser as staticUser } from '@/lib/data';
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -24,8 +25,11 @@ type HeaderProps = {
 export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await auth.signOut();
     router.push('/login');
   };
 
@@ -51,34 +55,45 @@ export default function Header({ onMenuClick }: HeaderProps) {
       <div className="flex w-full items-center justify-end gap-4">
         <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary">
           <Coins className="h-5 w-5" />
-          <span>{currentUser.coins.toLocaleString() || 0}</span>
+          <span>{staticUser.coins.toLocaleString() || 0}</span>
         </div>
         
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Avatar>
-                <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
-                <AvatarFallback>{currentUser.name.charAt(0).toUpperCase()}</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{currentUser.name}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/profile">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isUserLoading && <Skeleton className="h-10 w-10 rounded-full" />}
+        {!isUserLoading && user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar>
+                  <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
+                  <AvatarFallback>{user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{user.displayName || user.email}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        {!isUserLoading && !user && (
+           <Button asChild>
+            <Link href="/login">
+              <LogIn className="mr-2 h-4 w-4" />
+              Login
+            </Link>
+          </Button>
+        )}
       </div>
     </header>
   );
