@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -37,7 +36,7 @@ const applyReferralCodeFlow = ai.defineFlow(
     outputSchema: ReferralOutputSchema,
   },
   async ({ newUserUid, referralCode }) => {
-    // We need to initialize firebase admin on the server
+    // We need to initialize firebase on the server
     const { firestore } = initializeFirebase();
 
     // Find the user with the given referral code
@@ -64,7 +63,6 @@ const applyReferralCodeFlow = ai.defineFlow(
     }
     
     const referrerUserRef = doc(firestore, 'users', referrerUid);
-    const newUserRef = doc(firestore, 'users', newUserUid);
 
     const batch = writeBatch(firestore);
 

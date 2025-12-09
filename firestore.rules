@@ -1,7 +1,27 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+  
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Only allow users to read/write their own data
+    match /users/{userId} {
+      // A user can create their own profile
+      allow create: if request.auth.uid == userId;
+      
+      // Any signed-in user can read public user data (needed for referral checks)
+      allow get: if isSignedIn();
+      
+      // A user can update their own profile, but cannot change their coins or admin status
+      allow update: if request.auth.uid == userId && !("coins" in request.resource.data) && !("isAdmin" in request.resource.data);
+    }
+
+    // Fallback rule to deny all other access
     match /{document=**} {
       allow read, write: if false;
     }

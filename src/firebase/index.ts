@@ -1,7 +1,7 @@
 'use client';
 
 import firebaseConfig from '@/firebase/config.json';
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
@@ -20,7 +20,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
 }
 
 export * from './provider';
-export * from './auth-provider';
 export * from './client-provider';
-export * from './errors';
-export * from './error-emitter';
+export * from './auth-provider';
+export * from './firestore/use-collection';
+export * from './firestore/use-doc';
