@@ -42,9 +42,15 @@ service cloud.firestore {
     match /daily_logins/{loginId} {
         // A user can create a login record for themselves for the current day.
         // The document ID must be in the format 'userId_YYYY-MM-DD'.
-        allow create: if isSignedIn() && request.resource.data.size() == 1 && request.resource.data.claimedAt == request.time && loginId.split('_')[0] == request.auth.uid;
+        // The document should only contain the 'claimedAt' field.
+        allow create: if isSignedIn() 
+                      && request.resource.data.size() == 1 
+                      && request.resource.data.claimedAt == request.time 
+                      && loginId.split('_')[0] == request.auth.uid;
+
         // Nobody can update or delete login records.
         allow update, delete: if false;
+
         // Only the owner can read their login records.
         allow get: if isSignedIn() && isOwner(loginId.split('_')[0]);
     }
