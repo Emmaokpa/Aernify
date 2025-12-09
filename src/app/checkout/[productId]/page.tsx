@@ -1,20 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { notFound, useRouter, useParams } from 'next/navigation';
-import { products, currentUser } from '@/lib/data';
+import { notFound, useRouter } from 'next/navigation';
+import { products } from '@/lib/data';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Coins, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { useUser, useFirestore } from '@/firebase';
+import { doc, updateDoc, increment } from 'firebase/firestore';
 
-export default function CheckoutPage() {
-  const params = useParams();
-  const productId = Array.isArray(params.productId) ? params.productId[0] : params.productId;
+
+export default function CheckoutPage({ params }: { params: { productId: string } }) {
+  const { productId } = params;
   const product = products.find((p) => p.id === productId);
   const { toast } = useToast();
+  const { user, profile, isUserLoading } = useUser();
+  const firestore = useFirestore();
 
   const [purchaseState, setPurchaseState] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -24,24 +28,35 @@ export default function CheckoutPage() {
   }
 
   const handlePurchase = async () => {
+    if (!user || !profile) {
+        setErrorMessage('You must be logged in to make a purchase.');
+        setPurchaseState('error');
+        return;
+    }
+
     setPurchaseState('processing');
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    if (currentUser.coins < product.price) {
+    if (profile.coins < product.price) {
       setErrorMessage('You do not have enough coins to make this purchase.');
       setPurchaseState('error');
       return;
     }
 
-    // On success
-    currentUser.coins -= product.price; // Simulate balance deduction
-    setPurchaseState('success');
-    toast({
-      title: 'Purchase Successful!',
-      description: `You have successfully bought ${product.name}.`,
-    });
+    const userDocRef = doc(firestore, 'users', user.uid);
+    try {
+        await updateDoc(userDocRef, {
+            coins: increment(-product.price)
+        });
+        setPurchaseState('success');
+        toast({
+        title: 'Purchase Successful!',
+        description: `You have successfully bought ${product.name}.`,
+        });
+    } catch(error) {
+        console.error("Error during purchase: ", error);
+        setErrorMessage('An error occurred during the purchase. Please try again.');
+        setPurchaseState('error');
+    }
   };
 
   return (
@@ -87,7 +102,7 @@ export default function CheckoutPage() {
                   <span>Your Balance:</span>
                     <span className="font-medium flex items-center gap-1.5">
                       <Coins className="w-4 h-4" />
-                      {currentUser.coins.toLocaleString()}
+                      {isUserLoading ? '...' : (profile?.coins ?? 0).toLocaleString()}
                     </span>
                 </div>
                 <div className="flex justify-between font-bold text-lg">
@@ -107,7 +122,7 @@ export default function CheckoutPage() {
               className="w-full"
               size="lg"
               onClick={handlePurchase}
-              disabled={purchaseState === 'processing'}
+              disabled={purchaseState === 'processing' || isUserLoading}
             >
               {purchaseState === 'processing' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Confirm Purchase
