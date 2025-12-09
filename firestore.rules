@@ -24,8 +24,11 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Check for the isAdmin flag on the user's document
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      // Check for the isAdmin flag on the user's document OR if the user is the hardcoded admin
+      let isHardcodedAdmin = request.auth.uid == 'l9CdzNkoImRHjWTCNGzzpo809Rr2';
+      let hasAdminRole = exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      return isHardcodedAdmin || hasAdminRole;
     }
 
     function incomingIdMatchesUser(userId) {
@@ -65,7 +68,7 @@ service cloud.firestore {
 
     match /games/{gameId} {
       allow get, list: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
 
     match /users/{userId}/userGamePlays/{userGamePlayId} {
