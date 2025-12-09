@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useFirestore } from '@/firebase';
+// Assuming useFirestore is what provides the initialized db client
+import { useFirestore } from '@/firebase'; 
 import { collection, doc, setDoc, updateDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
@@ -45,9 +46,10 @@ export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
     },
   });
 
-  const firestore = useFirestore();
+  const firestore = useFirestore(); // This hook is the likely source of the issue
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
+    // Reset form error and start submission
     setIsSubmitting(true);
     setFormError(null);
     console.log('[GameForm] Submitting values:', values);
@@ -57,22 +59,40 @@ export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
         // Update existing game
         console.log(`[GameForm] Attempting to UPDATE document with ID: ${game.id}`);
         const gameDocRef = doc(firestore, 'games', game.id);
-        await updateDoc(gameDocRef, values);
+        // The values object matches the data structure, so updateDoc is correct
+        await updateDoc(gameDocRef, values); 
         console.log('[GameForm] Update successful!');
         onSuccess('Game updated successfully!');
       } else {
         // Create new game
-        const newGameRef = doc(collection(firestore, 'games'));
+        // doc(collection(db, 'collectionName')) creates a new document reference with an auto-generated ID
+        const newGameRef = doc(collection(firestore, 'games')); 
         console.log(`[GameForm] Attempting to CREATE new document with ID: ${newGameRef.id}`);
-        await setDoc(newGameRef, values);
+        // setDoc with the new reference and data is correct
+        await setDoc(newGameRef, values); 
         console.log(`[GameForm] Create successful! New document ID: ${newGameRef.id}`);
         onSuccess('Game created successfully!');
       }
-    } catch (error: any) {
-      console.error("[GameForm] Submission failed. Error Code:", error.code);
-      console.error("[GameForm] Submission failed. Error Message:", error.message);
+    } catch (error) {
+      // --- CRITICAL FIX: Enhanced Error Logging and Display ---
+      // This will ensure any Firebase/Firestore specific error is caught and shown to the user.
+      const firebaseError = error as { code?: string; message?: string; name?: string };
+      
+      console.error("[GameForm] Submission failed. Error Name:", firebaseError.name);
+      console.error("[GameForm] Submission failed. Error Code:", firebaseError.code);
+      console.error("[GameForm] Submission failed. Error Message:", firebaseError.message);
       console.error("[GameForm] Full error object:", error);
-      const errorMessage = `Save failed: ${error.code} - ${error.message}`;
+
+      // Display a more specific message for the user
+      let errorMessage = 'An unexpected error occurred during save.';
+      if (firebaseError.code === 'permission-denied') {
+        errorMessage = 'Permission Denied. Check your user authentication status and Firestore security rules.';
+      } else if (firebaseError.code) {
+        errorMessage = `Save failed: ${firebaseError.code}`;
+      } else if (firebaseError.message) {
+        errorMessage = `Save failed: ${firebaseError.message}`;
+      }
+
       setFormError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -136,6 +156,10 @@ export function GameForm({ game, onSuccess, onCancel }: GameFormProps) {
                         </FormItem>
                     )}
                 />
+                
+                {formError && (
+                    <p className="text-sm font-medium text-red-600 dark:text-red-500">{formError}</p>
+                )}
               </div>
             </ScrollArea>
 
