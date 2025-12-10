@@ -126,14 +126,20 @@ function OfferList() {
 
   const submissionsQuery = useMemo(() => {
     if (!user) return null;
+    // Correctly query for submissions only belonging to the current user
     return query(collection(firestore, 'offer_submissions'), where('userId', '==', user.uid));
   }, [firestore, user]);
   const { data: submissions, isLoading: isLoadingSubmissions } = useCollection<OfferSubmission>(submissionsQuery);
 
-  const isLoading = isLoadingOffers || isLoadingSubmissions;
+  const isLoading = isLoadingOffers || (user && isLoadingSubmissions);
   
   const augmentedOffers = useMemo(() => {
-    if (!offers || !submissions) return [];
+    if (!offers) return [];
+    
+    // If submissions are still loading or not available, treat all offers as new
+    if (!submissions) {
+        return offers.map(offer => ({ ...offer, status: null }));
+    }
     
     const submissionMap = new Map(submissions.map(s => [s.offerId, s]));
     
@@ -342,5 +348,3 @@ export default function AffiliatePage() {
     </>
   );
 }
-
-    
