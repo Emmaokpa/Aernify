@@ -6,11 +6,7 @@ import Header from './header';
 import BottomNav from './bottom-nav';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Coins } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import Link from 'next/link';
 import { useUser } from '@/firebase';
-import { currentUser as staticUser } from '@/lib/data';
 import { Skeleton } from '../ui/skeleton';
 
 function AppSkeleton() {
@@ -82,6 +78,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { user, isUserLoading } = useUser();
 
   const isAuthPage = pathname === '/login' || pathname === '/signup';
+  const isGamePage = pathname.startsWith('/play/');
 
   useEffect(() => {
     if (!isUserLoading && !user && !isAuthPage) {
@@ -99,13 +96,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }
   
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn("min-h-screen bg-background", isGamePage && 'is-game-page')}>
       <Sidebar isOpen={isSidebarOpen} setOpen={setSidebarOpen} />
-      <div className="md:pl-64 flex flex-col min-h-screen">
+      <div className={cn("flex flex-col min-h-screen", !isGamePage && "md:pl-64")}>
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className={cn(
             "flex-grow p-4 md:p-8 pb-32 md:pb-8",
-            pathname !== '/profile' && "pt-6 md:pt-8" 
+            pathname !== '/profile' && "pt-6 md:pt-8",
+            isGamePage && "p-0 md:p-0 pb-0 md:pb-0 h-screen"
           )}>
           {children}
         </main>

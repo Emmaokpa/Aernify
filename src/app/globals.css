@@ -68,4 +68,10 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  .is-game-page main {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height */
+    padding: 0 !important;
+  }
+
 }

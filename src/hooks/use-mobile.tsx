@@ -17,3 +17,24 @@ export function useIsMobile() {
 
   return !!isMobile
 }
+
+export function useScreenOrientation() {
+  const [orientation, setOrientation] = React.useState(
+    getScreenOrientation()
+  );
+
+  function getScreenOrientation() {
+    if (typeof window === 'undefined') return 'portrait';
+    return window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+  }
+
+  React.useEffect(() => {
+    function handleResize() {
+      setOrientation(getScreenOrientation());
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return orientation;
+}
