@@ -96,9 +96,9 @@ export const useFirebaseApp = (): FirebaseApp => {
 };
 
 /**
- * Hook for accessing the authenticated user's state.
+ * Hook for accessing the authenticated user's state and profile.
  */
 export const useUser = () => {
-  const { user, isUserLoading, userError } = useAuthContext();
-  return { user, isUserLoading, userError };
+  const { user, profile, isUserLoading, userError } = useAuthContext();
+  return { user, profile, isUserLoading, userError };
 };
