@@ -105,6 +105,22 @@
             "imageHint": { "type": "string" }
         },
         "required": ["name", "description", "price", "imageUrl"]
+    },
+    "OfferSubmission": {
+        "title": "Offer Submission",
+        "description": "Represents a user's submission for completing an affiliate offer.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "userDisplayName": { "type": "string" },
+            "offerId": { "type": "string" },
+            "offerTitle": { "type": "string" },
+            "reward": { "type": "number" },
+            "proofImageUrl": { "type": "string", "format": "uri" },
+            "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+            "submittedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "offerId", "proofImageUrl", "status", "submittedAt"]
     }
   },
   "auth": {
@@ -140,6 +156,12 @@
             "$ref": "#/entities/Product"
         },
         "description": "Stores information about shop products."
+    },
+    "/offer_submissions/{submissionId}": {
+        "schema": {
+            "$ref": "#/entities/OfferSubmission"
+        },
+        "description": "Stores user submissions for offer completion."
     }
   }
 }

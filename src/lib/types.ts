@@ -84,3 +84,15 @@ export interface UserProfile {
     referralCode: string;
     isAdmin: boolean;
 }
+
+export interface OfferSubmission {
+    id: string;
+    userId: string;
+    userDisplayName: string;
+    offerId: string;
+    offerTitle: string;
+    reward: number;
+    proofImageUrl: string;
+    status: 'pending' | 'approved' | 'rejected';
+    submittedAt: any; // Firestore Timestamp
+}
