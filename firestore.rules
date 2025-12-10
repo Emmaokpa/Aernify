@@ -84,11 +84,11 @@ service cloud.firestore {
         // A user can create their own submission.
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
         
-        // Admins can see all submissions. Regular users can only list/get their own.
+        // Admins can read all submissions. Users can read their own.
+        // This rule applies to both get and list. For list, the query must have a filter.
         allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-        allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
 
-        // Only admins can update the status of a submission.
+        // Only admins can update the status of a submission. A user cannot change their own submission.
         allow update: if isAdmin() && request.resource.data.status != resource.data.status;
         
         // Nobody can delete submissions for now.
