@@ -78,6 +78,33 @@
         }
       },
       "required": ["title", "description", "imageUrl", "iframeUrl", "reward"]
+    },
+    "Offer": {
+        "title": "Affiliate Offer",
+        "description": "Represents an affiliate offer from a partner.",
+        "type": "object",
+        "properties": {
+            "title": { "type": "string" },
+            "company": { "type": "string" },
+            "reward": { "type": "number" },
+            "imageUrl": { "type": "string", "format": "uri" },
+            "imageHint": { "type": "string" },
+            "link": { "type": "string", "format": "uri" }
+        },
+        "required": ["title", "company", "reward", "imageUrl", "link"]
+    },
+    "Product": {
+        "title": "E-commerce Product",
+        "description": "Represents a product available for purchase in the shop.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "description": { "type": "string" },
+            "price": { "type": "number" },
+            "imageUrl": { "type": "string", "format": "uri" },
+            "imageHint": { "type": "string" }
+        },
+        "required": ["name", "description", "price", "imageUrl"]
     }
   },
   "auth": {
@@ -101,6 +128,18 @@
             "$ref": "#/entities/Game"
         },
         "description": "Stores information about playable games."
+    },
+    "/offers/{offerId}": {
+        "schema": {
+            "$ref": "#/entities/Offer"
+        },
+        "description": "Stores information about affiliate offers."
+    },
+    "/products/{productId}": {
+        "schema": {
+            "$ref": "#/entities/Product"
+        },
+        "description": "Stores information about shop products."
     }
   }
 }

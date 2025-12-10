@@ -15,6 +15,7 @@ import {
   Sparkles,
   LogOut,
   Shield,
+  Briefcase,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
@@ -37,7 +38,9 @@ const navItems: NavItem[] = [
 ];
 
 const adminNavItems: NavItem[] = [
-    { title: 'Admin Games', href: '/admin/games', icon: <Shield /> },
+    { title: 'Manage Games', href: '/admin/games', icon: <Gamepad2 /> },
+    { title: 'Manage Offers', href: '/admin/offers', icon: <Briefcase /> },
+    { title: 'Manage Shop', href: '/admin/shop', icon: <ShoppingBag /> },
 ];
 
 type SidebarProps = {
@@ -83,7 +86,7 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
             ))}
              {profile?.isAdmin && (
                 <>
-                    <li className='px-3 py-2 text-xs font-semibold text-muted-foreground uppercase'>Admin</li>
+                    <li className='px-3 pt-4 pb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider'>Admin</li>
                     {adminNavItems.map((item) => (
                     <li key={item.title}>
                         <Link

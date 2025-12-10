@@ -43,6 +43,7 @@ export type Offer = {
   reward: number;
   imageUrl: string;
   imageHint: string;
+  link: string;
 };
 
 export type Product = {

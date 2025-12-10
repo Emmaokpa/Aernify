@@ -1,34 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { notFound, useRouter } from 'next/navigation';
-import { products } from '@/lib/data';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Coins, Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, useDoc } from '@/firebase';
 import { doc, updateDoc, increment } from 'firebase/firestore';
+import type { Product } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 export default function CheckoutPage({ params }: { params: { productId: string } }) {
   const { productId } = params;
-  const product = products.find((p) => p.id === productId);
   const { toast } = useToast();
   const { user, profile, isUserLoading } = useUser();
   const firestore = useFirestore();
 
+  const productDocRef = useMemo(() => {
+    if (!productId) return null;
+    return doc(firestore, 'products', productId);
+  }, [firestore, productId]);
+
+  const { data: product, isLoading: isProductLoading } = useDoc<Product>(productDocRef);
+
   const [purchaseState, setPurchaseState] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
-  if (!product) {
+  const router = useRouter();
+
+  if (!isProductLoading && !product) {
     notFound();
   }
 
   const handlePurchase = async () => {
-    if (!user || !profile) {
+    if (!user || !profile || !product) {
         setErrorMessage('You must be logged in to make a purchase.');
         setPurchaseState('error');
         return;
@@ -58,6 +67,36 @@ export default function CheckoutPage({ params }: { params: { productId: string }
         setPurchaseState('error');
     }
   };
+  
+  if (isProductLoading) {
+    return (
+        <div className="max-w-2xl mx-auto">
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-3/4 mx-auto" />
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex gap-4 items-center">
+                        <Skeleton className="w-24 h-24 rounded-lg" />
+                        <div className='space-y-2 flex-grow'>
+                            <Skeleton className="h-6 w-1/2" />
+                            <Skeleton className="h-4 w-full" />
+                        </div>
+                        <Skeleton className="h-8 w-20" />
+                    </div>
+                     <div className="space-y-2">
+                        <Skeleton className="h-6 w-full" />
+                        <Skeleton className="h-8 w-full" />
+                    </div>
+                </CardContent>
+                <CardFooter className="flex flex-col gap-3">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </CardFooter>
+            </Card>
+        </div>
+    )
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -68,7 +107,7 @@ export default function CheckoutPage({ params }: { params: { productId: string }
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {purchaseState === 'success' ? (
+          {purchaseState === 'success' && product ? (
             <div className="text-center space-y-4">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
               <p className="text-lg">Thank you for your order!</p>
@@ -82,7 +121,7 @@ export default function CheckoutPage({ params }: { params: { productId: string }
               <p className="text-lg font-bold">Purchase Failed</p>
               <p className="text-muted-foreground">{errorMessage}</p>
             </div>
-          ) : (
+          ) : product && (
             <>
               <div className="flex gap-4 items-center">
                 <div className="relative w-24 h-24 rounded-lg overflow-hidden">

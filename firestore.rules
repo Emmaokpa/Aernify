@@ -65,6 +65,22 @@ service cloud.firestore {
         allow write: if isAdmin();
     }
 
+    // Rules for the offers collection
+    match /offers/{offerId} {
+        // Any signed in user can read offer data
+        allow read: if isSignedIn();
+        // Only admins can create, update, or delete offers
+        allow write: if isAdmin();
+    }
+
+    // Rules for the products collection
+    match /products/{productId} {
+        // Any signed in user can read product data
+        allow read: if isSignedIn();
+        // Only admins can create, update, or delete products
+        allow write: if isAdmin();
+    }
+
 
     // Fallback rule to deny all other access
     match /{document=**} {
