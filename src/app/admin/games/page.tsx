@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import ImageUploadForm from '@/components/image-upload-form';
 
 type GameFormData = Omit<Game, 'id'>;
 
@@ -44,12 +45,17 @@ function AddGameForm() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { isSubmitting },
   } = useForm<GameFormData>();
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit: SubmitHandler<GameFormData> = async (data) => {
     setError(null);
+    if (!data.imageUrl) {
+        setError("Please upload an image for the game.");
+        return;
+    }
     try {
       const gamesCollection = collection(firestore, 'games');
       await addDoc(gamesCollection, {
@@ -95,13 +101,8 @@ function AddGameForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="imageUrl">Image URL</Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              {...register('imageUrl', { required: true })}
-              placeholder="https://images.unsplash.com/..."
-            />
+            <Label>Game Image</Label>
+            <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
           </div>
            <div className="space-y-2">
             <Label htmlFor="imageHint">Image Hint</Label>
@@ -142,7 +143,10 @@ function AddGameForm() {
 function GameList() {
     const firestore = useFirestore();
     const { toast } = useToast();
-    const gamesCollection = useMemo(() => collection(firestore, 'games'), [firestore]);
+    const gamesCollection = useMemo(() => {
+      if (!firestore) return null;
+      return collection(firestore, 'games');
+    }, [firestore]);
     const { data: games, isLoading } = useCollection<Game>(gamesCollection);
 
     const handleDelete = async (gameId: string) => {

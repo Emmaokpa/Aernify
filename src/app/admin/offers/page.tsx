@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -34,6 +33,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import ImageUploadForm from '@/components/image-upload-form';
 
 type OfferFormData = Omit<Offer, 'id'>;
 
@@ -44,12 +44,17 @@ function AddOfferForm() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { isSubmitting },
   } = useForm<OfferFormData>();
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit: SubmitHandler<OfferFormData> = async (data) => {
     setError(null);
+     if (!data.imageUrl) {
+        setError("Please upload an image for the offer.");
+        return;
+    }
     try {
       const offersCollection = collection(firestore, 'offers');
       await addDoc(offersCollection, {
@@ -92,13 +97,8 @@ function AddOfferForm() {
             <Input id="company" {...register('company', { required: true })} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="imageUrl">Image URL</Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              {...register('imageUrl', { required: true })}
-              placeholder="https://images.unsplash.com/..."
-            />
+            <Label>Offer Image</Label>
+            <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="imageHint">Image Hint</Label>

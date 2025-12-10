@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -35,6 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import ImageUploadForm from '@/components/image-upload-form';
 
 type ProductFormData = Omit<Product, 'id'>;
 
@@ -45,12 +45,17 @@ function AddProductForm() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { isSubmitting },
   } = useForm<ProductFormData>();
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit: SubmitHandler<ProductFormData> = async (data) => {
     setError(null);
+    if (!data.imageUrl) {
+        setError("Please upload an image for the product.");
+        return;
+    }
     try {
       const productsCollection = collection(firestore, 'products');
       await addDoc(productsCollection, {
@@ -96,13 +101,8 @@ function AddProductForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="imageUrl">Image URL</Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              {...register('imageUrl', { required: true })}
-              placeholder="https://images.unsplash.com/..."
-            />
+            <Label>Product Image</Label>
+            <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
           </div>
            <div className="space-y-2">
             <Label htmlFor="imageHint">Image Hint</Label>
