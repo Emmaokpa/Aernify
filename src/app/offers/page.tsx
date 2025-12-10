@@ -1,10 +1,10 @@
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from "@/components/page-header";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { Coins, Loader2, CheckCircle, Clock, XCircle, FileClock } from "lucide-react";
+import { Coins, Loader2, CheckCircle, Clock, XCircle, FileClock, ExternalLink } from "lucide-react";
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import type { Offer, OfferSubmission } from '@/lib/types';
@@ -26,7 +26,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
-function SubmitOfferDialog({ offer }: { offer: Offer }) {
+function SubmitOfferDialog({ offer, children }: { offer: Offer, children: React.ReactNode }) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user, profile } = useUser();
@@ -83,27 +83,19 @@ function SubmitOfferDialog({ offer }: { offer: Offer }) {
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full">Submit for Verification</Button>
+        {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Submit: {offer.title}</DialogTitle>
+          <DialogTitle>Submit Proof for: {offer.title}</DialogTitle>
           <DialogDescription>
-            Upload a screenshot or proof of completion to receive your reward. Your submission will be reviewed by an admin.
+            Upload a screenshot or other proof of completion to receive your reward. Your submission will be reviewed by an admin.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="space-y-2">
-            <p className="font-medium">Step 1: Complete the offer</p>
-            <Button variant="outline" asChild>
-              <a href={offer.link} target="_blank" rel="noopener noreferrer">
-                Go to Offer
-              </a>
-            </Button>
-          </div>
-          <div className="space-y-2">
-            <p className="font-medium">Step 2: Upload your proof</p>
+            <p className="font-medium">Upload your proof of completion</p>
             <ImageUploadForm onUploadSuccess={(url) => { setProofImageUrl(url); setError(null); }} />
           </div>
         </div>
@@ -115,7 +107,7 @@ function SubmitOfferDialog({ offer }: { offer: Offer }) {
           </DialogClose>
           <Button type="button" onClick={handleSubmit} disabled={isSubmitting || !proofImageUrl}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Submit
+            Submit for Review
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -153,7 +145,7 @@ function OfferList() {
           <div className="flex flex-col flex-grow">
             <CardHeader>
               <CardTitle>{offer.title}</CardTitle>
-              <p className="text-sm text-muted-foreground">{offer.company}</p>
+              <CardDescription>{offer.company}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
                <div className="font-bold text-primary flex items-center gap-1.5 text-lg">
@@ -161,8 +153,15 @@ function OfferList() {
                 <span>{offer.reward.toLocaleString()}</span>
               </div>
             </CardContent>
-            <CardFooter>
-              <SubmitOfferDialog offer={offer} />
+            <CardFooter className="flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <Button asChild className="w-full">
+                <a href={offer.link} target="_blank" rel="noopener noreferrer">
+                  Start Offer <ExternalLink className='ml-2' />
+                </a>
+              </Button>
+              <SubmitOfferDialog offer={offer}>
+                <Button variant="outline" className="w-full">Submit Proof</Button>
+              </SubmitOfferDialog>
             </CardFooter>
           </div>
         </Card>
@@ -219,11 +218,11 @@ function SubmissionHistory() {
 
   if (!submissions || submissions.length === 0) {
     return (
-      <div className="text-center py-10">
+      <div className="text-center py-10 rounded-lg border bg-card">
         <FileClock className="mx-auto h-12 w-12 text-muted-foreground" />
         <h3 className="mt-4 text-lg font-semibold">No Submissions Yet</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Complete an offer to see its status here.
+          Complete an offer and submit proof to see its status here.
         </p>
       </div>
     )
@@ -231,7 +230,7 @@ function SubmissionHistory() {
 
   return (
     <div className='space-y-4'>
-      {submissions.sort((a,b) => b.submittedAt?.toMillis() - a.submittedAt?.toMillis()).map(submission => (
+      {submissions.sort((a,b) => (b.submittedAt?.toMillis() || 0) - (a.submittedAt?.toMillis() || 0)).map(submission => (
         <Card key={submission.id} className='p-4'>
           <div className='flex justify-between items-start'>
             <div>
@@ -257,18 +256,23 @@ function SubmissionHistory() {
 
 function OfferSkeleton() {
   return (
-    <Card className="overflow-hidden flex flex-col group">
-      <CardHeader className="p-0">
-        <Skeleton className="aspect-[16/9] w-full" />
-      </CardHeader>
-      <CardContent className="p-4 flex-grow space-y-2">
-        <Skeleton className="h-5 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
-      </CardContent>
-      <CardFooter className="p-4 flex flex-col items-start gap-3 bg-muted/30">
-        <Skeleton className="h-7 w-1/3" />
-        <Skeleton className="h-10 w-full" />
-      </CardFooter>
+     <Card className="overflow-hidden group sm:flex">
+      <div className="relative sm:w-1/3 aspect-[16/9] sm:aspect-auto">
+        <Skeleton className="w-full h-full" />
+      </div>
+      <div className="flex flex-col flex-grow">
+        <CardHeader>
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-4 w-1/2 mt-2" />
+        </CardHeader>
+        <CardContent className="flex-grow">
+          <Skeleton className="h-8 w-1/3" />
+        </CardContent>
+        <CardFooter className="flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </CardFooter>
+      </div>
     </Card>
   );
 }
@@ -281,9 +285,9 @@ export default function AffiliatePage() {
         title="Affiliate Offers"
         description="Earn big rewards by completing offers from our partners."
       />
-      <Tabs defaultValue="offers">
+      <Tabs defaultValue="offers" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="offers">Offers</TabsTrigger>
+          <TabsTrigger value="offers">All Offers</TabsTrigger>
           <TabsTrigger value="submissions">My Submissions</TabsTrigger>
         </TabsList>
         <TabsContent value="offers" className="mt-6">
@@ -296,3 +300,5 @@ export default function AffiliatePage() {
     </>
   );
 }
+
+    
