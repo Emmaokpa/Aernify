@@ -31,8 +31,7 @@ export default function ImageUploadForm({ onUploadSuccess }: ImageUploadFormProp
     }
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleUpload = async () => {
     if (!file) {
       setError('Please select an image to upload.');
       return;
@@ -67,7 +66,7 @@ export default function ImageUploadForm({ onUploadSuccess }: ImageUploadFormProp
 
   return (
     <div className="border rounded-lg p-4 space-y-4">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="image-upload">Select Image</Label>
           <Input 
@@ -79,7 +78,7 @@ export default function ImageUploadForm({ onUploadSuccess }: ImageUploadFormProp
           />
         </div>
         {file && <p className="text-sm text-muted-foreground">Selected: {file.name}</p>}
-        <Button type="submit" disabled={!file || status === 'uploading'}>
+        <Button onClick={handleUpload} type="button" disabled={!file || status === 'uploading'}>
           {status === 'uploading' ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -87,7 +86,7 @@ export default function ImageUploadForm({ onUploadSuccess }: ImageUploadFormProp
           )}
           Upload Image
         </Button>
-      </form>
+      </div>
       
       {status === 'uploading' && (
         <div className="text-sm text-muted-foreground flex items-center">
