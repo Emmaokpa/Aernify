@@ -9,28 +9,56 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Game } from '@/lib/types';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import { collection, doc, getDoc, serverTimestamp, setDoc, updateDoc, increment } from 'firebase/firestore';
 
+const DAILY_REWARD = 20;
 
 export default function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRewardGranted, setIsRewardGranted] = useState(false);
+  
   const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+
   const gamesCollection = useMemo(() => collection(firestore, 'games'), [firestore]);
-  const { data: games, isLoading } = useCollection<Game>(gamesCollection);
+  const { data: games, isLoading: isGamesLoading } = useCollection<Game>(gamesCollection);
 
   useEffect(() => {
-    // Simulate checking for daily login after a short delay
-    const timer = setTimeout(() => {
-      // Don't show modal if there's no user.
-      if (localStorage.getItem('user')) {
-        setIsModalOpen(true);
+    if (isUserLoading || !user) {
+      return;
+    }
+
+    const checkDailyLogin = async () => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const dailyLoginDocRef = doc(firestore, 'daily_logins', `${user.uid}_${todayStr}`);
+      
+      try {
+        const docSnap = await getDoc(dailyLoginDocRef);
+
+        if (!docSnap.exists()) {
+          // Not claimed yet, let's reward the user!
+          const userDocRef = doc(firestore, 'users', user.uid);
+          
+          await updateDoc(userDocRef, { coins: increment(DAILY_REWARD) });
+          await setDoc(dailyLoginDocRef, { claimedAt: serverTimestamp() });
+          
+          setIsRewardGranted(true);
+          setIsModalOpen(true);
+        }
+      } catch (error) {
+        console.error("Error checking or granting daily reward:", error);
       }
-    }, 1500);
+    };
+
+    // Check after a short delay to not be too intrusive
+    const timer = setTimeout(checkDailyLogin, 1500);
     return () => clearTimeout(timer);
-  }, []);
+
+  }, [user, isUserLoading, firestore]);
 
   const heroGame = games?.[0];
+  const isLoading = isGamesLoading || isUserLoading;
 
   return (
     <>
@@ -93,7 +121,11 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-      <DailyLoginModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} />
+      <DailyLoginModal 
+        isOpen={isModalOpen && isRewardGranted} 
+        onOpenChange={setIsModalOpen} 
+        reward={DAILY_REWARD}
+       />
     </>
   );
 }
