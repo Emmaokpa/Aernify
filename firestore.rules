@@ -31,7 +31,6 @@ service cloud.firestore {
       allow get: if isSignedIn();
       
       // An owner can update their own profile, but cannot change their admin status.
-      // The new coin value must be greater than or equal to the existing one.
       allow update: if isOwner(userId) && 
                     request.resource.data.isAdmin == resource.data.isAdmin;
 
@@ -58,27 +57,39 @@ service cloud.firestore {
 
     // Rules for the games collection
     match /games/{gameId} {
-        // Any signed in user can read game data
-        allow read: if isSignedIn();
-
+        // Any signed in user can get a single game
+        allow get: if isSignedIn();
         // Only admins can create, update, or delete games
         allow write: if isAdmin();
     }
+    match /games {
+        // Any signed in user can list all games
+        allow list: if isSignedIn();
+    }
+
 
     // Rules for the offers collection
     match /offers/{offerId} {
-        // Any signed in user can read offer data
-        allow read: if isSignedIn();
+        // Any signed in user can get a single offer
+        allow get: if isSignedIn();
         // Only admins can create, update, or delete offers
         allow write: if isAdmin();
+    }
+    match /offers {
+        // Any signed in user can list all offers
+        allow list: if isSignedIn();
     }
 
     // Rules for the products collection
     match /products/{productId} {
-        // Any signed in user can read product data
-        allow read: if isSignedIn();
+        // Any signed in user can get a single product
+        allow get: if isSignedIn();
         // Only admins can create, update, or delete products
         allow write: if isAdmin();
+    }
+    match /products {
+      // Any signed in user can list all products
+      allow list: if isSignedIn();
     }
 
 
