@@ -57,41 +57,27 @@ service cloud.firestore {
 
     // Rules for the games collection
     match /games/{gameId} {
-        // Any signed in user can get a single game
-        allow get: if isSignedIn();
-        // Only admins can create, update, or delete games
+        // Any signed-in user can read game data.
+        allow read: if isSignedIn();
+        // Only admins can write (create, update, delete) game data.
         allow write: if isAdmin();
     }
-    match /games {
-        // Any signed in user can list all games
-        allow list: if isSignedIn();
-    }
-
 
     // Rules for the offers collection
     match /offers/{offerId} {
-        // Any signed in user can get a single offer
-        allow get: if isSignedIn();
-        // Only admins can create, update, or delete offers
+        // Any signed-in user can read offer data.
+        allow read: if isSignedIn();
+        // Only admins can write (create, update, delete) offer data.
         allow write: if isAdmin();
-    }
-    match /offers {
-        // Any signed in user can list all offers
-        allow list: if isSignedIn();
     }
 
     // Rules for the products collection
     match /products/{productId} {
-        // Any signed in user can get a single product
-        allow get: if isSignedIn();
-        // Only admins can create, update, or delete products
+        // Any signed-in user can read product data.
+        allow read: if isSignedIn();
+        // Only admins can write (create, update, delete) product data.
         allow write: if isAdmin();
     }
-    match /products {
-      // Any signed in user can list all products
-      allow list: if isSignedIn();
-    }
-
 
     // Fallback rule to deny all other access
     match /{document=**} {
