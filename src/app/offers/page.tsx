@@ -1,12 +1,12 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Coins, Loader2, CheckCircle, Clock, XCircle, FileClock, ExternalLink } from "lucide-react";
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
 import type { Offer, OfferSubmission } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -24,9 +24,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from '@/lib/utils';
 
 
-function SubmitOfferDialog({ offer, children }: { offer: Offer, children: React.ReactNode }) {
+function SubmitOfferDialog({ offer, children, disabled }: { offer: Offer, children: React.ReactNode, disabled?: boolean }) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user, profile } = useUser();
@@ -82,7 +83,7 @@ function SubmitOfferDialog({ offer, children }: { offer: Offer, children: React.
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
+      <DialogTrigger asChild disabled={disabled}>
         {children}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -118,8 +119,35 @@ function SubmitOfferDialog({ offer, children }: { offer: Offer, children: React.
 
 function OfferList() {
   const firestore = useFirestore();
+  const { user } = useUser();
+
   const offersCollection = useMemo(() => collection(firestore, 'offers'), [firestore]);
-  const { data: offers, isLoading } = useCollection<Offer>(offersCollection);
+  const { data: offers, isLoading: isLoadingOffers } = useCollection<Offer>(offersCollection);
+
+  const submissionsQuery = useMemo(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'offer_submissions'), where('userId', '==', user.uid));
+  }, [firestore, user]);
+  const { data: submissions, isLoading: isLoadingSubmissions } = useCollection<OfferSubmission>(submissionsQuery);
+
+  const isLoading = isLoadingOffers || isLoadingSubmissions;
+  
+  const augmentedOffers = useMemo(() => {
+    if (!offers || !submissions) return [];
+    
+    const submissionMap = new Map(submissions.map(s => [s.offerId, s]));
+    
+    // Filter out approved offers, and augment others with status
+    return offers
+      .map(offer => {
+        const submission = submissionMap.get(offer.id);
+        const status = submission ? submission.status : null;
+        return { ...offer, status };
+      })
+      .filter(offer => offer.status !== 'approved');
+
+  }, [offers, submissions]);
+
 
   if (isLoading) {
      return (
@@ -130,44 +158,60 @@ function OfferList() {
   }
 
   return (
-    <div className="space-y-4">
-      {offers?.map((offer) => (
-        <Card key={offer.id} className="overflow-hidden group sm:flex">
-          <div className="relative sm:w-1/3 aspect-[16/9] sm:aspect-auto">
-            <Image
-              src={offer.imageUrl}
-              alt={offer.title}
-              fill
-              className="object-cover"
-              data-ai-hint={offer.imageHint}
-            />
-          </div>
-          <div className="flex flex-col flex-grow">
-            <CardHeader>
-              <CardTitle>{offer.title}</CardTitle>
-              <CardDescription>{offer.company}</CardDescription>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {augmentedOffers.map((offer) => {
+        const isPending = offer.status === 'pending';
+        return (
+          <Card key={offer.id} className="overflow-hidden flex flex-col rounded-2xl group">
+            <CardHeader className="p-0 relative">
+               <div className="relative aspect-[16/9]">
+                <Image
+                  src={offer.imageUrl}
+                  alt={offer.title}
+                  fill
+                  className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+                  data-ai-hint={offer.imageHint}
+                />
+              </div>
+              {isPending && (
+                <Badge variant="outline" className="absolute top-3 right-3 text-amber-600 border-amber-500/30 bg-amber-500/20 backdrop-blur-sm">
+                  <Clock className="w-3.5 h-3.5 mr-1" /> Pending Review
+                </Badge>
+              )}
             </CardHeader>
-            <CardContent className="flex-grow">
+            <CardContent className="p-4 flex-grow">
+              <p className="text-sm text-muted-foreground">{offer.company}</p>
+              <h3 className="text-lg font-semibold">{offer.title}</h3>
+            </CardContent>
+            <CardFooter className="p-4 flex flex-col items-start gap-3 bg-muted/30">
                <div className="font-bold text-primary flex items-center gap-1.5 text-lg">
                 <Coins className="w-5 h-5" />
                 <span>{offer.reward.toLocaleString()}</span>
               </div>
-            </CardContent>
-            <CardFooter className="flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <Button asChild className="w-full">
-                <a href={offer.link} target="_blank" rel="noopener noreferrer">
-                  Start Offer <ExternalLink className='ml-2' />
-                </a>
-              </Button>
-              <SubmitOfferDialog offer={offer}>
-                <Button variant="outline" className="w-full">Submit Proof</Button>
-              </SubmitOfferDialog>
+              <div className="w-full flex flex-col sm:flex-row gap-2">
+                 <Button asChild className="w-full">
+                    <a href={offer.link} target="_blank" rel="noopener noreferrer">
+                    Start Offer <ExternalLink className='ml-2 h-4 w-4' />
+                    </a>
+                </Button>
+                <SubmitOfferDialog offer={offer} disabled={isPending}>
+                    <Button variant="outline" className="w-full" disabled={isPending}>
+                        {isPending ? 'Submitted' : 'Submit Proof'}
+                    </Button>
+                </SubmitOfferDialog>
+              </div>
             </CardFooter>
-          </div>
-        </Card>
-      ))}
-      {!isLoading && offers?.length === 0 && (
-        <p className="text-muted-foreground col-span-full text-center py-10">No offers available right now. Check back later!</p>
+          </Card>
+        )
+      })}
+      {!isLoading && augmentedOffers.length === 0 && (
+        <div className="col-span-full text-center py-20 rounded-lg bg-card border">
+            <CheckCircle className="mx-auto h-16 w-16 text-muted-foreground" />
+            <h3 className="mt-4 text-xl font-semibold">All Caught Up!</h3>
+            <p className="mt-2 text-muted-foreground">
+            You've completed all available offers. Check back later for new ones.
+            </p>
+        </div>
       )}
     </div>
   );
@@ -179,7 +223,7 @@ function SubmissionHistory() {
   
   const submissionsQuery = useMemo(() => {
     if (!user) return null;
-    return query(collection(firestore, 'offer_submissions'), where('userId', '==', user.uid));
+    return query(collection(firestore, 'offer_submissions'), where('userId', '==', user.uid), orderBy('submittedAt', 'desc'));
   }, [firestore, user]);
   
   const { data: submissions, isLoading } = useCollection<OfferSubmission>(submissionsQuery);
@@ -204,7 +248,7 @@ function SubmissionHistory() {
           <Card key={i} className='p-4 space-y-3'>
             <div className='flex justify-between items-center'>
               <Skeleton className='h-5 w-1/2' />
-              <Skeleton className='h-6 w-20' />
+              <Skeleton className='h-6 w-24' />
             </div>
             <div className='flex justify-between items-center'>
               <Skeleton className='h-4 w-1/4' />
@@ -218,7 +262,7 @@ function SubmissionHistory() {
 
   if (!submissions || submissions.length === 0) {
     return (
-      <div className="text-center py-10 rounded-lg border bg-card">
+      <div className="text-center py-20 rounded-lg border bg-card">
         <FileClock className="mx-auto h-12 w-12 text-muted-foreground" />
         <h3 className="mt-4 text-lg font-semibold">No Submissions Yet</h3>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -230,7 +274,7 @@ function SubmissionHistory() {
 
   return (
     <div className='space-y-4'>
-      {submissions.sort((a,b) => (b.submittedAt?.toMillis() || 0) - (a.submittedAt?.toMillis() || 0)).map(submission => (
+      {submissions.map(submission => (
         <Card key={submission.id} className='p-4'>
           <div className='flex justify-between items-start'>
             <div>
@@ -256,23 +300,21 @@ function SubmissionHistory() {
 
 function OfferSkeleton() {
   return (
-     <Card className="overflow-hidden group sm:flex">
-      <div className="relative sm:w-1/3 aspect-[16/9] sm:aspect-auto">
-        <Skeleton className="w-full h-full" />
-      </div>
-      <div className="flex flex-col flex-grow">
-        <CardHeader>
-          <Skeleton className="h-6 w-3/4" />
-          <Skeleton className="h-4 w-1/2 mt-2" />
+     <Card className="overflow-hidden flex flex-col rounded-2xl group">
+        <CardHeader className="p-0">
+          <Skeleton className="aspect-[16/9] w-full" />
         </CardHeader>
-        <CardContent className="flex-grow">
-          <Skeleton className="h-8 w-1/3" />
+        <CardContent className="p-4 flex-grow space-y-2">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-5 w-3/4" />
         </CardContent>
-        <CardFooter className="flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
+        <CardFooter className="p-4 flex flex-col items-start gap-3 bg-muted/30">
+            <Skeleton className="h-7 w-1/3" />
+            <div className="w-full flex flex-col sm:flex-row gap-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+            </div>
         </CardFooter>
-      </div>
     </Card>
   );
 }
