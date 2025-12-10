@@ -4,9 +4,9 @@ import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { Coins, Loader2, CheckCircle, Clock, XCircle, FileClock, ExternalLink } from "lucide-react";
+import { Coins, Loader2, CheckCircle, Clock, ExternalLink } from "lucide-react";
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, where, orderBy } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import type { Offer, OfferSubmission } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -22,10 +22,6 @@ import {
 import ImageUploadForm from '@/components/image-upload-form';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from '@/lib/utils';
-
 
 function SubmitOfferDialog({ offer, children, disabled }: { offer: Offer, children: React.ReactNode, disabled?: boolean }) {
   const { toast } = useToast();
@@ -116,7 +112,6 @@ function SubmitOfferDialog({ offer, children, disabled }: { offer: Offer, childr
   );
 }
 
-
 function OfferList() {
   const firestore = useFirestore();
   const { user } = useUser();
@@ -150,7 +145,6 @@ function OfferList() {
       .filter(offer => offer.status !== 'approved');
 
   }, [offers, submissions]);
-
 
   if (isLoading) {
      return (
@@ -220,87 +214,6 @@ function OfferList() {
   );
 }
 
-function SubmissionHistory() {
-  const firestore = useFirestore();
-  const { user } = useUser();
-  
-  const submissionsQuery = useMemo(() => {
-    if (!user) return null;
-    return query(collection(firestore, 'offer_submissions'), where('userId', '==', user.uid), orderBy('submittedAt', 'desc'));
-  }, [firestore, user]);
-  
-  const { data: submissions, isLoading } = useCollection<OfferSubmission>(submissionsQuery);
-
-  const StatusBadge = ({ status }: { status: OfferSubmission['status'] }) => {
-    switch (status) {
-      case 'approved':
-        return <Badge variant="secondary" className="bg-green-500/20 text-green-700 border-green-500/30"><CheckCircle className="w-3.5 h-3.5 mr-1" /> Approved</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive"><XCircle className="w-3.5 h-3.5 mr-1" /> Rejected</Badge>;
-      case 'pending':
-        return <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10"><Clock className="w-3.5 h-3.5 mr-1" /> Pending</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className='space-y-4'>
-        {Array.from({length: 2}).map((_, i) => (
-          <Card key={i} className='p-4 space-y-3'>
-            <div className='flex justify-between items-center'>
-              <Skeleton className='h-5 w-1/2' />
-              <Skeleton className='h-6 w-24' />
-            </div>
-            <div className='flex justify-between items-center'>
-              <Skeleton className='h-4 w-1/4' />
-              <Skeleton className='h-4 w-1/3' />
-            </div>
-          </Card>
-        ))}
-      </div>
-    )
-  }
-
-  if (!submissions || submissions.length === 0) {
-    return (
-      <div className="text-center py-20 rounded-lg border bg-card">
-        <FileClock className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-semibold">No Submissions Yet</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Complete an offer and submit proof to see its status here.
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className='space-y-4'>
-      {submissions.map(submission => (
-        <Card key={submission.id} className='p-4'>
-          <div className='flex justify-between items-start'>
-            <div>
-              <h4 className='font-semibold'>{submission.offerTitle}</h4>
-               <p className="text-sm text-muted-foreground">
-                Submitted {submission.submittedAt ? formatDistanceToNow(submission.submittedAt.toDate(), { addSuffix: true }) : 'just now'}
-              </p>
-            </div>
-            <StatusBadge status={submission.status} />
-          </div>
-          <div className='flex justify-between items-center mt-2'>
-            <div className="font-semibold text-primary flex items-center gap-1.5 text-md">
-              <Coins className="w-4 h-4" />
-              <span>{submission.reward.toLocaleString()}</span>
-            </div>
-            <a href={submission.proofImageUrl} target="_blank" rel="noopener noreferrer" className='text-sm text-muted-foreground hover:underline'>View Proof</a>
-          </div>
-        </Card>
-      ))}
-    </div>
-  )
-}
-
 function OfferSkeleton() {
   return (
      <Card className="overflow-hidden flex flex-col rounded-2xl group">
@@ -322,7 +235,6 @@ function OfferSkeleton() {
   );
 }
 
-
 export default function AffiliatePage() {
   return (
     <>
@@ -330,18 +242,7 @@ export default function AffiliatePage() {
         title="Affiliate Offers"
         description="Earn big rewards by completing offers from our partners."
       />
-      <Tabs defaultValue="offers" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="offers">All Offers</TabsTrigger>
-          <TabsTrigger value="submissions">My Submissions</TabsTrigger>
-        </TabsList>
-        <TabsContent value="offers" className="mt-6">
-          <OfferList />
-        </TabsContent>
-        <TabsContent value="submissions" className="mt-6">
-          <SubmissionHistory />
-        </TabsContent>
-      </Tabs>
+      <OfferList />
     </>
   );
 }
