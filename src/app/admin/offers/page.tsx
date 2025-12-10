@@ -13,13 +13,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
   useCollection,
 } from '@/firebase';
-import { collection, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import type { Offer } from '@/lib/types';
 import Image from 'next/image';
 import {
@@ -33,9 +33,133 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 import ImageUploadForm from '@/components/image-upload-form';
 
 type OfferFormData = Omit<Offer, 'id'>;
+type OfferWithId = Offer & { id: string };
+
+function EditOfferForm({ offer }: { offer: OfferWithId }) {
+  const { toast } = useToast();
+  const firestore = useFirestore();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { isSubmitting },
+  } = useForm<OfferFormData>({
+    defaultValues: {
+      ...offer,
+      reward: Number(offer.reward),
+    },
+  });
+
+  const onSubmit: SubmitHandler<OfferFormData> = async (data) => {
+    try {
+      const offerDocRef = doc(firestore, 'offers', offer.id);
+      await updateDoc(offerDocRef, {
+        ...data,
+        reward: Number(data.reward),
+      });
+      toast({
+        title: 'Offer Updated!',
+        description: `${data.title} has been successfully updated.`,
+      });
+      setIsDialogOpen(false);
+    } catch (err: any) {
+      console.error('Error updating offer:', err);
+      toast({
+        variant: 'destructive',
+        title: 'An error occurred.',
+        description: 'Failed to update offer. Please try again.',
+      });
+    }
+  };
+
+  return (
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 opacity-80 group-hover:opacity-100 transition-opacity"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit Offer</DialogTitle>
+          <DialogDescription>
+            Make changes to &quot;{offer.title}&quot;. Click save when you&apos;re done.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Offer Title</Label>
+            <Input id="title" {...register('title', { required: true })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company">Company</Label>
+            <Input id="company" {...register('company', { required: true })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Offer Image</Label>
+             {offer.imageUrl && <Image src={offer.imageUrl} alt={offer.title} width={100} height={100} className='rounded-md aspect-video object-cover' />}
+            <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="imageHint">Image Hint</Label>
+            <Input
+              id="imageHint"
+              {...register('imageHint')}
+              placeholder="e.g. 'analytics chart'"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="link">Offer Link</Label>
+            <Input
+              id="link"
+              type="url"
+              {...register('link', { required: true })}
+              placeholder="https://partner.com/offer/..."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="reward">Reward Coins</Label>
+            <Input
+              id="reward"
+              type="number"
+              {...register('reward', { required: true, valueAsNumber: true })}
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function AddOfferForm() {
   const { toast } = useToast();
@@ -140,7 +264,7 @@ function OfferList() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const offersCollection = useMemo(() => collection(firestore, 'offers'), [firestore]);
-    const { data: offers, isLoading } = useCollection<Offer>(offersCollection);
+    const { data: offers, isLoading } = useCollection<OfferWithId>(offersCollection);
 
     const handleDelete = async (offerId: string) => {
         try {
@@ -179,7 +303,8 @@ function OfferList() {
                              <p className="text-sm text-muted-foreground">{offer.company}</p>
                             <p className="text-sm text-primary font-semibold">{offer.reward} coins</p>
                         </div>
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-2 right-2 flex gap-2">
+                            <EditOfferForm offer={offer} />
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="destructive" size="icon" className="h-8 w-8 opacity-80 group-hover:opacity-100 transition-opacity">
@@ -190,7 +315,7 @@ function OfferList() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                    This will permanently delete the offer "{offer.title}". This action cannot be undone.
+                                    This will permanently delete the offer &quot;{offer.title}&quot;. This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

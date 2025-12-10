@@ -14,13 +14,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
   useCollection,
 } from '@/firebase';
-import { collection, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import Image from 'next/image';
 import {
@@ -34,9 +34,127 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 import ImageUploadForm from '@/components/image-upload-form';
 
 type ProductFormData = Omit<Product, 'id'>;
+type ProductWithId = Product & { id: string };
+
+function EditProductForm({ product }: { product: ProductWithId }) {
+  const { toast } = useToast();
+  const firestore = useFirestore();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { isSubmitting },
+  } = useForm<ProductFormData>({
+    defaultValues: {
+      ...product,
+      price: Number(product.price),
+    },
+  });
+
+  const onSubmit: SubmitHandler<ProductFormData> = async (data) => {
+    try {
+      const productDocRef = doc(firestore, 'products', product.id);
+      await updateDoc(productDocRef, {
+        ...data,
+        price: Number(data.price),
+      });
+      toast({
+        title: 'Product Updated!',
+        description: `${data.name} has been successfully updated.`,
+      });
+      setIsDialogOpen(false);
+    } catch (err: any) {
+      console.error('Error updating product:', err);
+      toast({
+        variant: 'destructive',
+        title: 'An error occurred.',
+        description: 'Failed to update product. Please try again.',
+      });
+    }
+  };
+
+  return (
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 opacity-80 group-hover:opacity-100 transition-opacity"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit Product</DialogTitle>
+          <DialogDescription>
+            Make changes to &quot;{product.name}&quot;. Click save when you&apos;re done.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+           <div className="space-y-2">
+            <Label htmlFor="name">Product Name</Label>
+            <Input id="name" {...register('name', { required: true })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              {...register('description', { required: true })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Product Image</Label>
+             {product.imageUrl && <Image src={product.imageUrl} alt={product.name} width={100} height={100} className='rounded-md aspect-square object-cover' />}
+            <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="imageHint">Image Hint</Label>
+            <Input
+              id="imageHint"
+              {...register('imageHint')}
+              placeholder="e.g. 'wireless earbuds'"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="price">Price (in Coins)</Label>
+            <Input
+              id="price"
+              type="number"
+              {...register('price', { required: true, valueAsNumber: true })}
+            />
+          </div>
+          <DialogFooter>
+             <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                    Cancel
+                </Button>
+            </DialogClose>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function AddProductForm() {
   const { toast } = useToast();
@@ -135,7 +253,7 @@ function ProductList() {
     const firestore = useFirestore();
     const { toast } = useToast();
     const productsCollection = useMemo(() => collection(firestore, 'products'), [firestore]);
-    const { data: products, isLoading } = useCollection<Product>(productsCollection);
+    const { data: products, isLoading } = useCollection<ProductWithId>(productsCollection);
 
     const handleDelete = async (productId: string) => {
         try {
@@ -173,7 +291,8 @@ function ProductList() {
                             <h3 className="font-semibold text-lg">{product.name}</h3>
                             <p className="text-sm text-muted-foreground">{product.price} coins</p>
                         </div>
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-2 right-2 flex gap-2">
+                             <EditProductForm product={product} />
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="destructive" size="icon" className="h-8 w-8 opacity-80 group-hover:opacity-100 transition-opacity">
@@ -184,7 +303,7 @@ function ProductList() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                    This will permanently delete the product "{product.name}". This action cannot be undone.
+                                    This will permanently delete the product &quot;{product.name}&quot;. This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
