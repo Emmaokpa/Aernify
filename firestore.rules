@@ -42,8 +42,8 @@ service cloud.firestore {
                       request.resource.data.weeklyCoins == resource.data.weeklyCoins + incomingCoinChange() ||
                       // Case 2: Weekly coins are being reset to 0 (admin flow)
                       request.resource.data.weeklyCoins == 0 ||
-                      // Case 3: Total coins are being spent, but weekly coins are not affected (purchasing)
-                      request.resource.data.weeklyCoins == resource.data.weeklyCoins
+                      // Case 3: Weekly coins are not part of the update at all (spending)
+                      !('weeklyCoins' in request.resource.data)
                     );
 
       // Only admins can delete user documents
