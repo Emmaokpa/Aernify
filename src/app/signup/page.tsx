@@ -97,7 +97,7 @@ export default function SignUpPage() {
     try {
       const userCredential = await signInWithPopup(auth, provider);
       // The onAuthStateChanged listener in AuthProvider will handle profile creation for existing users.
-      // But for brand new users, we can create the profile immediately.
+      // But for brand new users, we must create the profile immediately.
       await createUserProfile(firestore, userCredential.user, null);
 
       toast({

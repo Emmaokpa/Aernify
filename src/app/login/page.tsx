@@ -24,45 +24,30 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { applyReferralCode } from '@/ai/flows/referral-flow';
 
-// Function to generate a random referral code
-const generateReferralCode = () => {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-};
 
-// This function is needed here for the case where a user uses Google to sign in
-// for the very first time from the login page.
-async function createUserProfile(db: any, user: User, referralCode: string | null) {
+// This function is needed for the edge case where a user signs up with Google
+// for the first time ever via the login page. The AuthProvider will also handle this,
+// but having it here provides a faster initial profile creation.
+async function createUserProfile(db: any, user: User) {
   const userRef = doc(db, 'users', user.uid);
   const docSnap = await getDoc(userRef);
 
-  // Only create profile if it doesn't exist
   if (docSnap.exists()) {
-    return;
+    return; // Profile already exists
   }
   
-  let startingCoins = 10; // Standard starting coins
-
-  // This is unlikely to be used from the login page, but included for consistency
-  if (referralCode) {
-      const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
-      if (referralResult.success) {
-           console.log(`Referral success! Referrer has been awarded coins.`);
-      } else {
-          console.warn("Referral code application failed:", referralResult.message);
-      }
-  }
-
-  const newUserProfile: Omit<UserProfile, 'isAdmin'> = {
+  // This is a simplified profile creation for this edge case.
+  const newUserProfile: Omit<UserProfile, 'isAdmin' | 'referralCode'> = {
     uid: user.uid,
-    displayName: user.displayName || '',
+    displayName: user.displayName || 'New User',
     email: user.email || '',
     photoURL: user.photoURL,
-    coins: startingCoins,
-    referralCode: generateReferralCode(),
+    coins: 10,
   };
 
   const finalProfile = {
       ...newUserProfile,
+      referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
       isAdmin: false,
   }
 
@@ -70,6 +55,7 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
     await setDoc(userRef, finalProfile);
   } catch (e: any) {
     console.error('Error creating user profile:', e);
+    // Emit a contextual error for debugging security rules if needed
     errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: userRef.path,
         operation: 'create',
@@ -94,8 +80,8 @@ export default function LoginPage() {
     try {
       const userCredential = await signInWithPopup(auth, provider);
       // Ensure profile exists for users signing in for the first time via Google on the login page.
-      await createUserProfile(firestore, userCredential.user, null);
-      // The redirect is handled automatically by the onAuthStateChanged listener in AuthProvider
+      await createUserProfile(firestore, userCredential.user);
+      // The redirect is handled automatically by the onAuthStateChanged listener in AuthProvider/MainLayout
     } catch (err: any) {
       console.error('Google sign-in error:', err);
       if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
@@ -120,7 +106,7 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // onAuthStateChanged in AuthProvider will handle the redirect.
+      // onAuthStateChanged in MainLayout will handle the redirect.
     } catch (err: any) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Invalid email or password. Please try again.');
