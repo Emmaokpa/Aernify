@@ -133,6 +133,7 @@ export default function LeaderboardPage() {
     const { user: currentUserAuth } = useUser();
 
     const leaderboardQuery = useMemo(() => {
+        if (!firestore) return null;
         return query(
             collection(firestore, 'users'), 
             orderBy('weeklyCoins', 'desc'), 
@@ -220,5 +221,3 @@ export default function LeaderboardPage() {
     </>
   );
 }
-
-    
