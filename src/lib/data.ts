@@ -1,3 +1,4 @@
+
 import type { User, DailyChallenge, Game, Offer, Product } from './types';
 import { getImage } from './placeholder-images';
 import { Star, Video, Gamepad2, Gift, Trophy, Crown, Coins as CoinsIcon, ListChecks } from 'lucide-react';
@@ -49,18 +50,6 @@ export const dailyChallenges: DailyChallenge[] = [
     },
     {
         id: 4,
-        title: 'Offer Explorer',
-        description: 'Attempt to complete one affiliate offer.',
-        reward: 100,
-        isCompleted: false,
-        progress: 0,
-        currentValue: 0,
-        targetValue: 1,
-        difficulty: 'Medium',
-        icon: React.createElement(ListChecks),
-    },
-    {
-        id: 5,
         title: 'Game Marathon',
         description: 'Play games for a total of 15 minutes.',
         reward: 150,
@@ -72,14 +61,26 @@ export const dailyChallenges: DailyChallenge[] = [
         icon: React.createElement(Trophy),
     },
     {
+        id: 5,
+        title: 'Offer Master',
+        description: 'Successfully complete 3 affiliate offers.',
+        reward: 300,
+        isCompleted: false,
+        progress: 0,
+        currentValue: 0,
+        targetValue: 3,
+        difficulty: 'Hard',
+        icon: React.createElement(ListChecks),
+    },
+     {
         id: 6,
-        title: 'Power Player',
-        description: 'Earn 200 coins from playing games.',
+        title: 'Game Champion',
+        description: 'Play a total of 50 games.',
         reward: 250,
         isCompleted: false,
-        progress: 25,
-        currentValue: 50,
-        targetValue: 200,
+        progress: 10,
+        currentValue: 5,
+        targetValue: 50,
         difficulty: 'Hard',
         icon: React.createElement(Crown),
     },
