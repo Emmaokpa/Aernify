@@ -159,6 +159,21 @@ service cloud.firestore {
       // Nobody can delete progress.
       allow delete: if false;
     }
+
+    // Rules for the orders collection
+    match /orders/{orderId} {
+      // A user can create their own order.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+
+      // Admins can read all orders. Users can read their own.
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      // Only admins can update the status of an order.
+      allow update: if isAdmin();
+      
+      // Nobody can delete orders for now.
+      allow delete: if false;
+    }
     
     // Fallback rule to deny all other access
     match /{document=**} {

@@ -9,8 +9,9 @@ import { useCollection, useFirestore } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 function ProductDetailModal({ product, isOpen, onOpenChange }: { product: Product | null, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
     if (!product) {
@@ -50,8 +51,8 @@ function ProductDetailModal({ product, isOpen, onOpenChange }: { product: Produc
                             <p className="text-muted-foreground">{product.description}</p>
                         </CardContent>
                     </Card>
-                    <Button size="lg" className="w-full text-lg" disabled>
-                        (Checkout Coming Soon)
+                    <Button size="lg" className="w-full text-lg" asChild>
+                       <Link href={`/checkout/${product.id}`}>Checkout</Link>
                     </Button>
                     </div>
                 </div>
@@ -119,7 +120,7 @@ export default function ShopPage() {
               </CardHeader>
               <CardContent className="p-4 flex-grow">
                 <h3 className="text-lg font-semibold">{product.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{product.description}</p>
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
               </CardContent>
               <CardFooter className="p-4 flex flex-col items-start gap-3 bg-muted/30">
                 <div className="font-bold text-primary flex items-center gap-1.5 text-lg">
