@@ -27,8 +27,8 @@ service cloud.firestore {
                     && request.resource.data.isAdmin == false
                     && !exists(/databases/$(database)/documents/users/$(userId));
       
-      // Any signed-in user can read public user data (needed for referral checks)
-      allow get: if isSignedIn();
+      // Any signed-in user can read public user data and list users for the leaderboard.
+      allow get, list: if isSignedIn();
       
       // An owner can update their own profile, but cannot change their admin status.
       allow update: if isOwner(userId) && 
