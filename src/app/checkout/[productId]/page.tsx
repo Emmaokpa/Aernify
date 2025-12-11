@@ -1,19 +1,19 @@
 
 'use client';
-import { useMemo, useState } from 'react';
-import { useParams, useRouter, notFound } from 'next/navigation';
+import { useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Coins, Loader2, ChevronLeft } from 'lucide-react';
+import { Coins, Loader2, ChevronLeft, AlertTriangle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useUser, useFirestore, useDoc } from '@/firebase';
-import type { Product, ShippingInfo } from '@/lib/types';
+import type { Product } from '@/lib/types';
 import { doc, writeBatch, increment, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -129,7 +129,24 @@ export default function CheckoutPage() {
   }
 
   if (!product) {
-    notFound();
+     return (
+      <div className="max-w-6xl mx-auto text-center">
+         <Button variant="outline" onClick={() => router.back()} className="mb-6">
+            <ChevronLeft className="mr-2 h-4 w-4" /> Back to Shop
+        </Button>
+        <Card className="mt-8">
+            <CardHeader>
+                <div className="mx-auto bg-destructive/20 rounded-full p-3 w-fit">
+                    <AlertTriangle className="h-10 w-10 text-destructive" />
+                </div>
+                <CardTitle className="mt-4">Product Not Found</CardTitle>
+                <CardDescription>
+                    The product you are trying to purchase could not be found. It may have been removed or the link is incorrect.
+                </CardDescription>
+            </CardHeader>
+        </Card>
+      </div>
+    );
   }
 
   return (
