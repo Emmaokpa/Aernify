@@ -112,7 +112,7 @@ export default function EarnPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Invite a friend with your code and you both get{' '}
+              Invite a friend with your code and get{' '}
               <span className="font-bold text-primary">100 coins!</span>
             </p>
             <div>
