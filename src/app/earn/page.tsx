@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -14,10 +15,13 @@ import {
   AlertDialogDescription,
 } from '@/components/ui/alert-dialog';
 import { useToast } from "@/hooks/use-toast";
-import { currentUser } from '@/lib/data';
+import { useUser } from '@/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 export default function EarnPage() {
   const { toast } = useToast();
+  const { profile, isUserLoading } = useUser();
   const [adsWatched, setAdsWatched] = useState(0);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
   const dailyAdLimit = 20;
@@ -46,7 +50,7 @@ export default function EarnPage() {
   const handleVideoEnd = () => {
     setIsAdModalOpen(false);
     setAdsWatched(adsWatched + 1);
-    currentUser.coins += 10;
+    // Note: In a real app, you would call a server function to update coins
     toast({
       title: "Reward Claimed!",
       description: "+10 Coins have been added to your balance.",
@@ -54,8 +58,8 @@ export default function EarnPage() {
   };
 
   const handleCopyCode = () => {
-    const referralCode = 'ABC123XYZ';
-    navigator.clipboard.writeText(referralCode);
+    if (!profile?.referralCode) return;
+    navigator.clipboard.writeText(profile.referralCode);
     toast({
       title: "Copied!",
       description: "Referral code copied to clipboard.",
@@ -113,13 +117,20 @@ export default function EarnPage() {
             </p>
             <div>
               <p className="text-sm font-medium mb-2">Your referral code:</p>
-              <div className="flex gap-2">
-                <Input readOnly value="ABC123XYZ" className="font-mono" />
-                <Button onClick={handleCopyCode}>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copy
-                </Button>
-              </div>
+              {isUserLoading ? (
+                <div className="flex gap-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-24" />
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input readOnly value={profile?.referralCode || 'N/A'} className="font-mono" />
+                  <Button onClick={handleCopyCode} disabled={!profile?.referralCode}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
