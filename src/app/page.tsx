@@ -21,7 +21,11 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
 
-  const gamesCollection = useMemo(() => collection(firestore, 'games'), [firestore]);
+  const gamesCollection = useMemo(() => {
+    if (!firestore || !user) return null; // Wait for user
+    return collection(firestore, 'games');
+  }, [firestore, user]);
+
   const { data: games, isLoading: isGamesLoading } = useCollection<Game>(gamesCollection);
 
   useEffect(() => {
