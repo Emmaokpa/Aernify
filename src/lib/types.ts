@@ -96,3 +96,15 @@ export interface OfferSubmission {
     status: 'pending' | 'approved' | 'rejected';
     submittedAt: any; // Firestore Timestamp
 }
+
+export interface RedemptionRequest {
+    id: string;
+    userId: string;
+    userDisplayName: string;
+    giftCardId: string;
+    giftCardName: string;
+    giftCardValue: number;
+    coinsSpent: number;
+    status: 'pending' | 'approved' | 'rejected';
+    requestedAt: any; // Firestore Timestamp
+}

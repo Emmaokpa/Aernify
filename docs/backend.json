@@ -134,6 +134,22 @@
             "submittedAt": { "type": "string", "format": "date-time" }
         },
         "required": ["userId", "offerId", "proofImageUrl", "status", "submittedAt"]
+    },
+    "RedemptionRequest": {
+      "title": "Gift Card Redemption Request",
+      "description": "Represents a user's request to redeem coins for a gift card.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userDisplayName": { "type": "string" },
+        "giftCardId": { "type": "string" },
+        "giftCardName": { "type": "string" },
+        "giftCardValue": { "type": "number" },
+        "coinsSpent": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "requestedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "giftCardId", "coinsSpent", "status", "requestedAt"]
     }
   },
   "auth": {
@@ -181,6 +197,12 @@
             "$ref": "#/entities/OfferSubmission"
         },
         "description": "Stores user submissions for offer completion."
+    },
+    "/redemption_requests/{requestId}": {
+      "schema": {
+        "$ref": "#/entities/RedemptionRequest"
+      },
+      "description": "Stores user requests for gift card redemption."
     }
   }
 }

@@ -93,14 +93,28 @@ service cloud.firestore {
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
         
         // Admins can read all submissions. Users can read their own.
-        // This rule applies to both get and list. For list, the query must have a filter.
         allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
 
         // Only admins can update the status of a submission. A user cannot change their own submission.
-        allow update: if isAdmin() && request.resource.data.status != resource.data.status;
+        allow update: if isAdmin();
         
         // Nobody can delete submissions for now.
         allow delete: if false;
+    }
+
+    // Rules for the redemption_requests collection
+    match /redemption_requests/{requestId} {
+      // A user can create their own request.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+
+      // Admins can read all requests. Users can read their own.
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      // Only admins can update the status of a request.
+      allow update: if isAdmin();
+      
+      // Nobody can delete requests.
+      allow delete: if false;
     }
 
     // Fallback rule to deny all other access

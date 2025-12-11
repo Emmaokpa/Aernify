@@ -6,7 +6,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import {
   Gamepad2,
@@ -15,6 +14,7 @@ import {
   ShoppingBag,
   Gift,
   ArrowRight,
+  TicketCheck,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 
@@ -43,6 +43,11 @@ const adminFeatures: NavItem[] = [
     title: 'Manage Gift Cards',
     href: '/admin/gift-cards',
     icon: <Gift className="w-8 h-8" />,
+  },
+  {
+    title: 'Verify Redemptions',
+    href: '/admin/verify-redemptions',
+    icon: <TicketCheck className="w-8 h-8" />,
   },
 ];
 
