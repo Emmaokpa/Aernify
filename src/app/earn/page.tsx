@@ -15,13 +15,16 @@ import {
   AlertDialogDescription,
 } from '@/components/ui/alert-dialog';
 import { useToast } from "@/hooks/use-toast";
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { incrementChallengeProgress } from '@/lib/challenges';
+import { doc, updateDoc, increment } from 'firebase/firestore';
 
 
 export default function EarnPage() {
   const { toast } = useToast();
-  const { profile, isUserLoading } = useUser();
+  const { user, profile, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const [adsWatched, setAdsWatched] = useState(0);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
   const dailyAdLimit = 20;
@@ -47,14 +50,32 @@ export default function EarnPage() {
     }
   };
 
-  const handleVideoEnd = () => {
+  const handleVideoEnd = async () => {
     setIsAdModalOpen(false);
     setAdsWatched(adsWatched + 1);
-    // Note: In a real app, you would call a server function to update coins
-    toast({
-      title: "Reward Claimed!",
-      description: "+10 Coins have been added to your balance.",
-    });
+    
+    if (!user) return;
+
+    try {
+        const userRef = doc(firestore, 'users', user.uid);
+        await updateDoc(userRef, { coins: increment(10) });
+
+        // Increment challenge progress
+        await incrementChallengeProgress(firestore, user.uid, 'watchAd');
+
+        toast({
+            title: "Reward Claimed!",
+            description: "+10 Coins have been added to your balance.",
+        });
+
+    } catch (error) {
+        console.error("Error rewarding for ad watch:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not claim reward. Please try again.",
+        });
+    }
   };
 
   const handleCopyCode = () => {

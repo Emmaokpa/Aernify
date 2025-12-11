@@ -10,10 +10,10 @@ import type { Game } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { incrementChallengeProgress } from '@/lib/challenges';
 
 
 const PLAY_TIME_FOR_REWARD = 3 * 60; // 3 minutes in seconds
-const REWARD_AMOUNT = 5;
 
 export default function GamePage() {
   const params = useParams();
@@ -38,6 +38,12 @@ export default function GamePage() {
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
+    if (isGameStarted && user) {
+        incrementChallengeProgress(firestore, user.uid, 'playGame');
+    }
+  }, [isGameStarted, user, firestore]);
+
+  useEffect(() => {
     if (!game || !user || rewardClaimed || !isGameStarted) {
       return;
     }
@@ -47,7 +53,7 @@ export default function GamePage() {
       try {
         const userDocRef = doc(firestore, 'users', user.uid);
         await updateDoc(userDocRef, {
-          coins: increment(REWARD_AMOUNT),
+          coins: increment(game.reward),
         });
         
         setRewardClaimed(true);
@@ -58,7 +64,7 @@ export default function GamePage() {
             <div className="flex items-center gap-2">
               <Coins className="h-5 w-5 text-primary" />
               <span>
-                You earned {REWARD_AMOUNT} coins for playing {game.title}!
+                You earned {game.reward} coins for playing {game.title}!
               </span>
             </div>
           ),
@@ -154,7 +160,7 @@ export default function GamePage() {
         </div>
       )}
 
-      {isGameStarted && (
+      {isGameStarted && game && (
         <>
             <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
                 <div className={cn(
@@ -166,7 +172,7 @@ export default function GamePage() {
                 ) : (
                     <Coins className="h-5 w-5 text-primary" />
                 )}
-                <span>{rewardClaimed ? `+${REWARD_AMOUNT} Coins!` : formatTime(countdown)}</span>
+                <span>{rewardClaimed ? `+${game.reward} Coins!` : formatTime(countdown)}</span>
                 </div>
                 <Button onClick={handleFullScreen} variant="ghost" size="icon" className="bg-black/50 text-white hover:bg-black/70 hover:text-white">
                     <Expand className="w-5 h-5" />

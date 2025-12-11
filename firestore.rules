@@ -117,6 +117,32 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Rules for the challenges collection
+    match /challenges/{challengeId} {
+      // Any signed-in user can read challenge definitions.
+      allow read: if isSignedIn();
+      // Only admins can write (create, update, delete) challenges.
+      allow write: if isAdmin();
+    }
+
+    // Rules for the user_challenge_progress collection
+    match /user_challenge_progress/{progressId} {
+      // progressId is in format "userId_YYYY-MM-DD"
+      function getUserId() {
+        return progressId.split('_')[0];
+      }
+      
+      // Users can read their own progress.
+      allow get: if isSignedIn() && isOwner(getUserId());
+      
+      // Users can create their own progress document for today.
+      allow create, update: if isSignedIn() && isOwner(getUserId());
+      
+      // Nobody can delete progress.
+      allow delete: if false;
+    }
+
+
     // Fallback rule to deny all other access
     match /{document=**} {
       allow read, write: if false;

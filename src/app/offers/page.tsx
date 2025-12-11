@@ -24,6 +24,7 @@ import {
 import ImageUploadForm from '@/components/image-upload-form';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { incrementChallengeProgress } from '@/lib/challenges';
 
 function SubmitOfferDialog({ offer, children, disabled }: { offer: Offer, children: React.ReactNode, disabled?: boolean }) {
   const { toast } = useToast();
@@ -59,6 +60,9 @@ function SubmitOfferDialog({ offer, children, disabled }: { offer: Offer, childr
         status: 'pending',
         submittedAt: serverTimestamp(),
       });
+
+      // Increment challenge progress
+      await incrementChallengeProgress(firestore, user.uid, 'completeOffer');
 
       toast({
         title: 'Submission Received!',

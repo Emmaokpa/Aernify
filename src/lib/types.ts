@@ -13,18 +13,16 @@ export type User = {
 };
 
 export type DailyChallenge = {
-  id: number;
-  title: string;
-  description: string;
-  reward: number;
-  isCompleted: boolean;
-  isVip?: boolean;
-  progress: number;
-  currentValue: number;
-  targetValue: number;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  icon: React.ReactNode;
+    id: string;
+    title: string;
+    description: string;
+    reward: number;
+    difficulty: 'Easy' | 'Medium' | 'Hard';
+    type: 'watchAd' | 'playGame' | 'completeOffer' | 'dailyCheckIn';
+    targetValue: number;
+    icon?: React.ReactNode;
 };
+
 
 export type Game = {
   id: string;
@@ -108,4 +106,17 @@ export interface RedemptionRequest {
     coinsSpent: number;
     status: 'pending' | 'approved' | 'rejected';
     requestedAt: any; // Firestore Timestamp
+}
+
+export type ChallengeProgress = {
+    [key: string]: {
+        currentValue: number;
+        claimed: boolean;
+    }
+}
+
+export interface UserChallengeProgress {
+    id?: string;
+    date: string;
+    progress: ChallengeProgress;
 }

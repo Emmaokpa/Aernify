@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { Game } from '@/lib/types';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, doc, getDoc, serverTimestamp, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { incrementChallengeProgress } from '@/lib/challenges';
 
 const DAILY_REWARD = 20;
 
@@ -46,6 +47,9 @@ export default function DashboardPage() {
           
           await updateDoc(userDocRef, { coins: increment(DAILY_REWARD) });
           await setDoc(dailyLoginDocRef, { claimedAt: serverTimestamp() });
+          
+          // Also update challenge progress for daily check-in
+          await incrementChallengeProgress(firestore, user.uid, 'dailyCheckIn');
           
           setIsRewardGranted(true);
           setIsModalOpen(true);

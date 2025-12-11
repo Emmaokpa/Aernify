@@ -15,6 +15,7 @@ import {
   Gift,
   ArrowRight,
   TicketCheck,
+  Sparkles,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 
@@ -28,6 +29,11 @@ const adminFeatures: NavItem[] = [
     title: 'Manage Offers',
     href: '/admin/offers',
     icon: <Briefcase className="w-8 h-8" />,
+  },
+   {
+    title: 'Manage Challenges',
+    href: '/admin/challenges',
+    icon: <Sparkles className="w-8 h-8" />,
   },
   {
     title: 'Verify Offers',

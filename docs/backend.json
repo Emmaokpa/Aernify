@@ -150,6 +150,42 @@
         "requestedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "giftCardId", "coinsSpent", "status", "requestedAt"]
+    },
+    "Challenge": {
+      "title": "Daily Challenge",
+      "description": "Represents a daily challenge for users to complete.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "reward": { "type": "number" },
+        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
+        "type": { "type": "string", "enum": ["watchAd", "playGame", "completeOffer", "dailyCheckIn"] },
+        "targetValue": { "type": "number" }
+      },
+      "required": ["title", "description", "reward", "difficulty", "type", "targetValue"]
+    },
+    "UserChallengeProgress": {
+      "title": "User's Daily Challenge Progress",
+      "description": "Tracks a user's progress on all challenges for a single day.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "The date in YYYY-MM-DD format." },
+        "progress": {
+          "type": "object",
+          "description": "A map where keys are challenge IDs and values are progress objects.",
+          "patternProperties": {
+            "^[a-zA-Z0-9]+$": {
+              "type": "object",
+              "properties": {
+                "currentValue": { "type": "number" },
+                "claimed": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      },
+      "required": ["date"]
     }
   },
   "auth": {
@@ -203,6 +239,18 @@
         "$ref": "#/entities/RedemptionRequest"
       },
       "description": "Stores user requests for gift card redemption."
+    },
+    "/challenges/{challengeId}": {
+      "schema": {
+        "$ref": "#/entities/Challenge"
+      },
+      "description": "Stores the definitions for all daily challenges."
+    },
+    "/user_challenge_progress/{progressId}": {
+      "schema": {
+        "$ref": "#/entities/UserChallengeProgress"
+      },
+      "description": "Stores a user's progress for a given day. The document ID is 'userId_YYYY-MM-DD'."
     }
   }
 }
