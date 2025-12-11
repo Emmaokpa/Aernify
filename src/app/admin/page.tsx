@@ -53,11 +53,6 @@ const adminFeatures: NavItem[] = [
     icon: <Gift className="w-8 h-8" />,
   },
   {
-    title: 'Fulfill Orders',
-    href: '/admin/orders',
-    icon: <PackageCheck className="w-8 h-8" />,
-  },
-  {
     title: 'Verify Redemptions',
     href: '/admin/verify-redemptions',
     icon: <TicketCheck className="w-8 h-8" />,
@@ -98,5 +93,3 @@ export default function AdminDashboardPage() {
     </AdminAuthWrapper>
   );
 }
-
-    

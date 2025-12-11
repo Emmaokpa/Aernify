@@ -190,37 +190,6 @@
         }
       },
       "required": ["date"]
-    },
-    "Order": {
-      "title": "Product Order",
-      "description": "Represents a user's order for a physical product.",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "userDisplayName": { "type": "string" },
-        "productId": { "type": "string" },
-        "productName": { "type": "string" },
-        "productImageUrl": { "type": "string", "format": "uri" },
-        "coinsSpent": { "type": "number" },
-        "shippingInfo": {
-          "type": "object",
-          "properties": {
-            "fullName": { "type": "string" },
-            "email": { "type": "string", "format": "email" },
-            "phoneNumber": { "type": "string" },
-            "addressLine1": { "type": "string" },
-            "addressLine2": { "type": "string" },
-            "city": { "type": "string" },
-            "state": { "type": "string" },
-            "postalCode": { "type": "string" },
-            "country": { "type": "string" }
-          },
-          "required": ["fullName", "email", "phoneNumber", "addressLine1", "city", "state", "postalCode", "country"]
-        },
-        "status": { "type": "string", "enum": ["pending", "shipped", "delivered", "cancelled"] },
-        "orderedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "productId", "productName", "coinsSpent", "shippingInfo", "status", "orderedAt"]
     }
   },
   "auth": {
@@ -286,14 +255,6 @@
         "$ref": "#/entities/UserChallengeProgress"
       },
       "description": "Stores a user's progress for a given day. The document ID is 'userId_YYYY-MM-DD'."
-    },
-    "/orders/{orderId}": {
-      "schema": {
-        "$ref": "#/entities/Order"
-      },
-      "description": "Stores user orders for physical products."
     }
   }
 }
-
-    

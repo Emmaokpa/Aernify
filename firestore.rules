@@ -160,27 +160,9 @@ service cloud.firestore {
       allow delete: if false;
     }
     
-    // Rules for the orders collection
-    match /orders/{orderId} {
-      // A user can create their own order.
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      
-      // An admin can read all orders. A user can read their own.
-      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-
-      // Only an admin can update an order (e.g., to change its status).
-      allow update: if isAdmin();
-      
-      // Admins can delete orders.
-      allow delete: if isAdmin();
-    }
-
-
     // Fallback rule to deny all other access
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
-
-    

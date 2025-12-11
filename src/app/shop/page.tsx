@@ -43,7 +43,7 @@ export default function ShopPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {isLoading && Array.from({ length: 4 }).map((_, i) => <ProductSkeleton key={i} />)}
         {products?.map((product) => (
-          <Link href={`/shop/${product.id}`} key={product.id}>
+          <div key={product.id} className="cursor-not-allowed">
             <Card className="overflow-hidden flex flex-col rounded-2xl group h-full">
               <CardHeader className="p-0">
                 <div className="relative aspect-square">
@@ -51,7 +51,7 @@ export default function ShopPage() {
                     src={product.imageUrl}
                     alt={product.name}
                     fill
-                    className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+                    className="object-cover"
                     data-ai-hint={product.imageHint}
                   />
                 </div>
@@ -67,7 +67,7 @@ export default function ShopPage() {
                 </div>
               </CardFooter>
             </Card>
-          </Link>
+          </div>
         ))}
          {!isLoading && products?.length === 0 && (
           <p className="text-muted-foreground col-span-full">No products available right now. Check back later!</p>
