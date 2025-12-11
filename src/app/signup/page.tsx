@@ -40,7 +40,7 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
     return;
   }
   
-  const newUserProfile: Omit<UserProfile, 'isAdmin' | 'coins'> & { coins: number } = {
+  const newUserProfile: Omit<UserProfile, 'isAdmin'> = {
     uid: user.uid,
     displayName: user.displayName || '',
     email: user.email || '',
@@ -93,17 +93,13 @@ export default function SignUpPage() {
     setError(null);
     const provider = new GoogleAuthProvider();
     try {
-      const userCredential = await signInWithPopup(auth, provider);
-      const user = userCredential.user;
-      
-      if (user) {
-        // The onAuthStateChanged listener in AuthProvider will handle profile creation.
-        toast({
-            title: 'Account Created!',
-            description: "You've successfully signed up with Google.",
-        });
-        router.push('/');
-      }
+      await signInWithPopup(auth, provider);
+      // The onAuthStateChanged listener in AuthProvider will handle profile creation.
+      toast({
+          title: 'Account Created!',
+          description: "You've successfully signed up with Google.",
+      });
+      router.push('/');
     } catch (err: any) {
       console.error('Google sign-in error:', err);
       if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
