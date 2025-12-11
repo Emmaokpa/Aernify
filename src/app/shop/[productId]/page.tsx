@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { notFound, useParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
@@ -23,28 +23,25 @@ export default function ProductDetailPage() {
     return doc(firestore, 'products', productId);
   }, [firestore, productId]);
 
-  const { data: productData, isLoading } = useDoc<Omit<Product, 'id'>>(productDocRef);
+  const { data: productData, isLoading } = useDoc<Product>(productDocRef);
 
+  useEffect(() => {
+    if (!isLoading && !productData) {
+      notFound();
+    }
+  }, [isLoading, productData]);
+  
   const product = useMemo(() => {
     if (!productData || !productId) return null;
     return { ...productData, id: productId };
   }, [productData, productId]);
 
-  if (!isLoading && !product) {
-    notFound();
-  }
 
-  return (
-    <div>
-       <Button asChild variant="outline" className='mb-4'>
-        <Link href="/shop">
-          <ChevronLeft className="mr-2" />
-          Back to Shop
-        </Link>
-      </Button>
-
-      <Card className="overflow-hidden">
-        {isLoading || !product ? (
+  if (isLoading || !product) {
+    return (
+      <div>
+        <Skeleton className="h-10 w-40 mb-4" />
+        <Card className="overflow-hidden">
           <div className="grid md:grid-cols-2 gap-8">
             <Skeleton className="aspect-square" />
             <div className="p-8 flex flex-col space-y-4">
@@ -58,7 +55,21 @@ export default function ProductDetailPage() {
               </div>
             </div>
           </div>
-        ) : (
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+       <Button asChild variant="outline" className='mb-4'>
+        <Link href="/shop">
+          <ChevronLeft className="mr-2" />
+          Back to Shop
+        </Link>
+      </Button>
+
+      <Card className="overflow-hidden">
             <div className="grid md:grid-cols-2 gap-8">
               <div className="relative aspect-square">
                 <Image
@@ -88,7 +99,6 @@ export default function ProductDetailPage() {
                 </div>
               </div>
             </div>
-        )}
       </Card>
     </div>
   );
