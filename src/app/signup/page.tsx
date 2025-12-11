@@ -124,7 +124,10 @@ export default function SignUpPage() {
         setError('This email is already in use. Please try another.');
       } else if (err.code === 'auth/weak-password') {
         setError('Password should be at least 6 characters.');
-      } else {
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('A network error occurred. Please check your internet connection and try again.');
+      }
+      else {
         setError('An unexpected error occurred. Please try again.');
         console.error(err);
       }
