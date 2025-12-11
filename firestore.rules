@@ -42,7 +42,7 @@ service cloud.firestore {
                       request.resource.data.weeklyCoins == resource.data.weeklyCoins + incomingCoinChange() ||
                       // Case 2: Weekly coins are being reset to 0 (admin flow)
                       request.resource.data.weeklyCoins == 0 ||
-                      // Case 3: Weekly coins are not part of the update at all (spending)
+                      // Case 3: Weekly coins are not being modified at all (spending)
                       !('weeklyCoins' in request.resource.data)
                     );
 
@@ -165,8 +165,9 @@ service cloud.firestore {
       // A user can create their own order.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
 
-      // Admins can read all orders. Users can read their own.
-      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      // Admins can read all orders. Users can read their own individual order.
+      allow list: if isAdmin();
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
 
       // Only admins can update the status of an order.
       allow update: if isAdmin();
