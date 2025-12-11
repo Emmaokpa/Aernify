@@ -89,9 +89,9 @@ export default function LoginPage() {
       } else {
         setError('An error occurred during Google sign-in. Please try again.');
       }
-    } finally {
-      setIsGoogleLoading(false);
+      setIsGoogleLoading(false); // Ensure loading is stopped on error
     }
+    // No need for a `finally` block if it's handled in the catch
   }
 
 
