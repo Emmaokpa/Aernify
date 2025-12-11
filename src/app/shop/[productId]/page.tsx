@@ -1,15 +1,62 @@
+'use client';
 
-import { notFound } from 'next/navigation';
+import { useMemo } from 'react';
+import { notFound, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Coins, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import type { Product } from '@/lib/types';
-import { getProductById } from '@/lib/firebase/firestore';
+import { useDoc, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// This is now a CLIENT component, purely for UI.
-function ProductDetailClient({ product }: { product: Product }) {
+function ProductDetailSkeleton() {
+  return (
+     <div>
+      <Skeleton className="h-10 w-40 mb-4" />
+      <Card className="overflow-hidden">
+        <div className="grid md:grid-cols-2 gap-8">
+          <Skeleton className="relative aspect-square" />
+          <div className="p-8 flex flex-col space-y-4">
+            <Skeleton className="h-9 w-3/4" />
+            <Skeleton className="h-5 w-1/2" />
+            <div className="flex-grow" />
+            <Skeleton className="h-10 w-1/3" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+export default function ProductPage() {
+  const params = useParams();
+  const productId = Array.isArray(params.productId) ? params.productId[0] : params.productId;
+  const firestore = useFirestore();
+
+  const productDocRef = useMemo(() => {
+    if (!productId) return null;
+    return doc(firestore, 'products', productId);
+  }, [firestore, productId]);
+
+  const { data: productData, isLoading } = useDoc<Omit<Product, 'id'>>(productDocRef);
+  
+  const product = useMemo(() => {
+      if (!productData || !productId) return null;
+      return { ...productData, id: productId };
+  }, [productData, productId]);
+
+  if (isLoading) {
+    return <ProductDetailSkeleton />;
+  }
+
+  if (!product) {
+    notFound();
+  }
+
   return (
     <div>
       <Button asChild variant="outline" className="mb-4">
@@ -52,20 +99,4 @@ function ProductDetailClient({ product }: { product: Product }) {
       </Card>
     </div>
   );
-}
-
-// This is now the SERVER component page.
-export default async function ProductPage({ params }: { params: { productId: string } }) {
-  const { productId } = params;
-
-  // 1. Fetch data on the server
-  const product = await getProductById(productId);
-
-  // 2. If no product, call notFound()
-  if (!product) {
-    notFound();
-  }
-
-  // 3. If product exists, render the client component with the data
-  return <ProductDetailClient product={product} />;
 }
