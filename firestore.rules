@@ -167,7 +167,7 @@ service cloud.firestore {
 
       // Admins can read all orders. Users can read their own individual order.
       allow list: if isAdmin();
-      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
 
       // Only admins can update the status of an order.
       allow update: if isAdmin();
