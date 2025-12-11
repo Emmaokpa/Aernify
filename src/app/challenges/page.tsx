@@ -5,66 +5,79 @@ import PageHeader from '@/components/page-header';
 import {
   Card,
   CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { dailyChallenges } from '@/lib/data';
-import { Coins, Lock } from 'lucide-react';
+import { Coins, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
+const getDifficultyClass = (difficulty: 'Easy' | 'Medium' | 'Hard') => {
+    switch (difficulty) {
+        case 'Easy':
+        return 'bg-green-600/20 text-green-400 border-green-600/30';
+        case 'Medium':
+        return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+        case 'Hard':
+        return 'bg-red-600/20 text-red-400 border-red-600/30';
+    }
+}
 
 export default function ChallengesPage() {
   return (
     <>
       <PageHeader
         title="Daily Challenges"
-        description="Complete tasks to earn bonus coins. New challenges every day!"
+        description="Complete tasks to earn bonus coins. New challenges unlock every day!"
       />
       <div className="space-y-4">
         {dailyChallenges.map((challenge) => (
           <Card
             key={challenge.id}
             className={cn(
-              'bg-card/80 overflow-hidden rounded-2xl',
-              challenge.isCompleted && 'opacity-60'
+              'bg-card/80 overflow-hidden rounded-2xl transition-all',
+              challenge.isCompleted && 'bg-green-600/10 border-green-600/30'
             )}
           >
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center text-primary bg-primary/10 rounded-lg">
+            <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 flex items-center justify-center text-primary bg-primary/10 rounded-lg shrink-0">
                   {challenge.icon}
                 </div>
-                <div>
-                  <h3 className="font-bold text-md">{challenge.title}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {challenge.description}
-                  </p>
+                <div className='flex-grow space-y-3'>
+                    <div className='flex justify-between items-start'>
+                        <div>
+                            <h3 className="font-bold text-md">{challenge.title}</h3>
+                            <p className="text-xs text-muted-foreground">
+                                {challenge.description}
+                            </p>
+                        </div>
+                        <div className="font-bold text-primary flex items-center gap-1.5 text-sm ml-4">
+                            <Coins className="w-4 h-4" />
+                            <span>{challenge.reward}</span>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <Progress value={challenge.progress} className="h-2" />
+                        <div className="flex justify-between items-center text-xs text-muted-foreground">
+                            <span>
+                                Progress: {challenge.currentValue}/{challenge.targetValue}
+                            </span>
+                             <Badge variant="outline" className={cn('text-xs', getDifficultyClass(challenge.difficulty))}>{challenge.difficulty}</Badge>
+                        </div>
+                    </div>
                 </div>
-                {challenge.isVip && <Lock className="w-4 h-4 ml-auto text-primary" />}
-              </div>
-
-              <div className="space-y-2">
-                <Progress value={challenge.progress} className="h-2" />
-                <div className="flex justify-between items-center text-xs text-muted-foreground">
-                  <span>
-                    {challenge.currentValue}/{challenge.targetValue}
-                  </span>
-                  <span>{challenge.difficulty}</span>
-                </div>
-              </div>
-              
-              <div className='flex flex-col items-center gap-2'>
-                <Button
-                  className="w-full"
-                  disabled={challenge.isCompleted || challenge.isVip && !challenge.isCompleted}
+                 <Button
+                  className={cn("ml-4", challenge.isCompleted && "bg-green-600 hover:bg-green-700")}
+                  disabled={challenge.isCompleted}
+                  size="sm"
                 >
-                  {challenge.isCompleted ? 'Claimed' : challenge.isVip ? 'Upgrade to VIP to Unlock' : 'In Progress'}
+                  {challenge.isCompleted ? <CheckCircle className='w-4 h-4' /> : 'Claim'}
                 </Button>
-                <div className="font-bold text-primary flex items-center gap-1.5 text-sm">
-                  <Coins className="w-4 h-4" />
-                  <span>{challenge.reward}</span>
-                </div>
-              </div>
-
             </CardContent>
           </Card>
         ))}
