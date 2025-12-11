@@ -168,17 +168,17 @@ export default function LeaderboardPage() {
   }, [currentUserAuth, leaderboardData]);
   
   const currentUserEntryForDisplay: LeaderboardEntry | null = useMemo(() => {
-    if (!currentUserProfile) return null;
+    if (!currentUserProfile || !currentUserAuth) return null;
     return {
       rank: 0, // No rank shown
-      score: currentUserProfile.weeklyCoins,
+      score: currentUserProfile?.weeklyCoins ?? 0,
       user: {
-        id: currentUserProfile.uid,
+        id: currentUserAuth.uid,
         name: currentUserProfile.displayName || 'Anonymous',
-        avatarUrl: currentUserProfile.photoURL || `https://api.dicebear.com/8.x/bottts/svg?seed=${currentUserProfile.uid}`
+        avatarUrl: currentUserProfile.photoURL || `https://api.dicebear.com/8.x/bottts/svg?seed=${currentUserAuth.uid}`
       }
     };
-  }, [currentUserProfile]);
+  }, [currentUserProfile, currentUserAuth]);
 
 
   return (
