@@ -37,12 +37,7 @@ const adminFeatures: NavItem[] = [
     href: '/admin/challenges',
     icon: <Sparkles className="w-8 h-8" />,
   },
-  {
-    title: 'Verify Offers',
-    href: '/admin/verify-offers',
-    icon: <CheckSquare className="w-8 h-8" />,
-  },
-  {
+   {
     title: 'Manage Shop',
     href: '/admin/shop',
     icon: <ShoppingBag className="w-8 h-8" />,
@@ -53,9 +48,19 @@ const adminFeatures: NavItem[] = [
     icon: <Gift className="w-8 h-8" />,
   },
   {
+    title: 'Verify Offers',
+    href: '/admin/verify-offers',
+    icon: <CheckSquare className="w-8 h-8" />,
+  },
+  {
     title: 'Verify Redemptions',
     href: '/admin/verify-redemptions',
     icon: <TicketCheck className="w-8 h-8" />,
+  },
+   {
+    title: 'Fulfill Orders',
+    href: '/admin/orders',
+    icon: <PackageCheck className="w-8 h-8" />,
   },
   {
     title: 'Leaderboard',
