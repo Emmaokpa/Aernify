@@ -40,12 +40,25 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
     return;
   }
   
+  let startingCoins = 10; // Standard starting coins
+
+  // If a referral code was used, apply it.
+  if (referralCode) {
+      const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
+      if (referralResult.success) {
+           console.log(`Referral success! Referrer has been awarded coins.`);
+           // New user does not get bonus coins per user request
+      } else {
+          console.warn("Referral code application failed:", referralResult.message);
+      }
+  }
+
   const newUserProfile: Omit<UserProfile, 'isAdmin'> = {
     uid: user.uid,
     displayName: user.displayName || '',
     email: user.email || '',
     photoURL: user.photoURL,
-    coins: 10, // Start with 10 coins
+    coins: startingCoins,
     referralCode: generateReferralCode(),
   };
 
@@ -55,18 +68,7 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
   }
 
   try {
-    // If a referral code was used, apply it.
-    if (referralCode) {
-        const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
-        if (referralResult.success) {
-             console.log(`Referral success! Referrer has been awarded coins.`);
-        } else {
-            console.warn("Referral code application failed:", referralResult.message);
-        }
-    }
-    
     await setDoc(userRef, finalProfile);
-
   } catch (e: any) {
     console.error('Error creating user profile:', e);
     errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -93,8 +95,11 @@ export default function SignUpPage() {
     setError(null);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener in AuthProvider will handle profile creation.
+      const userCredential = await signInWithPopup(auth, provider);
+      // The onAuthStateChanged listener in AuthProvider will handle profile creation for existing users.
+      // But for brand new users, we can create the profile immediately.
+      await createUserProfile(firestore, userCredential.user, null);
+
       toast({
           title: 'Account Created!',
           description: "You've successfully signed up with Google.",
