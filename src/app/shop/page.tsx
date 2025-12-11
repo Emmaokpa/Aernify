@@ -1,14 +1,15 @@
+
 'use client';
 import { useMemo, useState } from 'react';
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import Image from "next/image";
-import { Coins, ChevronLeft, X } from "lucide-react";
+import { Coins } from "lucide-react";
 import { useCollection, useFirestore } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
 function ProductDetailModal({ product, isOpen, onOpenChange }: { product: Product | null, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
@@ -19,6 +20,10 @@ function ProductDetailModal({ product, isOpen, onOpenChange }: { product: Produc
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle className="sr-only">{product.name}</DialogTitle>
+                    <DialogDescription className="sr-only">Product details for {product.name}</DialogDescription>
+                </DialogHeader>
                  <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
                     <Card className="overflow-hidden rounded-2xl">
                     <div className="relative aspect-square">
