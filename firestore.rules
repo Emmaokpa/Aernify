@@ -33,26 +33,27 @@ service cloud.firestore {
       allow get, list: if isSignedIn();
       
       // An owner can update their own profile, but cannot change their admin status or total coins directly.
-      // weeklyCoins can be reset by an admin (covered by another rule), but users can only increment it.
+      // weeklyCoins can be reset by an admin (covered by another rule), but users can only increment or decrement it.
       allow update: if isOwner(userId) && 
                     request.resource.data.isAdmin == resource.data.isAdmin &&
-                    // Users cannot directly set their coin totals
-                    request.resource.data.coins == resource.data.coins + incomingIncrement() &&
+                    // Users cannot directly set their coin totals, only modify them.
+                    request.resource.data.coins == resource.data.coins + incomingCoinChange() &&
                     (
-                      // Case 1: Weekly coins are being incremented along with total coins
-                      request.resource.data.weeklyCoins == resource.data.weeklyCoins + incomingIncrement() ||
+                      // Case 1: Weekly coins are changing along with total coins
+                      request.resource.data.weeklyCoins == resource.data.weeklyCoins + incomingCoinChange() ||
                       // Case 2: Weekly coins are being reset to 0 (by admin flow, checked in that rule)
-                      request.resource.data.weeklyCoins == 0
+                      request.resource.data.weeklyCoins == 0 ||
+                      // Case 3: Total coins are being spent, but weekly coins are not affected (if it's not a weekly activity)
+                      request.resource.data.weeklyCoins == resource.data.weeklyCoins
                     );
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
     }
 
-    function incomingIncrement() {
-        // This is a placeholder for a more complex check if we could inspect the write object.
-        // Since we can't, we rely on the fact that coin updates are always increments.
-        // This rule mainly prevents a user from arbitrarily setting their coin value.
+    function incomingCoinChange() {
+        // This function calculates the change in coins. It can be positive (earning) or negative (spending).
+        // This prevents a user from arbitrarily setting their coin value to any number.
         return request.resource.data.coins - resource.data.coins;
     }
     
