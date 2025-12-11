@@ -37,7 +37,7 @@ export default function LoginPage() {
       // onAuthStateChanged in AuthProvider will handle the redirect
       router.push('/');
     } catch (err: any) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Invalid email or password. Please try again.');
       } else {
         setError('An unexpected error occurred. Please try again.');
