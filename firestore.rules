@@ -33,17 +33,16 @@ service cloud.firestore {
       allow get, list: if isSignedIn();
       
       // An owner can update their own profile, but cannot change their admin status or total coins directly.
-      // weeklyCoins can be reset by an admin (covered by another rule), but users can only increment or decrement it.
       allow update: if isOwner(userId) && 
                     request.resource.data.isAdmin == resource.data.isAdmin &&
                     // Users cannot directly set their coin totals, only modify them.
                     request.resource.data.coins == resource.data.coins + incomingCoinChange() &&
                     (
-                      // Case 1: Weekly coins are changing along with total coins
+                      // Case 1: Weekly coins are changing along with total coins (earning)
                       request.resource.data.weeklyCoins == resource.data.weeklyCoins + incomingCoinChange() ||
-                      // Case 2: Weekly coins are being reset to 0 (by admin flow, checked in that rule)
+                      // Case 2: Weekly coins are being reset to 0 (admin flow)
                       request.resource.data.weeklyCoins == 0 ||
-                      // Case 3: Total coins are being spent, but weekly coins are not affected (if it's not a weekly activity)
+                      // Case 3: Total coins are being spent, but weekly coins are not affected (purchasing)
                       request.resource.data.weeklyCoins == resource.data.weeklyCoins
                     );
 
