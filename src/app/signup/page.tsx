@@ -55,7 +55,7 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
       }
   }
 
-  const newUserProfile: Omit<UserProfile, 'isAdmin'> = {
+  const newUserProfile: Omit<UserProfile, 'id' | 'isAdmin'> = {
     uid: user.uid,
     displayName: displayName || user.displayName || 'New User',
     email: user.email || '',
@@ -270,5 +270,3 @@ export default function SignUpPage() {
     </main>
   );
 }
-
-    

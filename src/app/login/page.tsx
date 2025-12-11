@@ -18,7 +18,7 @@ import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, AuthErrorCodes, User } from 'firebase/auth';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, increment } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -37,7 +37,7 @@ async function createUserProfile(db: any, user: User) {
   }
   
   // This is a simplified profile creation for this edge case.
-  const newUserProfile: Omit<UserProfile, 'isAdmin' | 'referralCode'> = {
+  const newUserProfile: Omit<UserProfile, 'id' | 'isAdmin' | 'referralCode' | 'weeklyCoins'> = {
     uid: user.uid,
     displayName: user.displayName || 'New User',
     email: user.email || '',
@@ -47,6 +47,7 @@ async function createUserProfile(db: any, user: User) {
 
   const finalProfile = {
       ...newUserProfile,
+      weeklyCoins: 0,
       referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
       isAdmin: false,
   }
