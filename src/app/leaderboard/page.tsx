@@ -113,7 +113,7 @@ function RankedUser({
       )}
     >
       <div className="w-12 text-center text-lg font-bold text-muted-foreground">
-        #{rank}
+        {rank ? `#${rank}` : '-'}
       </div>
       <Avatar className="w-10 h-10 mx-4">
         <AvatarImage src={user.avatarUrl} alt={user.name} />
@@ -130,7 +130,7 @@ function RankedUser({
 // --- Main Leaderboard Page Component ---
 export default function LeaderboardPage() {
     const firestore = useFirestore();
-    const { user: currentUserAuth } = useUser();
+    const { user: currentUserAuth, profile: currentUserProfile, isUserLoading } = useUser();
 
     const leaderboardQuery = useMemo(() => {
         if (!firestore) return null;
@@ -141,7 +141,9 @@ export default function LeaderboardPage() {
         );
     }, [firestore]);
 
-    const { data: users, isLoading } = useCollection<UserProfile>(leaderboardQuery);
+    const { data: users, isLoading: isCollectionLoading } = useCollection<UserProfile>(leaderboardQuery);
+
+    const isLoading = isUserLoading || isCollectionLoading;
 
     const leaderboardData: LeaderboardEntry[] = useMemo(() => {
         if (!users) return [];
@@ -159,6 +161,25 @@ export default function LeaderboardPage() {
 
   const topThree = leaderboardData.slice(0, 3);
   const rest = leaderboardData.slice(3);
+
+  const isCurrentUserInTop50 = useMemo(() => {
+    if (!currentUserAuth || !leaderboardData) return false;
+    return leaderboardData.some(entry => entry.user.id === currentUserAuth.uid);
+  }, [currentUserAuth, leaderboardData]);
+  
+  const currentUserEntryForDisplay: LeaderboardEntry | null = useMemo(() => {
+    if (!currentUserProfile) return null;
+    return {
+      rank: 0, // No rank shown
+      score: currentUserProfile.weeklyCoins,
+      user: {
+        id: currentUserProfile.uid,
+        name: currentUserProfile.displayName || 'Anonymous',
+        avatarUrl: currentUserProfile.photoURL || `https://api.dicebear.com/8.x/bottts/svg?seed=${currentUserProfile.uid}`
+      }
+    };
+  }, [currentUserProfile]);
+
 
   return (
     <>
@@ -218,6 +239,21 @@ export default function LeaderboardPage() {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Current User Not in Top 50 Display */}
+      {!isLoading && !isCurrentUserInTop50 && currentUserEntryForDisplay && (
+        <div className="mt-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">Your Current Standing</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <RankedUser entry={currentUserEntryForDisplay} isCurrentUser={true} />
+                    <p className="text-xs text-muted-foreground text-center mt-3">You are not in the top 50. Keep playing to climb the ranks!</p>
+                </CardContent>
+            </Card>
+        </div>
+      )}
     </>
   );
 }
