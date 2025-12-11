@@ -79,6 +79,14 @@ service cloud.firestore {
         allow write: if isAdmin();
     }
 
+     // Rules for the giftCards collection
+    match /giftCards/{giftCardId} {
+        // Any signed-in user can read gift card data.
+        allow read: if isSignedIn();
+        // Only admins can write (create, update, delete) gift card data.
+        allow write: if isAdmin();
+    }
+
     // Rules for the offer_submissions collection
     match /offer_submissions/{submissionId} {
         // A user can create their own submission.

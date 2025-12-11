@@ -15,8 +15,6 @@ import {
   Sparkles,
   LogOut,
   Shield,
-  Briefcase,
-  CheckSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
@@ -38,12 +36,6 @@ const navItems: NavItem[] = [
   { title: 'Profile', href: '/profile', icon: <User /> },
 ];
 
-const adminNavItems: NavItem[] = [
-    { title: 'Manage Games', href: '/admin/games', icon: <Gamepad2 /> },
-    { title: 'Manage Offers', href: '/admin/offers', icon: <Briefcase /> },
-    { title: 'Verify Offers', href: '/admin/verify-offers', icon: <CheckSquare /> },
-    { title: 'Manage Shop', href: '/admin/shop', icon: <ShoppingBag /> },
-];
 
 type SidebarProps = {
   isOpen: boolean;
@@ -89,21 +81,19 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
              {profile?.isAdmin && (
                 <>
                     <li className='px-3 pt-4 pb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider'>Admin</li>
-                    {adminNavItems.map((item) => (
-                    <li key={item.title}>
-                        <Link
-                        href={item.href}
-                        onClick={() => setOpen(false)}
-                        className={cn(
-                            'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10',
-                            pathname.startsWith(item.href) && 'bg-primary/20 text-primary font-semibold'
-                        )}
-                        >
-                        {item.icon}
-                        {item.title}
+                    <li>
+                         <Link
+                            href="/admin"
+                            onClick={() => setOpen(false)}
+                             className={cn(
+                                'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10',
+                                pathname.startsWith('/admin') && 'bg-primary/20 text-primary font-semibold'
+                            )}
+                         >
+                            <Shield />
+                            Admin Dashboard
                         </Link>
                     </li>
-                    ))}
                 </>
             )}
           </ul>

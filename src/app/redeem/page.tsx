@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { giftCards } from '@/lib/data';
 import Image from 'next/image';
 import { Coins, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -21,14 +20,17 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { GiftCard } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useUser, useFirestore } from '@/firebase';
-import { doc, updateDoc, increment } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection } from '@/firebase';
+import { doc, updateDoc, increment, collection } from 'firebase/firestore';
 
 export default function RedeemPage() {
   const { toast } = useToast();
   const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
   const { user, profile, isUserLoading } = useUser();
   const firestore = useFirestore();
+
+  const giftCardsCollection = useMemo(() => collection(firestore, 'giftCards'), [firestore]);
+  const { data: giftCards, isLoading: isLoadingGiftCards } = useCollection<GiftCard>(giftCardsCollection);
 
   const handleRedeem = async (card: GiftCard) => {
     if (!user || !profile) return;
@@ -67,6 +69,8 @@ export default function RedeemPage() {
       setIsRedeeming(null);
     }
   };
+
+  const isLoading = isUserLoading || isLoadingGiftCards;
   
   return (
     <>
@@ -86,7 +90,10 @@ export default function RedeemPage() {
           </div>
         </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {giftCards.map((card) => (
+        {isLoading && Array.from({length: 4}).map((_, i) => (
+           <Skeleton key={i} className="aspect-[4/4.5] rounded-2xl" />
+        ))}
+        {giftCards?.map((card) => (
           <Card key={card.id} className="overflow-hidden flex flex-col rounded-2xl group">
             <CardHeader className="p-0">
               <div className="relative aspect-[1.6]">

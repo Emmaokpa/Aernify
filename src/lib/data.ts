@@ -1,4 +1,4 @@
-import type { User, DailyChallenge, Game, Offer, Product, GiftCard, LeaderboardEntry } from './types';
+import type { User, DailyChallenge, Game, Offer, Product, LeaderboardEntry } from './types';
 import { getImage } from './placeholder-images';
 import { Star, Video, Gamepad2, Gift, Trophy, Crown, Coins as CoinsIcon } from 'lucide-react';
 import React from 'react';
@@ -146,13 +146,6 @@ export const products: Product[] = [
   { id: 'p4', name: 'Mechanical Keyboard', description: 'Tactile feedback for pro gamers.', price: 12000, ...getImage('product4') },
   { id: 'p5', name: '10,000mAh Power Bank', description: 'Charge your devices anywhere.', price: 6000, ...getImage('product5') },
   { id: 'p6', name: 'Pro VR Headset', description: 'Immerse yourself in virtual worlds.', price: 65000, ...getImage('product6') },
-];
-
-export const giftCards: GiftCard[] = [
-  { id: 'gc1', name: 'Amazon Gift Card', value: 10, price: 10000, ...getImage('giftcard1') },
-  { id: 'gc2', name: 'Google Play Gift Card', value: 15, price: 15000, ...getImage('giftcard2') },
-  { id: 'gc3', name: 'Apple Gift Card', value: 25, price: 25000, ...getImage('giftcard3') },
-  { id: 'gc4', name: 'Steam Gift Card', value: 20, price: 20000, ...getImage('giftcard4') },
 ];
 
 export const leaderboard: LeaderboardEntry[] = [

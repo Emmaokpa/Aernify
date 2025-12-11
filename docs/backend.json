@@ -106,6 +106,19 @@
         },
         "required": ["name", "description", "price", "imageUrl"]
     },
+     "GiftCard": {
+      "title": "Gift Card",
+      "description": "Represents a gift card available for redemption.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "value": { "type": "number" },
+        "price": { "type": "number" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "imageHint": { "type": "string" }
+      },
+      "required": ["name", "value", "price", "imageUrl"]
+    },
     "OfferSubmission": {
         "title": "Offer Submission",
         "description": "Represents a user's submission for completing an affiliate offer.",
@@ -156,6 +169,12 @@
             "$ref": "#/entities/Product"
         },
         "description": "Stores information about shop products."
+    },
+     "/giftCards/{giftCardId}": {
+      "schema": {
+        "$ref": "#/entities/GiftCard"
+      },
+      "description": "Stores information about available gift cards."
     },
     "/offer_submissions/{submissionId}": {
         "schema": {
