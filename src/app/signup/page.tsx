@@ -46,14 +46,13 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
   }
 
   try {
-    // If a referral code was used, apply it first.
+    // If a referral code was used, apply it.
     if (referralCode) {
         const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
         if (referralResult.success) {
             // The referral flow handles the referrer's reward.
-            // We add the bonus to the new user's starting coins.
-            finalProfile.coins += 100;
-             console.log(`Referral success! New user coins: ${finalProfile.coins}`);
+            // The new user gets the standard 10 coins.
+             console.log(`Referral success! Referrer has been awarded coins.`);
         } else {
             console.warn("Referral code application failed:", referralResult.message);
         }
