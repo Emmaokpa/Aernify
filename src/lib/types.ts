@@ -122,4 +122,29 @@ export interface UserChallengeProgress {
     progress: ChallengeProgress;
 }
 
+export interface ShippingInfo {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  userDisplayName: string;
+  productId: string;
+  productName: string;
+  productImageUrl: string;
+  coinsSpent: number;
+  shippingInfo: ShippingInfo;
+  status: 'pending' | 'shipped' | 'delivered' | 'cancelled';
+  orderedAt: any; // Firestore Timestamp
+}
+
     

@@ -17,6 +17,7 @@ import {
   TicketCheck,
   Sparkles,
   Trophy,
+  PackageCheck,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 
@@ -50,6 +51,11 @@ const adminFeatures: NavItem[] = [
     title: 'Manage Gift Cards',
     href: '/admin/gift-cards',
     icon: <Gift className="w-8 h-8" />,
+  },
+  {
+    title: 'Fulfill Orders',
+    href: '/admin/orders',
+    icon: <PackageCheck className="w-8 h-8" />,
   },
   {
     title: 'Verify Redemptions',
