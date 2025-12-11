@@ -1,8 +1,8 @@
 
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import PageHeader from "@/components/page-header";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Coins, Loader2, CheckCircle, Clock, ExternalLink } from "lucide-react";
@@ -24,7 +24,6 @@ import {
 import ImageUploadForm from '@/components/image-upload-form';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 
 function SubmitOfferDialog({ offer, children, disabled }: { offer: Offer, children: React.ReactNode, disabled?: boolean }) {
   const { toast } = useToast();
@@ -85,7 +84,7 @@ function SubmitOfferDialog({ offer, children, disabled }: { offer: Offer, childr
       <DialogTrigger asChild disabled={disabled}>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Submit Proof for: {offer.title}</DialogTitle>
           <DialogDescription>
@@ -93,15 +92,12 @@ function SubmitOfferDialog({ offer, children, disabled }: { offer: Offer, childr
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <div className="space-y-2">
-            <p className="font-medium">Upload your proof of completion</p>
-            <ImageUploadForm onUploadSuccess={(url) => { setProofImageUrl(url); setError(null); }} />
-          </div>
+          {error && <p className="text-sm text-destructive px-1">{error}</p>}
+          <ImageUploadForm onUploadSuccess={(url) => { setProofImageUrl(url); setError(null); }} />
         </div>
-        <DialogFooter>
+        <DialogFooter className='gap-2 sm:gap-0'>
           <DialogClose asChild>
-            <Button type="button" variant="secondary">
+            <Button type="button" variant="outline">
               Cancel
             </Button>
           </DialogClose>
@@ -114,6 +110,7 @@ function SubmitOfferDialog({ offer, children, disabled }: { offer: Offer, childr
     </Dialog>
   );
 }
+
 
 function OfferList() {
   const firestore = useFirestore();
@@ -179,7 +176,7 @@ function OfferList() {
                     </Badge>
                 )}
             </CardHeader>
-            <CardContent className="p-4 flex-grow flex flex-col">
+            <CardContent className="p-4 flex-grow">
               <p className="text-sm text-muted-foreground">{offer.company}</p>
               <h3 className="text-lg font-semibold leading-tight">{offer.title}</h3>
               <div className="font-bold text-primary flex items-center gap-1.5 text-lg mt-2">
@@ -187,7 +184,7 @@ function OfferList() {
                 <span>{offer.reward.toLocaleString()}</span>
               </div>
             </CardContent>
-            <CardFooter className="p-4 bg-muted/20">
+            <CardFooter className="p-4 bg-card">
               <div className="flex w-full gap-2">
                  <Button asChild className="flex-1 rounded-full" size="sm">
                     <a href={offer.link} target="_blank" rel="noopener noreferrer">
