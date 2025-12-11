@@ -89,23 +89,14 @@ export default function ChallengesPage() {
     if (!challenges) return [];
     
     return challenges.map(challenge => {
-        const progressInfo = progressData?.progress?.[challenge.id];
+        // Correctly get progress for the challenge *type*
+        const typeProgressValue = progressData?.progress?.[challenge.type]?.currentValue ?? 0;
         
-        // This is the key fix: We check progress based on the challenge TYPE,
-        // because actions like `playGame` increment a generic counter for that type.
-        const typeProgress = progressData?.progress?.[challenge.type]?.currentValue ?? 0;
+        // The claimed status is specific to the challenge *ID*
+        const isClaimed = progressData?.progress?.[challenge.id]?.claimed ?? false;
 
-        let currentValue = 0;
-        // The `dailyCheckIn` challenge type is unique, its progress is implicitly 1 if the user logs in.
-        // We'll give them progress for just visiting the page, which is handled by the root page load.
-        if (challenge.type === 'dailyCheckIn') {
-             currentValue = progressData?.progress?.['dailyCheckIn']?.currentValue ?? 0;
-        } else {
-             currentValue = typeProgress;
-        }
-
+        const currentValue = typeProgressValue;
         const isCompleted = currentValue >= challenge.targetValue;
-        const isClaimed = progressInfo?.claimed ?? false;
 
         return {
             ...challenge,
