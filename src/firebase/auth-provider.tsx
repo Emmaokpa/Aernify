@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode, useMe
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { useAuth, useFirestore, useDoc } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface AuthContextState {
   user: User | null;
@@ -16,6 +16,11 @@ interface AuthContextState {
 }
 
 const AuthContext = createContext<AuthContextState | undefined>(undefined);
+
+// Function to generate a random referral code
+const generateReferralCode = () => {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const auth = useAuth();
@@ -33,7 +38,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, 
-      (firebaseUser) => {
+      async (firebaseUser) => {
+        if (firebaseUser) {
+          // User is signed in. Check if their profile exists in Firestore.
+          const userRef = doc(firestore, 'users', firebaseUser.uid);
+          const docSnap = await getDoc(userRef);
+
+          if (!docSnap.exists()) {
+            // User exists in Auth, but not in Firestore. Create the profile.
+            console.log(`User ${firebaseUser.uid} not found in Firestore. Creating profile...`);
+            const newUserProfile: UserProfile = {
+              uid: firebaseUser.uid,
+              displayName: firebaseUser.displayName || 'New User',
+              email: firebaseUser.email || '',
+              photoURL: firebaseUser.photoURL,
+              coins: 10, // Default starting coins
+              referralCode: generateReferralCode(),
+              isAdmin: false,
+            };
+            await setDoc(userRef, newUserProfile);
+          }
+        }
         setUser(firebaseUser);
         setIsUserLoading(false);
       },
@@ -45,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, firestore]);
 
   const value = { 
     user, 
