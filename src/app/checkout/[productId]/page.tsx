@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -42,15 +43,6 @@ export default function CheckoutPage({ params }: { params: { productId: string }
           fullName: profile?.displayName ?? '',
       }
   });
-
-
-  if (isProductLoading) {
-    return <CheckoutSkeleton />;
-  }
-
-  if (!product) {
-    notFound();
-  }
 
   const handlePurchase: SubmitHandler<ShippingInfo> = async (shippingData) => {
     if (!user || !profile || !product) {
@@ -104,6 +96,15 @@ export default function CheckoutPage({ params }: { params: { productId: string }
   };
   
   const isLoading = isUserLoading || isProductLoading || isSubmitting;
+
+  if (isProductLoading) {
+    return <CheckoutSkeleton />;
+  }
+
+  // Correctly call notFound() before any hooks that might depend on the product
+  if (!product) {
+    notFound();
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
