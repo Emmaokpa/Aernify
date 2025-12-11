@@ -14,14 +14,48 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/icons/logo';
-import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, AuthErrorCodes } from 'firebase/auth';
+import { useAuth, useFirestore } from '@/firebase';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, AuthErrorCodes, User } from 'firebase/auth';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+
+
+// Function to generate a random referral code
+const generateReferralCode = () => {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
+
+async function createUserProfile(db: any, user: User) {
+  const userRef = doc(db, 'users', user.uid);
+  const docSnap = await getDoc(userRef);
+
+  // Only create profile if it doesn't exist
+  if (docSnap.exists()) {
+    return;
+  }
+  
+  const newUserProfile: Omit<UserProfile, 'isAdmin'> = {
+    uid: user.uid,
+    displayName: user.displayName || '',
+    email: user.email || '',
+    photoURL: user.photoURL,
+    coins: 10, // Start with 10 coins
+    referralCode: generateReferralCode(),
+  };
+
+  await setDoc(userRef, {
+      ...newUserProfile,
+      isAdmin: false, // Ensure isAdmin is always false on client-side creation
+  });
+}
+
 
 export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,8 +66,14 @@ export default function LoginPage() {
     setError(null);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      // onAuthStateChanged in AuthProvider will handle profile creation and redirect.
+      const userCredential = await signInWithPopup(auth, provider);
+      const user = userCredential.user;
+      
+      if (user) {
+        // This will create a profile if it's their first time, or do nothing if it exists.
+        await createUserProfile(firestore, user);
+      }
+      // The redirect is handled automatically by the onAuthStateChanged listener in AuthProvider
     } catch (err: any) {
       console.error('Google sign-in error:', err);
       if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
