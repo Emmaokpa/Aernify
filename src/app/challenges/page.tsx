@@ -88,28 +88,21 @@ export default function ChallengesPage() {
   const augmentedChallenges = useMemo(() => {
     if (!challenges) return [];
     
-    // Create a map of challenge progress by the challenge TYPE for multivalue challenges like play games.
-    const progressByType: { [key: string]: number } = {};
-    if(progressData?.progress) {
-        Object.values(progressData.progress).forEach(p => {
-             // This is a hack because we dont have a good way to tie progress to challenge type
-        })
-    }
-
     return challenges.map(challenge => {
         const progressInfo = progressData?.progress?.[challenge.id];
         
+        // This is the key fix: We check progress based on the challenge TYPE,
+        // because actions like `playGame` increment a generic counter for that type.
+        const typeProgress = progressData?.progress?.[challenge.type]?.currentValue ?? 0;
+
         let currentValue = 0;
         // The `dailyCheckIn` challenge type is unique, its progress is implicitly 1 if the user logs in.
-        // We'll give them progress for just visiting the page.
+        // We'll give them progress for just visiting the page, which is handled by the root page load.
         if (challenge.type === 'dailyCheckIn') {
-             currentValue = 1;
+             currentValue = progressData?.progress?.['dailyCheckIn']?.currentValue ?? 0;
         } else {
-            // This is a rough mapping. In a real app, you might have more specific progress tracking.
-             const typeProgress = progressData?.progress?.[challenge.type]?.currentValue ?? 0;
              currentValue = typeProgress;
         }
-
 
         const isCompleted = currentValue >= challenge.targetValue;
         const isClaimed = progressInfo?.claimed ?? false;
