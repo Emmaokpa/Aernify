@@ -18,10 +18,70 @@ import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, AuthErrorCodes, User } from 'firebase/auth';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { applyReferralCode } from '@/ai/flows/referral-flow';
+
+// Function to generate a random referral code
+const generateReferralCode = () => {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
+
+// This function is needed here for the case where a user uses Google to sign in
+// for the very first time from the login page.
+async function createUserProfile(db: any, user: User, referralCode: string | null) {
+  const userRef = doc(db, 'users', user.uid);
+  const docSnap = await getDoc(userRef);
+
+  // Only create profile if it doesn't exist
+  if (docSnap.exists()) {
+    return;
+  }
+  
+  let startingCoins = 10; // Standard starting coins
+
+  // This is unlikely to be used from the login page, but included for consistency
+  if (referralCode) {
+      const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
+      if (referralResult.success) {
+           console.log(`Referral success! Referrer has been awarded coins.`);
+      } else {
+          console.warn("Referral code application failed:", referralResult.message);
+      }
+  }
+
+  const newUserProfile: Omit<UserProfile, 'isAdmin'> = {
+    uid: user.uid,
+    displayName: user.displayName || '',
+    email: user.email || '',
+    photoURL: user.photoURL,
+    coins: startingCoins,
+    referralCode: generateReferralCode(),
+  };
+
+  const finalProfile = {
+      ...newUserProfile,
+      isAdmin: false,
+  }
+
+  try {
+    await setDoc(userRef, finalProfile);
+  } catch (e: any) {
+    console.error('Error creating user profile:', e);
+    errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: userRef.path,
+        operation: 'create',
+        requestResourceData: finalProfile
+    }));
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +92,9 @@ export default function LoginPage() {
     setError(null);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const userCredential = await signInWithPopup(auth, provider);
+      // Ensure profile exists for users signing in for the first time via Google on the login page.
+      await createUserProfile(firestore, userCredential.user, null);
       // The redirect is handled automatically by the onAuthStateChanged listener in AuthProvider
     } catch (err: any) {
       console.error('Google sign-in error:', err);
