@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -189,7 +190,7 @@ export default function AdminFulfillOrdersPage() {
         </TabsContent>
         <TabsContent value="shipped">
             <OrderList status="shipped" />
-        </Tabs.Content>
+        </TabsContent>
          <TabsContent value="delivered">
             <OrderList status="delivered" />
         </TabsContent>
@@ -197,5 +198,3 @@ export default function AdminFulfillOrdersPage() {
     </AdminAuthWrapper>
   );
 }
-
-    
