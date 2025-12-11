@@ -1,4 +1,4 @@
-import type { User, DailyChallenge, Game, Offer, Product, LeaderboardEntry } from './types';
+import type { User, DailyChallenge, Game, Offer, Product } from './types';
 import { getImage } from './placeholder-images';
 import { Star, Video, Gamepad2, Gift, Trophy, Crown, Coins as CoinsIcon } from 'lucide-react';
 import React from 'react';
@@ -124,19 +124,19 @@ export const dailyChallenges: DailyChallenge[] = [
 ];
 
 export const games: Game[] = [
-  { id: 'g1', title: 'Galaxy Invaders', provider: 'Playgama', reward: 50, ...getImage('game1'), iframeUrl: 'https://playgama.com/game/1' },
-  { id: 'g2', title: 'Jungle Run', provider: 'Playgama', reward: 40, ...getImage('game2'), iframeUrl: 'https://playgama.com/game/2' },
-  { id: 'g3', title: 'Puzzle Blocks', provider: 'Playgama', reward: 60, ...getImage('game3'), iframeUrl: 'https://playgama.com/game/3' },
-  { id: 'g4', title: 'Speed Racer', provider: 'Playgama', reward: 75, ...getImage('game4'), iframeUrl: 'https://playgama.com/game/4' },
-  { id: 'g5', title: 'Pirate\'s Treasure', provider: 'Playgama', reward: 55, ...getImage('game5'), iframeUrl: 'https://playgama.com/game/5' },
-  { id: 'g6', title: 'Castle Defense', provider: 'Playgama', reward: 80, ...getImage('game6'), iframeUrl: 'https://playgama.com/game/6' },
+  { id: 'g1', title: 'Galaxy Invaders', description: 'Classic space shooter', imageUrl: 'https://picsum.photos/seed/g1/400/500', imageHint: 'space arcade', iframeUrl: 'https://playgama.com/game/1', reward: 5 },
+  { id: 'g2', title: 'Jungle Run', description: 'Endless runner adventure', imageUrl: 'https://picsum.photos/seed/g2/400/500', imageHint: 'jungle runner', iframeUrl: 'https://playgama.com/game/2', reward: 5 },
+  { id: 'g3', title: 'Puzzle Blocks', description: 'Addictive block puzzle', imageUrl: 'https://picsum.photos/seed/g3/400/500', imageHint: 'colorful blocks', iframeUrl: 'https://playgama.com/game/3', reward: 5 },
+  { id: 'g4', title: 'Speed Racer', description: 'High-speed racing game', imageUrl: 'https://picsum.photos/seed/g4/400/500', imageHint: 'racing car', iframeUrl: 'https://playgama.com/game/4', reward: 5 },
+  { id: 'g5', title: 'Pirate\'s Treasure', description: 'Solve puzzles for loot', imageUrl: 'https://picsum.photos/seed/g5/400/500', imageHint: 'treasure chest', iframeUrl: 'https://playgama.com/game/5', reward: 5 },
+  { id: 'g6', title: 'Castle Defense', description: 'Defend your kingdom', imageUrl: 'https://picsum.photos/seed/g6/400/500', imageHint: 'fantasy castle', iframeUrl: 'https://playgama.com/game/6', reward: 5 },
 ];
 
 export const offers: Offer[] = [
-  { id: 'o1', title: 'Complete a Survey', company: 'Survey Junkie', reward: 1200, ...getImage('offer1') },
-  { id: 'o2', title: 'Reach Level 10', company: 'RAID: Shadow Legends', reward: 5500, ...getImage('offer2') },
-  { id: 'o3', title: 'Sign up and get cashback', company: 'Cashback App', reward: 800, ...getImage('offer3') },
-  { id: 'o4', title: 'Install and create a budget', company: 'Finance Tracker', reward: 1500, ...getImage('offer4') },
+  { id: 'o1', title: 'Complete a Survey', company: 'Survey Junkie', reward: 1200, ...getImage('offer1'), link: '#' },
+  { id: 'o2', title: 'Reach Level 10', company: 'RAID: Shadow Legends', reward: 5500, ...getImage('offer2'), link: '#' },
+  { id: 'o3', title: 'Sign up and get cashback', company: 'Cashback App', reward: 800, ...getImage('offer3'), link: '#' },
+  { id: 'o4', title: 'Install and create a budget', company: 'Finance Tracker', reward: 1500, ...getImage('offer4'), link: '#' },
 ];
 
 export const products: Product[] = [
@@ -146,15 +146,4 @@ export const products: Product[] = [
   { id: 'p4', name: 'Mechanical Keyboard', description: 'Tactile feedback for pro gamers.', price: 12000, ...getImage('product4') },
   { id: 'p5', name: '10,000mAh Power Bank', description: 'Charge your devices anywhere.', price: 6000, ...getImage('product5') },
   { id: 'p6', name: 'Pro VR Headset', description: 'Immerse yourself in virtual worlds.', price: 65000, ...getImage('product6') },
-];
-
-export const leaderboard: LeaderboardEntry[] = [
-  { rank: 1, user: { name: 'Sophia', avatarUrl: getImage('leaderboardUser1').imageUrl }, score: 154200 },
-  { rank: 2, user: { name: 'Jacob', avatarUrl: getImage('leaderboardUser2').imageUrl }, score: 149300 },
-  { rank: 3, user: { name: 'CurrentUser', avatarUrl: currentUser.avatarUrl }, score: 125800 },
-  { rank: 4, user: { name: 'Emily', avatarUrl: getImage('leaderboardUser3').imageUrl }, score: 110500 },
-  { rank: 5, user: { name: 'Michael', avatarUrl: 'https://picsum.photos/seed/leader4/100/100' }, score: 98600 },
-  { rank: 6, user: { name: 'Jessica', avatarUrl: 'https://picsum.photos/seed/leader5/100/100' }, score: 95400 },
-  { rank: 7, user: { name: 'David', avatarUrl: 'https://picsum.photos/seed/leader6/100/100' }, score: 89300 },
-  { rank: 8, user: { name: 'Sarah', avatarUrl: 'https://picsum.photos/seed/leader7/100/100' }, score: 82100 },
 ];

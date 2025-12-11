@@ -9,12 +9,14 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Crown, Coins } from 'lucide-react';
+import { Crown, Coins, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { leaderboard as staticLeaderboard, currentUser } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { LeaderboardEntry } from '@/lib/types';
-import { useState, useEffect } from 'react';
+import type { LeaderboardEntry, UserProfile } from '@/lib/types';
+import { useMemo } from 'react';
+import { useUser, useFirestore, useCollection } from '@/firebase';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
+
 
 const getTrophyColor = (rank: number) => {
   if (rank === 1) return 'text-amber-400 fill-amber-400';
@@ -127,20 +129,35 @@ function RankedUser({
 
 // --- Main Leaderboard Page Component ---
 export default function LeaderboardPage() {
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+    const firestore = useFirestore();
+    const { user: currentUserAuth } = useUser();
 
-  useEffect(() => {
-    // Simulate fetching data
-    setTimeout(() => {
-      setLeaderboardData(staticLeaderboard);
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+    const leaderboardQuery = useMemo(() => {
+        return query(
+            collection(firestore, 'users'), 
+            orderBy('coins', 'desc'), 
+            limit(50)
+        );
+    }, [firestore]);
+
+    const { data: users, isLoading } = useCollection<UserProfile>(leaderboardQuery);
+
+    const leaderboardData: LeaderboardEntry[] = useMemo(() => {
+        if (!users) return [];
+        return users.map((user, index) => ({
+            rank: index + 1,
+            score: user.coins,
+            user: {
+                id: user.uid,
+                name: user.displayName || 'Anonymous',
+                avatarUrl: user.photoURL || `https://api.dicebear.com/8.x/bottts/svg?seed=${user.uid}`
+            }
+        }));
+    }, [users]);
+
 
   const topThree = leaderboardData.slice(0, 3);
   const rest = leaderboardData.slice(3);
-  const currentUserRank = leaderboardData.find(e => e.user.name === 'CurrentUser');
 
   return (
     <>
@@ -148,6 +165,17 @@ export default function LeaderboardPage() {
         title="Leaderboard"
         description="See who's on top this week. Top players win weekly prizes!"
       />
+
+      <Card className="mb-8 bg-primary/10 border-primary/20">
+          <CardContent className='p-6 text-center'>
+            <div className='max-w-md mx-auto'>
+                <Award className='w-12 h-12 mx-auto text-primary mb-2' />
+                <h3 className='text-lg font-bold text-primary-foreground'>Weekly Top Player Reward</h3>
+                <p className='text-muted-foreground'>The top player with over 50,000 coins at the end of the week wins a <span className='font-bold text-primary-foreground'>$50 Gift Card!</span> Only the #1 ranked player is eligible.</p>
+            </div>
+          </CardContent>
+      </Card>
+
 
       {/* --- Top 3 Display --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-8 mb-8 items-end">
@@ -164,7 +192,7 @@ export default function LeaderboardPage() {
         <CardContent>
           <div className="space-y-2">
             {isLoading ? (
-               Array.from({ length: 5 }).map((_, i) => (
+               Array.from({ length: 7 }).map((_, i) => (
                 <div key={i} className="flex items-center p-3">
                   <Skeleton className="h-6 w-12" />
                   <Skeleton className="w-10 h-10 rounded-full mx-4" />
@@ -175,9 +203,9 @@ export default function LeaderboardPage() {
             ) : (
                rest.map((entry) => (
                 <RankedUser 
-                  key={entry.rank} 
+                  key={entry.user.id} 
                   entry={entry} 
-                  isCurrentUser={entry.user.name === 'CurrentUser'}
+                  isCurrentUser={entry.user.id === currentUserAuth?.uid}
                 />
               ))
             )}

@@ -67,6 +67,7 @@ export type GiftCard = {
 export type LeaderboardEntry = {
   rank: number;
   user: {
+    id: string;
     name: string;
     avatarUrl: string;
   };
