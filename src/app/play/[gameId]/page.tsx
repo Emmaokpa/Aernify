@@ -54,6 +54,7 @@ export default function GamePage() {
         const userDocRef = doc(firestore, 'users', user.uid);
         await updateDoc(userDocRef, {
           coins: increment(game.reward),
+          weeklyCoins: increment(game.reward),
         });
         
         setRewardClaimed(true);
@@ -220,3 +221,5 @@ export default function GamePage() {
     </div>
   );
 }
+
+    

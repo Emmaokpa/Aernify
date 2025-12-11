@@ -31,7 +31,7 @@ const generateReferralCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
-async function createUserProfile(db: any, user: User, referralCode: string | null) {
+async function createUserProfile(db: any, user: User, referralCode: string | null, displayName?: string) {
   const userRef = doc(db, 'users', user.uid);
   const docSnap = await getDoc(userRef);
 
@@ -41,13 +41,15 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
   }
   
   let startingCoins = 10; // Standard starting coins
+  let bonusAwarded = false;
 
   // If a referral code was used, apply it.
   if (referralCode) {
       const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
       if (referralResult.success) {
-           console.log(`Referral success! Referrer has been awarded coins.`);
-           // New user does not get bonus coins per user request
+           console.log(`Referral success! Referrer and new user have been awarded coins.`);
+           // The flow now handles the new user bonus, but we check if it was awarded
+           bonusAwarded = referralResult.bonusAwarded;
       } else {
           console.warn("Referral code application failed:", referralResult.message);
       }
@@ -55,10 +57,11 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
 
   const newUserProfile: Omit<UserProfile, 'isAdmin'> = {
     uid: user.uid,
-    displayName: user.displayName || '',
+    displayName: displayName || user.displayName || 'New User',
     email: user.email || '',
     photoURL: user.photoURL,
-    coins: startingCoins,
+    coins: startingCoins, // Base coins, bonus will be added by the flow
+    weeklyCoins: bonusAwarded ? 50 : 0,
     referralCode: generateReferralCode(),
   };
 
@@ -68,6 +71,8 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
   }
 
   try {
+    // Use setDoc here which will either create or overwrite.
+    // The referral flow will increment the coins, so we set the base profile here.
     await setDoc(userRef, finalProfile);
   } catch (e: any) {
     console.error('Error creating user profile:', e);
@@ -146,7 +151,7 @@ export default function SignUpPage() {
         });
 
         // Create the user profile document in Firestore
-        await createUserProfile(firestore, user, referralCode);
+        await createUserProfile(firestore, user, referralCode, username);
       }
 
       toast({
@@ -265,3 +270,5 @@ export default function SignUpPage() {
     </main>
   );
 }
+
+    

@@ -58,7 +58,10 @@ export default function EarnPage() {
 
     try {
         const userRef = doc(firestore, 'users', user.uid);
-        await updateDoc(userRef, { coins: increment(10) });
+        await updateDoc(userRef, { 
+          coins: increment(10),
+          weeklyCoins: increment(10)
+        });
 
         // Increment challenge progress
         await incrementChallengeProgress(firestore, user.uid, 'watchAd');
@@ -186,3 +189,5 @@ export default function EarnPage() {
     </>
   );
 }
+
+    

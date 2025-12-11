@@ -16,6 +16,7 @@ import {
   ArrowRight,
   TicketCheck,
   Sparkles,
+  Trophy,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 
@@ -55,6 +56,11 @@ const adminFeatures: NavItem[] = [
     href: '/admin/verify-redemptions',
     icon: <TicketCheck className="w-8 h-8" />,
   },
+  {
+    title: 'Leaderboard',
+    href: '/admin/leaderboard',
+    icon: <Trophy className="w-8 h-8" />,
+  },
 ];
 
 export default function AdminDashboardPage() {
@@ -86,3 +92,5 @@ export default function AdminDashboardPage() {
     </AdminAuthWrapper>
   );
 }
+
+    

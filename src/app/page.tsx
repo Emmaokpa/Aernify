@@ -45,7 +45,10 @@ export default function DashboardPage() {
           // Not claimed yet, let's reward the user!
           const userDocRef = doc(firestore, 'users', user.uid);
           
-          await updateDoc(userDocRef, { coins: increment(DAILY_REWARD) });
+          await updateDoc(userDocRef, { 
+            coins: increment(DAILY_REWARD),
+            weeklyCoins: increment(DAILY_REWARD),
+          });
           await setDoc(dailyLoginDocRef, { claimedAt: serverTimestamp() });
           
           // Also update challenge progress for daily check-in
@@ -137,3 +140,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    

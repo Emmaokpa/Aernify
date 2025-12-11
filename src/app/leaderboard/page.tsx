@@ -135,7 +135,7 @@ export default function LeaderboardPage() {
     const leaderboardQuery = useMemo(() => {
         return query(
             collection(firestore, 'users'), 
-            orderBy('coins', 'desc'), 
+            orderBy('weeklyCoins', 'desc'), 
             limit(50)
         );
     }, [firestore]);
@@ -146,7 +146,7 @@ export default function LeaderboardPage() {
         if (!users) return [];
         return users.map((user, index) => ({
             rank: index + 1,
-            score: user.coins,
+            score: user.weeklyCoins,
             user: {
                 id: user.uid,
                 name: user.displayName || 'Anonymous',
@@ -162,7 +162,7 @@ export default function LeaderboardPage() {
   return (
     <>
       <PageHeader
-        title="Leaderboard"
+        title="Weekly Leaderboard"
         description="See who's on top this week. Top players win weekly prizes!"
       />
 
@@ -171,7 +171,7 @@ export default function LeaderboardPage() {
             <div className='max-w-md mx-auto'>
                 <Award className='w-12 h-12 mx-auto text-primary mb-2' />
                 <h3 className='text-lg font-bold text-primary-foreground'>Weekly Top Player Reward</h3>
-                <p className='text-muted-foreground'>The top player with over 50,000 coins at the end of the week wins a <span className='font-bold text-primary-foreground'>$50 Gift Card!</span> Only the #1 ranked player is eligible.</p>
+                <p className='text-muted-foreground'>The top player at the end of the week wins a <span className='font-bold text-primary-foreground'>$50 Gift Card!</span> Only the #1 ranked player is eligible.</p>
             </div>
           </CardContent>
       </Card>
@@ -220,3 +220,5 @@ export default function LeaderboardPage() {
     </>
   );
 }
+
+    

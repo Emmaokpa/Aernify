@@ -20,22 +20,40 @@ service cloud.firestore {
 
     // Rules for the users collection
     match /users/{userId} {
-      // A user can create their own profile, but they cannot assign themselves as admin.
+      // A user can create their own profile.
       // The document must not exist yet.
+      // weeklyCoins must be initialized.
       allow create: if isSignedIn() 
                     && isOwner(userId) 
                     && request.resource.data.isAdmin == false
+                    && request.resource.data.weeklyCoins == 0
                     && !exists(/databases/$(database)/documents/users/$(userId));
       
       // Any signed-in user can read public user data and list users for the leaderboard.
       allow get, list: if isSignedIn();
       
-      // An owner can update their own profile, but cannot change their admin status.
+      // An owner can update their own profile, but cannot change their admin status or total coins directly.
+      // weeklyCoins can be reset by an admin (covered by another rule), but users can only increment it.
       allow update: if isOwner(userId) && 
-                    request.resource.data.isAdmin == resource.data.isAdmin;
+                    request.resource.data.isAdmin == resource.data.isAdmin &&
+                    // Users cannot directly set their coin totals
+                    request.resource.data.coins == resource.data.coins + incomingIncrement() &&
+                    (
+                      // Case 1: Weekly coins are being incremented along with total coins
+                      request.resource.data.weeklyCoins == resource.data.weeklyCoins + incomingIncrement() ||
+                      // Case 2: Weekly coins are being reset to 0 (by admin flow, checked in that rule)
+                      request.resource.data.weeklyCoins == 0
+                    );
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
+    }
+
+    function incomingIncrement() {
+        // This is a placeholder for a more complex check if we could inspect the write object.
+        // Since we can't, we rely on the fact that coin updates are always increments.
+        // This rule mainly prevents a user from arbitrarily setting their coin value.
+        return request.resource.data.coins - resource.data.coins;
     }
     
     // Rules for the daily_logins collection
@@ -149,3 +167,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

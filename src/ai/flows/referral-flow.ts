@@ -22,6 +22,7 @@ export type ReferralInput = z.infer<typeof ReferralInputSchema>;
 const ReferralOutputSchema = z.object({
   success: z.boolean().describe('Whether the referral was applied successfully.'),
   message: z.string().describe('A message describing the result.'),
+  bonusAwarded: z.boolean().describe('Whether the new user received a bonus for using the code.')
 });
 export type ReferralOutput = z.infer<typeof ReferralOutputSchema>;
 
@@ -46,43 +47,48 @@ const applyReferralCodeFlow = ai.defineFlow(
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
-      return { success: false, message: 'Invalid referral code.' };
+      return { success: false, message: 'Invalid referral code.', bonusAwarded: false };
     }
 
     if (querySnapshot.size > 1) {
-        // This should ideally not happen if codes are unique
         console.warn(`Multiple users found with the same referral code: ${referralCode}`);
-        // We will proceed with the first one found
     }
 
     const referrerDoc = querySnapshot.docs[0];
     const referrerUid = referrerDoc.id;
 
     if (referrerUid === newUserUid) {
-      return { success: false, message: 'You cannot refer yourself.' };
+      return { success: false, message: 'You cannot refer yourself.', bonusAwarded: false };
     }
     
     const referrerUserRef = doc(firestore, 'users', referrerUid);
+    const newUserRef = doc(firestore, 'users', newUserUid);
 
     const batch = writeBatch(firestore);
 
     const referralBonus = 100;
+    const newUserBonus = 50;
 
     // Award 100 coins to the referrer
     batch.update(referrerUserRef, {
       coins: increment(referralBonus),
+      weeklyCoins: increment(referralBonus),
     });
     
-    // We will add coins to the new user on the client-side after this flow returns success.
-    // So we don't need to update the new user's doc here.
+    // Award 50 bonus coins to the new user for using a code
+    batch.update(newUserRef, {
+        coins: increment(newUserBonus),
+        weeklyCoins: increment(newUserBonus),
+    });
 
     try {
       await batch.commit();
-      return { success: true, message: 'Referral successful! Both users have been rewarded.' };
+      return { success: true, message: 'Referral successful! Both users have been rewarded.', bonusAwarded: true };
     } catch (error) {
       console.error("Error committing referral batch:", error);
-      // In a real-world scenario, you'd want more robust error handling/logging
-      return { success: false, message: 'An error occurred while applying the referral.' };
+      return { success: false, message: 'An error occurred while applying the referral.', bonusAwarded: false };
     }
   }
 );
+
+    

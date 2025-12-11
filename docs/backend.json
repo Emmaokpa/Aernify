@@ -25,7 +25,11 @@
         },
         "coins": {
           "type": "number",
-          "description": "The number of coins the user has."
+          "description": "The total number of coins the user has."
+        },
+        "weeklyCoins": {
+            "type": "number",
+            "description": "The number of coins the user has earned in the current week."
         },
         "referralCode": {
             "type": "string",
@@ -36,7 +40,7 @@
           "description": "Whether the user has administrative privileges."
         }
       },
-      "required": ["uid", "email", "coins", "referralCode"]
+      "required": ["uid", "email", "coins", "weeklyCoins", "referralCode"]
     },
     "DailyLogin": {
       "title": "Daily Login Record",
@@ -254,3 +258,5 @@
     }
   }
 }
+
+    

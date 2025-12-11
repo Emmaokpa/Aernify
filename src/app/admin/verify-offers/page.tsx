@@ -36,7 +36,10 @@ function SubmissionList() {
     // If approved, update user's coin balance
     if (decision === 'approve') {
       const userRef = doc(firestore, 'users', submission.userId);
-      batch.update(userRef, { coins: increment(submission.reward) });
+      batch.update(userRef, { 
+        coins: increment(submission.reward),
+        weeklyCoins: increment(submission.reward),
+      });
     }
 
     try {
@@ -166,3 +169,5 @@ export default function AdminVerifyOffersPage() {
     </AdminAuthWrapper>
   );
 }
+
+    

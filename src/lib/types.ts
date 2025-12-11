@@ -80,6 +80,7 @@ export interface UserProfile {
     email: string;
     photoURL: string | null;
     coins: number;
+    weeklyCoins: number;
     referralCode: string;
     isAdmin: boolean;
 }
@@ -120,3 +121,5 @@ export interface UserChallengeProgress {
     date: string;
     progress: ChallengeProgress;
 }
+
+    

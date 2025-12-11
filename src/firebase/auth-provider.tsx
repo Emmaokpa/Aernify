@@ -53,6 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               email: firebaseUser.email || '',
               photoURL: firebaseUser.photoURL,
               coins: 10, // Default starting coins
+              weeklyCoins: 0,
               referralCode: generateReferralCode(),
               isAdmin: false,
             };
@@ -91,3 +92,5 @@ export const useAuthContext = () => {
   }
   return context;
 };
+
+    
