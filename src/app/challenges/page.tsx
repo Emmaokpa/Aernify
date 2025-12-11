@@ -7,7 +7,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription
+  CardDescription,
+  CardFooter
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -34,51 +35,51 @@ export default function ChallengesPage() {
         title="Daily Challenges"
         description="Complete tasks to earn bonus coins. New challenges unlock every day!"
       />
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {dailyChallenges.map((challenge) => (
           <Card
             key={challenge.id}
             className={cn(
-              'bg-card/80 overflow-hidden rounded-2xl transition-all',
+              'bg-card/80 overflow-hidden rounded-2xl transition-all flex flex-col',
               challenge.isCompleted && 'bg-green-600/10 border-green-600/30'
             )}
           >
-            <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-12 h-12 flex items-center justify-center text-primary bg-primary/10 rounded-lg shrink-0">
+            <CardHeader className="flex flex-row items-start gap-4 p-4">
+               <div className="w-12 h-12 flex items-center justify-center text-primary bg-primary/10 rounded-lg shrink-0">
                   {challenge.icon}
                 </div>
-                <div className='flex-grow space-y-3'>
-                    <div className='flex justify-between items-start'>
-                        <div>
-                            <h3 className="font-bold text-md">{challenge.title}</h3>
-                            <p className="text-xs text-muted-foreground">
-                                {challenge.description}
-                            </p>
-                        </div>
-                        <div className="font-bold text-primary flex items-center gap-1.5 text-sm ml-4">
-                            <Coins className="w-4 h-4" />
-                            <span>{challenge.reward}</span>
-                        </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                        <Progress value={challenge.progress} className="h-2" />
-                        <div className="flex justify-between items-center text-xs text-muted-foreground">
-                            <span>
-                                Progress: {challenge.currentValue}/{challenge.targetValue}
-                            </span>
-                             <Badge variant="outline" className={cn('text-xs', getDifficultyClass(challenge.difficulty))}>{challenge.difficulty}</Badge>
-                        </div>
+                <div className='flex-grow'>
+                    <CardTitle className="text-lg">{challenge.title}</CardTitle>
+                    <CardDescription className="text-xs leading-tight mt-1">
+                        {challenge.description}
+                    </CardDescription>
+                </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 flex-grow">
+                 <div className="space-y-2">
+                    <Progress value={challenge.progress} className="h-2" />
+                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>
+                            Progress: {challenge.currentValue}/{challenge.targetValue}
+                        </span>
+                        <Badge variant="outline" className={cn('text-xs', getDifficultyClass(challenge.difficulty))}>{challenge.difficulty}</Badge>
                     </div>
                 </div>
+            </CardContent>
+            <CardFooter className="p-4 bg-muted/20 flex-col items-stretch gap-4">
+                 <div className="font-bold text-primary flex items-center justify-center gap-1.5 text-lg w-full">
+                    <span>Reward:</span>
+                    <Coins className="w-5 h-5" />
+                    <span>{challenge.reward}</span>
+                </div>
                  <Button
-                  className={cn("ml-4", challenge.isCompleted && "bg-green-600 hover:bg-green-700")}
+                  className={cn("w-full", challenge.isCompleted && "bg-green-600 hover:bg-green-700")}
                   disabled={challenge.isCompleted}
                   size="sm"
                 >
                   {challenge.isCompleted ? <CheckCircle className='w-4 h-4' /> : 'Claim'}
                 </Button>
-            </CardContent>
+            </CardFooter>
           </Card>
         ))}
       </div>
