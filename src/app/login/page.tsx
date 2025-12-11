@@ -81,7 +81,7 @@ export default function LoginPage() {
       const userCredential = await signInWithPopup(auth, provider);
       // Ensure profile exists for users signing in for the first time via Google on the login page.
       await createUserProfile(firestore, userCredential.user);
-      // The redirect is handled automatically by the onAuthStateChanged listener in AuthProvider/MainLayout
+      router.push('/');
     } catch (err: any) {
       console.error('Google sign-in error:', err);
       if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
@@ -106,7 +106,7 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // onAuthStateChanged in MainLayout will handle the redirect.
+      router.push('/');
     } catch (err: any) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Invalid email or password. Please try again.');
