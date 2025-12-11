@@ -59,8 +59,9 @@ export default function ProductDetailPage() {
   }
 
   if (!product) {
-    // This case should be handled by the useEffect above, but as a fallback:
-    return notFound();
+    // This case is now safely handled by the useEffect above,
+    // but as a fallback for the server render pass, we can return the skeleton.
+    return <ProductDetailSkeleton />;
   }
   
   return (
