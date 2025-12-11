@@ -77,7 +77,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const { user, isUserLoading } = useUser();
 
-  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
   const isGamePage = pathname.startsWith('/play/');
 
   useEffect(() => {

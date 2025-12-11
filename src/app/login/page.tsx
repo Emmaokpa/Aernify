@@ -41,6 +41,7 @@ export default function LoginPage() {
       } else {
         setError('An error occurred during Google sign-in. Please try again.');
       }
+    } finally {
       setIsGoogleLoading(false);
     }
   }
