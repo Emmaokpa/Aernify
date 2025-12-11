@@ -35,8 +35,10 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // onAuthStateChanged in AuthProvider will handle the redirect
-      router.push('/');
+      // onAuthStateChanged in AuthProvider will handle the redirect.
+      // Removing the router.push('/') here prevents a race condition
+      // where the page navigates before the AuthProvider can create
+      // the user profile for a "ghost" user.
     } catch (err: any) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Invalid email or password. Please try again.');
