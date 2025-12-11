@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -11,13 +11,15 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Coins, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useUser, useFirestore, useDoc } from '@/firebase';
-import { doc, writeBatch, increment, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, writeBatch, increment, collection, serverTimestamp, addDoc } from 'firebase/firestore';
 import type { Product, ShippingInfo } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
-export default function CheckoutPage({ params }: { params: { productId: string } }) {
-  const { productId } = params;
+export default function CheckoutPage() {
+  const params = useParams();
+  const productId = Array.isArray(params.productId) ? params.productId[0] : params.productId;
+  
   const { toast } = useToast();
   const { user, profile, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -28,7 +30,12 @@ export default function CheckoutPage({ params }: { params: { productId: string }
     return doc(firestore, 'products', productId);
   }, [firestore, productId]);
 
-  const { data: product, isLoading: isProductLoading } = useDoc<Product>(productDocRef);
+  const { data: productData, isLoading: isProductLoading } = useDoc<Omit<Product, 'id'>>(productDocRef);
+
+  const product = useMemo(() => {
+    if (!productData || !productId) return null;
+    return { ...productData, id: productId };
+  }, [productData, productId]);
 
   const [purchaseState, setPurchaseState] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -39,7 +46,7 @@ export default function CheckoutPage({ params }: { params: { productId: string }
     formState: { errors, isSubmitting },
   } = useForm<ShippingInfo>({
       defaultValues: {
-          email: profile?.email ?? '',
+          email: user?.email ?? '',
           fullName: profile?.displayName ?? '',
       }
   });
@@ -100,10 +107,9 @@ export default function CheckoutPage({ params }: { params: { productId: string }
   if (isProductLoading) {
     return <CheckoutSkeleton />;
   }
-
-  // Correctly call notFound() before any hooks that might depend on the product
+  
   if (!product) {
-    notFound();
+    return notFound();
   }
 
   return (
@@ -185,6 +191,11 @@ export default function CheckoutPage({ params }: { params: { productId: string }
                     <Input id="addressLine1" {...register('addressLine1', { required: 'Address is required' })} />
                     {errors.addressLine1 && <p className="text-xs text-destructive mt-1">{errors.addressLine1.message}</p>}
                 </div>
+                
+                 <div>
+                    <Label htmlFor="addressLine2">Address Line 2 (Optional)</Label>
+                    <Input id="addressLine2" {...register('addressLine2')} />
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
@@ -216,10 +227,10 @@ export default function CheckoutPage({ params }: { params: { productId: string }
                     type="submit"
                     className="w-full"
                     size="lg"
-                    disabled={isLoading}
+                    disabled={isLoading || profile?.coins == undefined || profile.coins < product.price }
                 >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Confirm & Place Order
+                    {profile?.coins != undefined && profile.coins < product.price ? "Insufficient Coins" : "Confirm & Place Order"}
                 </Button>
                 <Button asChild variant="outline" className="w-full" type="button" onClick={() => router.back()}>
                     Cancel
@@ -246,6 +257,9 @@ function SuccessView() {
         <CardFooter className="flex flex-col gap-3">
             <Button className="w-full" onClick={() => router.push('/shop')}>
                 Back to Shop
+            </Button>
+             <Button className="w-full" variant="outline" onClick={() => router.push('/')}>
+                Go to Dashboard
             </Button>
         </CardFooter>
     </>
@@ -315,5 +329,3 @@ function CheckoutSkeleton() {
         </div>
     )
 }
-
-    

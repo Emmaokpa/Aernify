@@ -23,7 +23,12 @@ export default function ProductDetailPage() {
     return doc(firestore, 'products', productId);
   }, [firestore, productId]);
 
-  const { data: product, isLoading } = useDoc<Product>(productDocRef);
+  const { data: productData, isLoading } = useDoc<Omit<Product, 'id'>>(productDocRef);
+
+  const product = useMemo(() => {
+    if (!productData || !productId) return null;
+    return { ...productData, id: productId };
+  }, [productData, productId]);
 
   if (!isLoading && !product) {
     notFound();
@@ -39,7 +44,7 @@ export default function ProductDetailPage() {
       </Button>
 
       <Card className="overflow-hidden">
-        {isLoading ? (
+        {isLoading || !product ? (
           <div className="grid md:grid-cols-2 gap-8">
             <Skeleton className="aspect-square" />
             <div className="p-8 flex flex-col space-y-4">
@@ -53,7 +58,7 @@ export default function ProductDetailPage() {
               </div>
             </div>
           </div>
-        ) : product && (
+        ) : (
             <div className="grid md:grid-cols-2 gap-8">
               <div className="relative aspect-square">
                 <Image
