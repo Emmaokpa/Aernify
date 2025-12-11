@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import PageHeader from "@/components/page-header";
@@ -7,7 +8,8 @@ import Image from "next/image";
 import { Coins, Loader2, CheckCircle, Clock, ExternalLink } from "lucide-react";
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
-import type { Offer, OfferSubmission } from '@/lib/types';
+import type { Offer } from '@/lib/types';
+import type { OfferSubmission } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -22,6 +24,7 @@ import {
 import ImageUploadForm from '@/components/image-upload-form';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 function SubmitOfferDialog({ offer, children, disabled }: { offer: Offer, children: React.ReactNode, disabled?: boolean }) {
   const { toast } = useToast();
@@ -159,45 +162,42 @@ function OfferList() {
       {augmentedOffers.map((offer) => {
         const isPending = offer.status === 'pending';
         return (
-          <Card key={offer.id} className="overflow-hidden flex flex-col rounded-2xl group">
-            <CardHeader className="p-0 relative">
-               <div className="relative aspect-[16/9]">
-                <Image
-                  src={offer.imageUrl}
-                  alt={offer.title}
-                  fill
-                  className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
-                  data-ai-hint={offer.imageHint}
-                />
-              </div>
-              {isPending && (
-                <Badge variant="outline" className="absolute top-3 right-3 text-amber-600 border-amber-500/30 bg-amber-500/20 backdrop-blur-sm">
-                  <Clock className="w-3.5 h-3.5 mr-1" /> Pending Review
-                </Badge>
-              )}
-            </CardHeader>
-            <CardContent className="p-4 flex-grow">
-              <p className="text-sm text-muted-foreground">{offer.company}</p>
-              <h3 className="text-lg font-semibold">{offer.title}</h3>
-            </CardContent>
-            <CardFooter className="p-4 flex flex-col items-start gap-3 bg-muted/30">
-               <div className="font-bold text-primary flex items-center gap-1.5 text-lg">
+          <Card key={offer.id} className="overflow-hidden aspect-[3/4] relative group transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 rounded-2xl">
+            <Image
+              src={offer.imageUrl}
+              alt={offer.title}
+              fill
+              className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-110"
+              data-ai-hint={offer.imageHint}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+            {isPending && (
+              <Badge variant="outline" className="absolute top-3 right-3 text-amber-600 border-amber-500/30 bg-amber-500/20 backdrop-blur-sm">
+                <Clock className="w-3.5 h-3.5 mr-1" /> Pending Review
+              </Badge>
+            )}
+
+            <div className="absolute bottom-0 left-0 p-4 text-white w-full">
+              <p className="text-sm opacity-80">{offer.company}</p>
+              <h3 className="text-lg font-semibold leading-tight">{offer.title}</h3>
+              <div className="font-bold text-primary flex items-center gap-1.5 text-lg mt-2">
                 <Coins className="w-5 h-5" />
                 <span>{offer.reward.toLocaleString()}</span>
               </div>
-              <div className="w-full flex flex-col sm:flex-row gap-2">
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
                  <Button asChild className="w-full">
                     <a href={offer.link} target="_blank" rel="noopener noreferrer">
                     Start Offer <ExternalLink className='ml-2 h-4 w-4' />
                     </a>
                 </Button>
                 <SubmitOfferDialog offer={offer} disabled={isPending}>
-                    <Button variant="outline" className="w-full" disabled={isPending}>
+                    <Button variant="secondary" className="w-full bg-white/20 text-white backdrop-blur-sm hover:bg-white/30" disabled={isPending}>
                         {isPending ? 'Submitted' : 'Submit Proof'}
                     </Button>
                 </SubmitOfferDialog>
               </div>
-            </CardFooter>
+            </div>
           </Card>
         )
       })}
@@ -216,22 +216,7 @@ function OfferList() {
 
 function OfferSkeleton() {
   return (
-     <Card className="overflow-hidden flex flex-col rounded-2xl group">
-        <CardHeader className="p-0">
-          <Skeleton className="aspect-[16/9] w-full" />
-        </CardHeader>
-        <CardContent className="p-4 flex-grow space-y-2">
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-5 w-3/4" />
-        </CardContent>
-        <CardFooter className="p-4 flex flex-col items-start gap-3 bg-muted/30">
-            <Skeleton className="h-7 w-1/3" />
-            <div className="w-full flex flex-col sm:flex-row gap-2">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-            </div>
-        </CardFooter>
-    </Card>
+     <Skeleton className="aspect-[3/4] rounded-2xl" />
   );
 }
 
