@@ -15,6 +15,7 @@ import {
   Sparkles,
   LogOut,
   Shield,
+  Banknote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
@@ -32,6 +33,7 @@ const navItems: NavItem[] = [
   { title: 'Affiliate', href: '/offers', icon: <ListChecks /> },
   { title: 'Shop', href: '/shop', icon: <ShoppingBag /> },
   { title: 'Redeem', href: '/redeem', icon: <Gift /> },
+  { title: 'Withdraw', href: '/withdraw', icon: <Banknote /> },
   { title: 'Leaderboard', href: '/leaderboard', icon: <Trophy /> },
   { title: 'Profile', href: '/profile', icon: <User /> },
 ];
@@ -122,3 +124,5 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
     </>
   );
 }
+
+    

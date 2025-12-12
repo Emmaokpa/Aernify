@@ -19,6 +19,7 @@ import {
   Trophy,
   PackageCheck,
   UserCog,
+  Banknote,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 
@@ -63,6 +64,11 @@ const adminFeatures: NavItem[] = [
     href: '/admin/verify-redemptions',
     icon: <TicketCheck className="w-8 h-8" />,
   },
+  {
+    title: 'Process Withdrawals',
+    href: '/admin/withdrawals',
+    icon: <Banknote className="w-8 h-8" />,
+  },
    {
     title: 'Fulfill Orders',
     href: '/admin/orders',
@@ -104,3 +110,5 @@ export default function AdminDashboardPage() {
     </AdminAuthWrapper>
   );
 }
+
+    

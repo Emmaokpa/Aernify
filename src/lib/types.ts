@@ -1,5 +1,6 @@
 
 
+
 export type NavItem = {
   title: string;
   href: string;
@@ -148,5 +149,23 @@ export interface Order {
   status: 'pending' | 'shipped' | 'delivered' | 'cancelled';
   orderedAt: any; // Firestore Timestamp
 }
+
+export interface BankDetails {
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+}
+
+export interface WithdrawalRequest {
+    id: string;
+    userId: string;
+    userDisplayName: string;
+    coinsToWithdraw: number;
+    nairaAmount: number;
+    bankDetails: BankDetails;
+    status: 'pending' | 'processed' | 'rejected';
+    requestedAt: any; // Firestore Timestamp
+}
+    
 
     

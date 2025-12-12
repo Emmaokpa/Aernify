@@ -124,6 +124,21 @@ service cloud.firestore {
       // Nobody can delete requests.
       allow delete: if false;
     }
+    
+    // Rules for the withdrawal_requests collection
+    match /withdrawal_requests/{requestId} {
+      // A user can create their own withdrawal request.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+
+      // Admins can read all requests. Users can read their own.
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      // Only admins can update the status of a request.
+      allow update: if isAdmin();
+      
+      // Nobody can delete requests for now.
+      allow delete: if false;
+    }
 
     // Rules for the challenges collection
     match /challenges/{challengeId} {
@@ -156,7 +171,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
 
       // Admins can list all orders. Users can read their own individual order.
-      allow list: if isSignedIn();
+      allow list: if isAdmin();
       allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
 
       // Only admins can update the status of an order.
@@ -172,3 +187,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

@@ -232,6 +232,32 @@
         "country": { "type": "string" }
       },
       "required": ["fullName", "email", "addressLine1", "city", "state", "postalCode", "country"]
+    },
+    "WithdrawalRequest": {
+        "title": "Withdrawal Request",
+        "description": "A user's request to convert coins to real money.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "userDisplayName": { "type": "string" },
+            "coinsToWithdraw": { "type": "number" },
+            "nairaAmount": { "type": "number" },
+            "bankDetails": { "$ref": "#/entities/BankDetails" },
+            "status": { "type": "string", "enum": ["pending", "processed", "rejected"] },
+            "requestedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "coinsToWithdraw", "nairaAmount", "bankDetails", "status", "requestedAt"]
+    },
+    "BankDetails": {
+        "title": "Bank Account Details",
+        "description": "Nigerian bank account details for withdrawals.",
+        "type": "object",
+        "properties": {
+            "bankName": { "type": "string" },
+            "accountNumber": { "type": "string" },
+            "accountName": { "type": "string" }
+        },
+        "required": ["bankName", "accountNumber", "accountName"]
     }
   },
   "auth": {
@@ -286,6 +312,12 @@
       },
       "description": "Stores user requests for gift card redemption."
     },
+    "/withdrawal_requests/{requestId}": {
+        "schema": {
+            "$ref": "#/entities/WithdrawalRequest"
+        },
+        "description": "Stores user requests to withdraw coins for cash."
+    },
     "/challenges/{challengeId}": {
       "schema": {
         "$ref": "#/entities/Challenge"
@@ -306,3 +338,5 @@
     }
   }
 }
+
+    
