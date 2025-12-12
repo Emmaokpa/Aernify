@@ -18,10 +18,16 @@ import {
   Sparkles,
   Trophy,
   PackageCheck,
+  UserCog,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 
 const adminFeatures: NavItem[] = [
+  {
+    title: 'Grant Admin',
+    href: '/admin/grant-admin',
+    icon: <UserCog className="w-8 h-8" />,
+  },
   {
     title: 'Manage Games',
     href: '/admin/games',
