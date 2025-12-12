@@ -99,7 +99,7 @@ export default function ProfilePage() {
           <ul className="space-y-3 text-foreground/90 mb-6">
             <li className="flex items-center gap-3">
               <Sparkles className="w-5 h-5 text-primary" />
-              <span>3x Earnings on all rewards</span>
+              <span>2x Earnings on all rewards</span>
             </li>
             <li className="flex items-center gap-3">
               <ShieldOff className="w-5 h-5 text-primary" />
