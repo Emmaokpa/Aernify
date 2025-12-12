@@ -94,7 +94,7 @@ export default function ProfilePage() {
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-primary">VIP Subscription</h3>
-            <p className="font-semibold text-foreground">$5.99/month</p>
+            <p className="font-semibold text-foreground">₦5,000/month</p>
           </div>
           <ul className="space-y-3 text-foreground/90 mb-6">
             <li className="flex items-center gap-3">
@@ -111,7 +111,7 @@ export default function ProfilePage() {
             </li>
           </ul>
           <Button className="w-full">
-            Upgrade with Paystack
+            Upgrade
           </Button>
         </CardContent>
       </Card>

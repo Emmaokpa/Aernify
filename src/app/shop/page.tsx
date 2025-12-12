@@ -57,7 +57,7 @@ function ProductDetailModal({ product, isOpen, onOpenChange }: { product: Produc
                         </CardContent>
                     </Card>
                     <Button size="lg" className="w-full text-lg" asChild>
-                       <Link href={`/checkout/${product.id}`}>Checkout with Paystack</Link>
+                       <Link href={`/checkout/${product.id}`}>Proceed to Checkout</Link>
                     </Button>
                     </div>
                 </div>
