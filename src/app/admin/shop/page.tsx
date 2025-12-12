@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -132,7 +133,7 @@ function EditProductForm({ product }: { product: ProductWithId }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="price">Price (in Coins)</Label>
+            <Label htmlFor="price">Price (in NGN)</Label>
             <Input
               id="price"
               type="number"
@@ -231,12 +232,12 @@ function AddProductForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="price">Price (in Coins)</Label>
+            <Label htmlFor="price">Price (in NGN)</Label>
             <Input
               id="price"
               type="number"
               {...register('price', { required: true, valueAsNumber: true })}
-              defaultValue={1000}
+              defaultValue={10000}
             />
           </div>
           <Button type="submit" disabled={isSubmitting}>
@@ -271,6 +272,13 @@ function ProductList() {
             });
         }
     };
+    
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat('en-NG', {
+            style: 'currency',
+            currency: 'NGN',
+        }).format(price);
+    };
 
     if (isLoading) {
         return <p>Loading products...</p>
@@ -289,7 +297,7 @@ function ProductList() {
                         </div>
                         <div className="p-4">
                             <h3 className="font-semibold text-lg">{product.name}</h3>
-                            <p className="text-sm text-muted-foreground">{product.price} coins</p>
+                            <p className="text-sm text-muted-foreground">{formatPrice(product.price)}</p>
                         </div>
                         <div className="absolute top-2 right-2 flex gap-2">
                              <EditProductForm product={product} />

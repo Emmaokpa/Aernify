@@ -5,16 +5,15 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Coins, Loader2, ChevronLeft, AlertTriangle } from 'lucide-react';
+import { Loader2, ChevronLeft, AlertTriangle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import type { Product } from '@/lib/types';
-import { doc, writeBatch, increment, collection } from 'firebase/firestore';
+import { doc, writeBatch, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -77,7 +76,7 @@ export default function CheckoutPage() {
       city: '',
       state: '',
       postalCode: '',
-      country: '',
+      country: 'Nigeria', // Default to Nigeria
     },
   });
 
@@ -86,17 +85,14 @@ export default function CheckoutPage() {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not process order. User or product not found.' });
         return;
     }
-
-    if (profile.coins < product.price) {
-        toast({ variant: 'destructive', title: 'Insufficient Coins', description: `You need ${product.price} coins.`});
-        return;
-    }
+    
+    // TODO: Implement Paystack payment logic here.
+    // For now, we will simulate a successful payment and create the order.
+    
+    toast({ title: 'Simulating Payment...', description: 'Preparing to create order.' });
 
     try {
         const batch = writeBatch(firestore);
-
-        const userRef = doc(firestore, 'users', user.uid);
-        batch.update(userRef, { coins: increment(-product.price) });
         
         const orderRef = doc(collection(firestore, 'orders'));
         batch.set(orderRef, {
@@ -105,7 +101,8 @@ export default function CheckoutPage() {
             productId: product.id,
             productName: product.name,
             productImageUrl: product.imageUrl,
-            coinsSpent: product.price,
+            // 'coinsSpent' will be repurposed or replaced with payment details
+            coinsSpent: product.price, 
             shippingInfo: values,
             status: 'pending',
             orderedAt: new Date(),
@@ -123,6 +120,13 @@ export default function CheckoutPage() {
   };
   
   const isLoading = isUserLoading || isProductLoading;
+  
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN',
+    }).format(price);
+  };
 
   if (isLoading) {
     return <CheckoutSkeleton />;
@@ -170,20 +174,7 @@ export default function CheckoutPage() {
                 <CardContent className="flex justify-between items-center font-bold text-2xl">
                     <span>Total Cost:</span>
                     <div className='flex items-center gap-2 text-primary'>
-                        <Coins className="w-7 h-7" />
-                        <span>{product.price.toLocaleString()}</span>
-                    </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Your Balance</CardTitle>
-                </CardHeader>
-                <CardContent className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Coins available:</span>
-                     <div className='flex items-center gap-2 font-bold'>
-                        <Coins className="w-5 h-5" />
-                        <span>{profile?.coins.toLocaleString()}</span>
+                        <span>{formatPrice(product.price)}</span>
                     </div>
                 </CardContent>
             </Card>
@@ -225,7 +216,7 @@ export default function CheckoutPage() {
                         <FormItem><FormLabel>Postal Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="country" render={({ field }) => (
-                        <FormItem><FormLabel>Country</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Country</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>
                     )} />
                   </div>
                 </div>
@@ -233,7 +224,7 @@ export default function CheckoutPage() {
             </Card>
             <Button type="submit" size="lg" className="w-full text-lg" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                 Place Order
+                 Proceed to Payment
             </Button>
           </div>
         </form>

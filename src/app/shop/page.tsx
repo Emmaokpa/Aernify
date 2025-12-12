@@ -4,12 +4,11 @@ import { useMemo, useState } from 'react';
 import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import Image from "next/image";
-import { Coins } from "lucide-react";
 import { useCollection, useFirestore } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -17,6 +16,13 @@ function ProductDetailModal({ product, isOpen, onOpenChange }: { product: Produc
     if (!product) {
         return null;
     }
+
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat('en-NG', {
+            style: 'currency',
+            currency: 'NGN',
+        }).format(price);
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -40,9 +46,8 @@ function ProductDetailModal({ product, isOpen, onOpenChange }: { product: Produc
                     <div className="space-y-6 flex flex-col justify-center">
                     <div>
                         <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">{product.name}</h1>
-                        <div className="font-bold text-primary flex items-center gap-1.5 text-2xl mt-2">
-                            <Coins className="w-6 h-6" />
-                            <span>{product.price.toLocaleString()}</span>
+                        <div className="font-bold text-primary text-2xl mt-2">
+                            <span>{formatPrice(product.price)}</span>
                         </div>
                     </div>
                     <Card>
@@ -52,7 +57,7 @@ function ProductDetailModal({ product, isOpen, onOpenChange }: { product: Produc
                         </CardContent>
                     </Card>
                     <Button size="lg" className="w-full text-lg" asChild>
-                       <Link href={`/checkout/${product.id}`}>Checkout</Link>
+                       <Link href={`/checkout/${product.id}`}>Checkout with Paystack</Link>
                     </Button>
                     </div>
                 </div>
@@ -96,11 +101,18 @@ export default function ShopPage() {
     setSelectedProduct(null);
   }
 
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN',
+    }).format(price);
+  };
+
   return (
     <>
       <PageHeader
         title="Shop"
-        description="Spend your coins on real tech gadgets and watches."
+        description="Purchase real tech gadgets and watches with secure payment."
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {isLoading && Array.from({ length: 4 }).map((_, i) => <ProductSkeleton key={i} />)}
@@ -123,9 +135,8 @@ export default function ShopPage() {
                 <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
               </CardContent>
               <CardFooter className="p-4 flex flex-col items-start gap-3 bg-muted/30">
-                <div className="font-bold text-primary flex items-center gap-1.5 text-lg">
-                  <Coins className="w-5 h-5" />
-                  <span>{product.price.toLocaleString()}</span>
+                <div className="font-bold text-primary text-lg">
+                  <span>{formatPrice(product.price)}</span>
                 </div>
               </CardFooter>
             </Card>

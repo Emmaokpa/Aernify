@@ -98,13 +98,13 @@
         "required": ["title", "company", "reward", "imageUrl", "link"]
     },
     "Product": {
-        "title": "E-commerce Product",
+        "title": "Product",
         "description": "Represents a product available for purchase in the shop.",
         "type": "object",
         "properties": {
             "name": { "type": "string" },
             "description": { "type": "string" },
-            "price": { "type": "number" },
+            "price": { "type": "number", "description": "Price in the local currency (e.g., NGN)." },
             "imageUrl": { "type": "string", "format": "uri" },
             "imageHint": { "type": "string" }
         },

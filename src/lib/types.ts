@@ -1,4 +1,5 @@
 
+
 export type NavItem = {
   title: string;
   href: string;
@@ -49,7 +50,7 @@ export type Product = {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price: number; // Price will now be in a real currency (e.g., NGN)
   imageUrl: string;
   imageHint: string;
 };
@@ -142,7 +143,7 @@ export interface Order {
   productId: string;
   productName: string;
   productImageUrl: string;
-  coinsSpent: number;
+  coinsSpent: number; // This will likely change to a currency amount
   shippingInfo: ShippingInfo;
   status: 'pending' | 'shipped' | 'delivered' | 'cancelled';
   orderedAt: any; // Firestore Timestamp

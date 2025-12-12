@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -93,7 +94,7 @@ export default function ProfilePage() {
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-primary">VIP Subscription</h3>
-            <p className="font-semibold text-foreground">$4.99/month</p>
+            <p className="font-semibold text-foreground">$5.99/month</p>
           </div>
           <ul className="space-y-3 text-foreground/90 mb-6">
             <li className="flex items-center gap-3">
@@ -109,8 +110,8 @@ export default function ProfilePage() {
               <span>Claim exclusive gift cards</span>
             </li>
           </ul>
-          <Button className="w-full" disabled>
-            Upgrade
+          <Button className="w-full">
+            Upgrade with Paystack
           </Button>
         </CardContent>
       </Card>
