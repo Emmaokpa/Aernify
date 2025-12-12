@@ -7,9 +7,8 @@ import {
   Menu,
   Gamepad2,
   ShoppingBag,
-  Trophy,
+  Gift,
   Coins,
-  Banknote,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 import { Button } from '../ui/button';
@@ -18,7 +17,7 @@ const navItems: NavItem[] = [
   { title: 'Play', href: '/play', icon: <Gamepad2 /> },
   { title: 'Shop', href: '/shop', icon: <ShoppingBag /> },
   { title: 'Earn', href: '/earn', icon: <Coins /> },
-  { title: 'Withdraw', href: '/withdraw', icon: <Banknote /> },
+  { title: 'Redeem', href: '/redeem', icon: <Gift /> },
 ];
 
 type BottomNavProps = {
@@ -73,5 +72,3 @@ export default function BottomNav({ onMenuClick }: BottomNavProps) {
     </div>
   );
 }
-
-    

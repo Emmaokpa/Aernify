@@ -25,8 +25,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
-const COIN_TO_NAIRA_RATE = 0.5; // 1 coin = 0.5 Naira
-const MINIMUM_WITHDRAWAL_COINS = 1000;
+const COIN_TO_NAIRA_RATE = 1.5; // 1 coin = 1.5 Naira
+const MINIMUM_WITHDRAWAL_COINS = 2000;
 
 const withdrawalSchema = z.object({
   coinsToWithdraw: z.coerce.number()
@@ -48,6 +48,9 @@ export default function WithdrawPage() {
     resolver: zodResolver(withdrawalSchema),
     defaultValues: {
         coinsToWithdraw: MINIMUM_WITHDRAWAL_COINS,
+        bankName: '',
+        accountName: '',
+        accountNumber: '',
     }
   });
 
@@ -211,7 +214,7 @@ export default function WithdrawPage() {
               <div>
                 <h4 className="font-semibold">Please Note</h4>
                 <p className="text-sm">
-                  The current conversion rate is {COIN_TO_NAIRA_RATE} Naira per coin. The minimum withdrawal is {MINIMUM_WITHDRAWAL_COINS} coins.
+                  The current conversion rate is {COIN_TO_NAIRA_RATE} Naira per coin. The minimum withdrawal is {MINIMUM_WITHDRAWAL_COINS.toLocaleString()} coins.
                 </p>
               </div>
             </div>
@@ -220,5 +223,3 @@ export default function WithdrawPage() {
     </>
   );
 }
-
-    
