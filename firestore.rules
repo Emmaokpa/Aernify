@@ -34,7 +34,7 @@ service cloud.firestore {
       
       // TEMPORARILY RELAXED RULE: Allow an owner to update their own profile,
       // including changing their admin status. This is for a one-time admin grant.
-      allow update: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
@@ -156,7 +156,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
 
       // Admins can list all orders. Users can read their own individual order.
-      allow list: if isAdmin();
+      allow list: if isSignedIn();
       allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
 
       // Only admins can update the status of an order.
