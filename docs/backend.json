@@ -38,6 +38,10 @@
         "isAdmin": {
           "type": "boolean",
           "description": "Whether the user has administrative privileges."
+        },
+        "isVip": {
+          "type": "boolean",
+          "description": "Whether the user has a VIP subscription."
         }
       },
       "required": ["uid", "email", "coins", "weeklyCoins", "referralCode"]
@@ -338,5 +342,3 @@
     }
   }
 }
-
-    
