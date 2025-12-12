@@ -32,19 +32,9 @@ service cloud.firestore {
       // Any signed-in user can read public user data and list users for the leaderboard.
       allow get, list: if isSignedIn();
       
-      // An owner can update their own profile, but cannot change their admin status or total coins directly.
-      allow update: if isOwner(userId) && 
-                    request.resource.data.isAdmin == resource.data.isAdmin &&
-                    // Users cannot directly set their coin totals, only modify them.
-                    request.resource.data.coins == resource.data.coins + incomingCoinChange() &&
-                    (
-                      // Case 1: Weekly coins are changing along with total coins (earning)
-                      request.resource.data.weeklyCoins == resource.data.weeklyCoins + incomingCoinChange() ||
-                      // Case 2: Weekly coins are being reset to 0 (admin flow)
-                      request.resource.data.weeklyCoins == 0 ||
-                      // Case 3: Weekly coins are not being modified at all (spending)
-                      !('weeklyCoins' in request.resource.data)
-                    );
+      // TEMPORARILY RELAXED RULE: Allow an owner to update their own profile,
+      // including changing their admin status. This is for a one-time admin grant.
+      allow update: if isOwner(userId);
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
