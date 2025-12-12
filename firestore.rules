@@ -165,7 +165,7 @@ service cloud.firestore {
       // A user can create their own order.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
 
-      // Admins can read all orders. Users can read their own individual order.
+      // Admins can list all orders. Users can read their own individual order.
       allow list: if isAdmin();
       allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
 
