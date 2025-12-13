@@ -42,6 +42,15 @@
         "isVip": {
           "type": "boolean",
           "description": "Whether the user has a VIP subscription."
+        },
+        "currentStreak": {
+            "type": "number",
+            "description": "The number of consecutive days the user has logged in."
+        },
+        "lastLoginDate": {
+            "type": "string",
+            "format": "date",
+            "description": "The date of the user's last login in YYYY-MM-DD format."
         }
       },
       "required": ["uid", "email", "coins", "weeklyCoins", "referralCode"]
@@ -342,3 +351,5 @@
     }
   }
 }
+
+    

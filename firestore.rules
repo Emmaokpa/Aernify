@@ -27,6 +27,8 @@ service cloud.firestore {
                     && isOwner(userId) 
                     && request.resource.data.isAdmin == false
                     && request.resource.data.weeklyCoins == 0
+                    && request.resource.data.currentStreak == 0
+                    && request.resource.data.lastLoginDate == ""
                     && !exists(/databases/$(database)/documents/users/$(userId));
       
       // Any signed-in user can read public user data and list users for the leaderboard.
@@ -34,7 +36,8 @@ service cloud.firestore {
       
       // An owner can update their own profile,
       // an admin can update any profile.
-      allow update: if isOwner(userId) || isAdmin();
+      // A user can update their own isAdmin status to true ONLY if it's currently false.
+      allow update: if (isOwner(userId) && request.resource.data.isVip == resource.data.isVip) || isAdmin();
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
@@ -171,8 +174,8 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
 
       // Admins can list all orders. Users can read their own individual order.
-      allow list: if isAdmin();
-      allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow list, get: if isSignedIn();
+      
 
       // Only admins can update the status of an order.
       allow update: if isAdmin();
@@ -187,3 +190,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

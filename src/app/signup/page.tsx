@@ -63,6 +63,9 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
     coins: startingCoins, // Base coins, bonus will be added by the flow
     weeklyCoins: bonusAwarded ? 50 : 0,
     referralCode: generateReferralCode(),
+    isVip: false,
+    currentStreak: 0,
+    lastLoginDate: '',
   };
 
   const finalProfile = {
@@ -270,3 +273,5 @@ export default function SignUpPage() {
     </main>
   );
 }
+
+    

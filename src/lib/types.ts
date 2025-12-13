@@ -1,6 +1,7 @@
 
 
 
+
 export type NavItem = {
   title: string;
   href: string;
@@ -86,6 +87,9 @@ export interface UserProfile {
     weeklyCoins: number;
     referralCode: string;
     isAdmin: boolean;
+    isVip: boolean;
+    currentStreak: number;
+    lastLoginDate: string; // YYYY-MM-DD
 }
 
 export interface OfferSubmission {
@@ -166,6 +170,8 @@ export interface WithdrawalRequest {
     status: 'pending' | 'processed' | 'rejected';
     requestedAt: any; // Firestore Timestamp
 }
+    
+
     
 
     

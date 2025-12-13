@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (!docSnap.exists()) {
             // User exists in Auth, but not in Firestore. Create the profile.
             console.log(`User ${firebaseUser.uid} not found in Firestore. Creating profile...`);
-            const newUserProfile: UserProfile = {
+            const newUserProfile: Omit<UserProfile, 'id'> = {
               uid: firebaseUser.uid,
               displayName: firebaseUser.displayName || 'New User',
               email: firebaseUser.email || '',
@@ -56,6 +56,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               weeklyCoins: 0,
               referralCode: generateReferralCode(),
               isAdmin: false,
+              isVip: false,
+              currentStreak: 0,
+              lastLoginDate: '',
             };
             await setDoc(userRef, newUserProfile);
           }
@@ -92,5 +95,7 @@ export const useAuthContext = () => {
   }
   return context;
 };
+
+    
 
     

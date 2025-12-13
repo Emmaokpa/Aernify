@@ -10,17 +10,22 @@ import { ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Game } from '@/lib/types';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, doc, getDoc, serverTimestamp, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, doc, getDoc, serverTimestamp, setDoc, updateDoc, increment, writeBatch } from 'firebase/firestore';
 import { incrementChallengeProgress } from '@/lib/challenges';
+import { getTodayString } from '@/lib/utils';
+import { differenceInCalendarDays } from 'date-fns';
 
 const DAILY_REWARD = 20;
+const STREAK_REWARDS = {
+  7: 150,
+  30: 1000,
+};
 
 export default function DashboardPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isRewardGranted, setIsRewardGranted] = useState(false);
+  const [modalState, setModalState] = useState({ isOpen: false, reward: 0, bonus: 0, streak: 0 });
   
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { user, profile, isUserLoading } = useUser();
 
   const gamesCollection = useMemo(() => {
     if (!firestore || !user) return null; // Wait for user
@@ -30,32 +35,67 @@ export default function DashboardPage() {
   const { data: games, isLoading: isGamesLoading } = useCollection<Game>(gamesCollection);
 
   useEffect(() => {
-    if (isUserLoading || !user) {
+    if (isUserLoading || !user || !profile) {
       return;
     }
 
     const checkDailyLogin = async () => {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = getTodayString();
       const dailyLoginDocRef = doc(firestore, 'daily_logins', `${user.uid}_${todayStr}`);
       
       try {
         const docSnap = await getDoc(dailyLoginDocRef);
 
         if (!docSnap.exists()) {
-          // Not claimed yet, let's reward the user!
           const userDocRef = doc(firestore, 'users', user.uid);
+          const batch = writeBatch(firestore);
+
+          let totalReward = DAILY_REWARD;
+          let streakBonus = 0;
+          let newStreak = 1;
           
-          await updateDoc(userDocRef, { 
-            coins: increment(DAILY_REWARD),
-            weeklyCoins: increment(DAILY_REWARD),
+          const lastLoginDate = profile.lastLoginDate;
+          const today = new Date(todayStr);
+
+          if (lastLoginDate) {
+              const lastLogin = new Date(lastLoginDate);
+              const daysDiff = differenceInCalendarDays(today, lastLogin);
+
+              if (daysDiff === 1) {
+                  // Streak continues
+                  newStreak = (profile.currentStreak || 0) + 1;
+              } else if (daysDiff > 1) {
+                  // Streak broken
+                  newStreak = 1;
+              } else {
+                  // Already logged in today, but something went wrong. Let's be safe.
+                  newStreak = profile.currentStreak || 1;
+              }
+          }
+
+          // Check for streak milestone rewards
+          if (newStreak in STREAK_REWARDS) {
+            streakBonus = STREAK_REWARDS[newStreak as keyof typeof STREAK_REWARDS];
+            totalReward += streakBonus;
+          }
+
+          // Update user's profile
+          batch.update(userDocRef, { 
+            coins: increment(totalReward),
+            weeklyCoins: increment(totalReward),
+            currentStreak: newStreak,
+            lastLoginDate: todayStr
           });
-          await setDoc(dailyLoginDocRef, { claimedAt: serverTimestamp() });
+
+          // Mark daily login as claimed
+          batch.set(dailyLoginDocRef, { claimedAt: serverTimestamp() });
           
+          await batch.commit();
+
           // Also update challenge progress for daily check-in
           await incrementChallengeProgress(firestore, user.uid, 'dailyCheckIn');
           
-          setIsRewardGranted(true);
-          setIsModalOpen(true);
+          setModalState({ isOpen: true, reward: DAILY_REWARD, bonus: streakBonus, streak: newStreak });
         }
       } catch (error) {
         console.error("Error checking or granting daily reward:", error);
@@ -66,7 +106,7 @@ export default function DashboardPage() {
     const timer = setTimeout(checkDailyLogin, 1500);
     return () => clearTimeout(timer);
 
-  }, [user, isUserLoading, firestore]);
+  }, [user, profile, isUserLoading, firestore]);
 
   const heroGame = games?.[0];
   const isLoading = isGamesLoading || isUserLoading;
@@ -133,9 +173,11 @@ export default function DashboardPage() {
         </div>
       </div>
       <DailyLoginModal 
-        isOpen={isModalOpen && isRewardGranted} 
-        onOpenChange={setIsModalOpen} 
-        reward={DAILY_REWARD}
+        isOpen={modalState.isOpen} 
+        onOpenChange={(isOpen) => setModalState(prev => ({...prev, isOpen}))} 
+        reward={modalState.reward}
+        bonus={modalState.bonus}
+        streak={modalState.streak}
        />
     </>
   );
