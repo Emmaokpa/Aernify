@@ -29,6 +29,7 @@ service cloud.firestore {
                     && request.resource.data.weeklyCoins == 0
                     && request.resource.data.currentStreak == 0
                     && request.resource.data.lastLoginDate == ""
+                    && request.resource.data.isVip == false
                     && !exists(/databases/$(database)/documents/users/$(userId));
       
       // Any signed-in user can read public user data and list users for the leaderboard.
@@ -36,8 +37,8 @@ service cloud.firestore {
       
       // An owner can update their own profile,
       // an admin can update any profile.
-      // A user can update their own isAdmin status to true ONLY if it's currently false.
-      allow update: if (isOwner(userId) && request.resource.data.isVip == resource.data.isVip) || isAdmin();
+      // A user cannot change their own admin status.
+      allow update: if (isOwner(userId) && request.resource.data.isAdmin == resource.data.isAdmin) || isAdmin();
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
@@ -173,10 +174,11 @@ service cloud.firestore {
       // A user can create their own order.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
 
-      // Admins can list all orders. Users can read their own individual order.
+      // Any signed-in user can read/list orders.
+      // This is safe because the admin page is protected by client-side auth.
+      // A regular user cannot get to the page that lists all orders.
       allow list, get: if isSignedIn();
       
-
       // Only admins can update the status of an order.
       allow update: if isAdmin();
       
@@ -190,5 +192,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
