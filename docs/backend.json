@@ -28,12 +28,12 @@
           "description": "The total number of coins the user has."
         },
         "weeklyCoins": {
-            "type": "number",
-            "description": "The number of coins the user has earned in the current week."
+          "type": "number",
+          "description": "The number of coins the user has earned in the current week."
         },
         "referralCode": {
-            "type": "string",
-            "description": "A unique code for referring other users."
+          "type": "string",
+          "description": "A unique code for referring other users."
         },
         "isAdmin": {
           "type": "boolean",
@@ -44,16 +44,29 @@
           "description": "Whether the user has a VIP subscription."
         },
         "currentStreak": {
-            "type": "number",
-            "description": "The number of consecutive days the user has logged in."
+          "type": "number",
+          "description": "The number of consecutive days the user has logged in."
         },
         "lastLoginDate": {
-            "type": "string",
-            "format": "date",
-            "description": "The date of the user's last login in YYYY-MM-DD format."
+          "type": "string",
+          "format": "date",
+          "description": "The date of the user's last login in YYYY-MM-DD format."
+        },
+        "wishlist": {
+          "type": "array",
+          "description": "A list of product IDs the user has added to their wishlist.",
+          "items": {
+            "type": "string"
+          }
         }
       },
-      "required": ["uid", "email", "coins", "weeklyCoins", "referralCode"]
+      "required": [
+        "uid",
+        "email",
+        "coins",
+        "weeklyCoins",
+        "referralCode"
+      ]
     },
     "DailyLogin": {
       "title": "Daily Login Record",
@@ -66,7 +79,9 @@
           "description": "The server timestamp when the bonus was claimed."
         }
       },
-      "required": ["claimedAt"]
+      "required": [
+        "claimedAt"
+      ]
     },
     "Game": {
       "title": "Game",
@@ -84,110 +99,260 @@
           "format": "uri"
         },
         "imageHint": {
-            "type": "string"
+          "type": "string"
         },
         "iframeUrl": {
           "type": "string",
           "format": "uri"
         },
         "reward": {
-            "type": "number"
+          "type": "number"
         }
       },
-      "required": ["title", "description", "imageUrl", "iframeUrl", "reward"]
+      "required": [
+        "title",
+        "description",
+        "imageUrl",
+        "iframeUrl",
+        "reward"
+      ]
     },
     "Offer": {
-        "title": "Affiliate Offer",
-        "description": "Represents an affiliate offer from a partner.",
-        "type": "object",
-        "properties": {
-            "title": { "type": "string" },
-            "company": { "type": "string" },
-            "reward": { "type": "number" },
-            "imageUrl": { "type": "string", "format": "uri" },
-            "imageHint": { "type": "string" },
-            "link": { "type": "string", "format": "uri" }
+      "title": "Affiliate Offer",
+      "description": "Represents an affiliate offer from a partner.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
         },
-        "required": ["title", "company", "reward", "imageUrl", "link"]
+        "company": {
+          "type": "string"
+        },
+        "reward": {
+          "type": "number"
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "imageHint": {
+          "type": "string"
+        },
+        "link": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "title",
+        "company",
+        "reward",
+        "imageUrl",
+        "link"
+      ]
     },
     "Product": {
-        "title": "Product",
-        "description": "Represents a product available for purchase in the shop.",
-        "type": "object",
-        "properties": {
-            "name": { "type": "string" },
-            "description": { "type": "string" },
-            "price": { "type": "number", "description": "Price in the local currency (e.g., NGN)." },
-            "imageUrl": { "type": "string", "format": "uri" },
-            "imageHint": { "type": "string" }
+      "title": "Product",
+      "description": "Represents a product available for purchase in the shop.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
         },
-        "required": ["name", "description", "price", "imageUrl"]
+        "description": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number",
+          "description": "Price in the local currency (e.g., NGN)."
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "imageHint": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "price",
+        "imageUrl"
+      ]
     },
-     "GiftCard": {
+    "GiftCard": {
       "title": "Gift Card",
       "description": "Represents a gift card available for redemption.",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "value": { "type": "number" },
-        "price": { "type": "number" },
-        "imageUrl": { "type": "string", "format": "uri" },
-        "imageHint": { "type": "string" }
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        },
+        "price": {
+          "type": "number"
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "imageHint": {
+          "type": "string"
+        }
       },
-      "required": ["name", "value", "price", "imageUrl"]
+      "required": [
+        "name",
+        "value",
+        "price",
+        "imageUrl"
+      ]
     },
     "OfferSubmission": {
-        "title": "Offer Submission",
-        "description": "Represents a user's submission for completing an affiliate offer.",
-        "type": "object",
-        "properties": {
-            "userId": { "type": "string" },
-            "userDisplayName": { "type": "string" },
-            "offerId": { "type": "string" },
-            "offerTitle": { "type": "string" },
-            "reward": { "type": "number" },
-            "proofImageUrl": { "type": "string", "format": "uri" },
-            "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
-            "submittedAt": { "type": "string", "format": "date-time" }
+      "title": "Offer Submission",
+      "description": "Represents a user's submission for completing an affiliate offer.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
         },
-        "required": ["userId", "offerId", "proofImageUrl", "status", "submittedAt"]
+        "userDisplayName": {
+          "type": "string"
+        },
+        "offerId": {
+          "type": "string"
+        },
+        "offerTitle": {
+          "type": "string"
+        },
+        "reward": {
+          "type": "number"
+        },
+        "proofImageUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "offerId",
+        "proofImageUrl",
+        "status",
+        "submittedAt"
+      ]
     },
     "RedemptionRequest": {
       "title": "Gift Card Redemption Request",
       "description": "Represents a user's request to redeem coins for a gift card.",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "userDisplayName": { "type": "string" },
-        "giftCardId": { "type": "string" },
-        "giftCardName": { "type": "string" },
-        "giftCardValue": { "type": "number" },
-        "coinsSpent": { "type": "number" },
-        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
-        "requestedAt": { "type": "string", "format": "date-time" }
+        "userId": {
+          "type": "string"
+        },
+        "userDisplayName": {
+          "type": "string"
+        },
+        "giftCardId": {
+          "type": "string"
+        },
+        "giftCardName": {
+          "type": "string"
+        },
+        "giftCardValue": {
+          "type": "number"
+        },
+        "coinsSpent": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["userId", "giftCardId", "coinsSpent", "status", "requestedAt"]
+      "required": [
+        "userId",
+        "giftCardId",
+        "coinsSpent",
+        "status",
+        "requestedAt"
+      ]
     },
     "Challenge": {
       "title": "Daily Challenge",
       "description": "Represents a daily challenge for users to complete.",
       "type": "object",
       "properties": {
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "reward": { "type": "number" },
-        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
-        "type": { "type": "string", "enum": ["watchAd", "playGame", "completeOffer", "dailyCheckIn"] },
-        "targetValue": { "type": "number" }
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "reward": {
+          "type": "number"
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": [
+            "Easy",
+            "Medium",
+            "Hard"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "watchAd",
+            "playGame",
+            "completeOffer",
+            "dailyCheckIn"
+          ]
+        },
+        "targetValue": {
+          "type": "number"
+        }
       },
-      "required": ["title", "description", "reward", "difficulty", "type", "targetValue"]
+      "required": [
+        "title",
+        "description",
+        "reward",
+        "difficulty",
+        "type",
+        "targetValue"
+      ]
     },
     "UserChallengeProgress": {
       "title": "User's Daily Challenge Progress",
       "description": "Tracks a user's progress on all challenges for a single day.",
       "type": "object",
       "properties": {
-        "date": { "type": "string", "format": "date", "description": "The date in YYYY-MM-DD format." },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date in YYYY-MM-DD format."
+        },
         "progress": {
           "type": "object",
           "description": "A map where keys are challenge IDs and values are progress objects.",
@@ -195,86 +360,183 @@
             "^[a-zA-Z0-9]+$": {
               "type": "object",
               "properties": {
-                "currentValue": { "type": "number" },
-                "claimed": { "type": "boolean" }
+                "currentValue": {
+                  "type": "number"
+                },
+                "claimed": {
+                  "type": "boolean"
+                }
               }
             }
           }
         }
       },
-      "required": ["date"]
+      "required": [
+        "date"
+      ]
     },
     "Order": {
       "title": "Product Order",
       "description": "Represents a user's order for a physical product.",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "userDisplayName": { "type": "string" },
-        "productId": { "type": "string" },
-        "productName": { "type": "string" },
-        "productImageUrl": { "type": "string" },
-        "coinsSpent": { "type": "number" },
+        "userId": {
+          "type": "string"
+        },
+        "userDisplayName": {
+          "type": "string"
+        },
+        "productId": {
+          "type": "string"
+        },
+        "productName": {
+          "type": "string"
+        },
+        "productImageUrl": {
+          "type": "string"
+        },
+        "coinsSpent": {
+          "type": "number"
+        },
         "shippingInfo": {
           "$ref": "#/entities/ShippingInfo"
         },
         "status": {
           "type": "string",
-          "enum": ["pending", "shipped", "delivered", "cancelled"]
+          "enum": [
+            "pending",
+            "shipped",
+            "delivered",
+            "cancelled"
+          ]
         },
         "orderedAt": {
           "type": "string",
           "format": "date-time"
         }
       },
-      "required": ["userId", "productId", "coinsSpent", "shippingInfo", "status", "orderedAt"]
+      "required": [
+        "userId",
+        "productId",
+        "coinsSpent",
+        "shippingInfo",
+        "status",
+        "orderedAt"
+      ]
     },
     "ShippingInfo": {
       "title": "Shipping Information",
       "description": "Stores the shipping details for an order.",
       "type": "object",
       "properties": {
-        "fullName": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "phoneNumber": { "type": "string" },
-        "addressLine1": { "type": "string" },
-        "addressLine2": { "type": "string" },
-        "city": { "type": "string" },
-        "state": { "type": "string" },
-        "postalCode": { "type": "string" },
-        "country": { "type": "string" }
+        "fullName": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phoneNumber": {
+          "type": "string"
+        },
+        "addressLine1": {
+          "type": "string"
+        },
+        "addressLine2": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "postalCode": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        }
       },
-      "required": ["fullName", "email", "addressLine1", "city", "state", "postalCode", "country"]
+      "required": [
+        "fullName",
+        "email",
+        "addressLine1",
+        "city",
+        "state",
+        "postalCode",
+        "country"
+      ]
     },
     "WithdrawalRequest": {
-        "title": "Withdrawal Request",
-        "description": "A user's request to convert coins to real money.",
-        "type": "object",
-        "properties": {
-            "userId": { "type": "string" },
-            "userDisplayName": { "type": "string" },
-            "coinsToWithdraw": { "type": "number" },
-            "nairaAmount": { "type": "number" },
-            "bankDetails": { "$ref": "#/entities/BankDetails" },
-            "status": { "type": "string", "enum": ["pending", "processed", "rejected"] },
-            "requestedAt": { "type": "string", "format": "date-time" }
+      "title": "Withdrawal Request",
+      "description": "A user's request to convert coins to real money.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
         },
-        "required": ["userId", "coinsToWithdraw", "nairaAmount", "bankDetails", "status", "requestedAt"]
+        "userDisplayName": {
+          "type": "string"
+        },
+        "coinsToWithdraw": {
+          "type": "number"
+        },
+        "nairaAmount": {
+          "type": "number"
+        },
+        "bankDetails": {
+          "$ref": "#/entities/BankDetails"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "processed",
+            "rejected"
+          ]
+        },
+        "requestedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "coinsToWithdraw",
+        "nairaAmount",
+        "bankDetails",
+        "status",
+        "requestedAt"
+      ]
     },
     "BankDetails": {
-        "title": "Bank Account Details",
-        "description": "Nigerian bank account details for withdrawals.",
-        "type": "object",
-        "properties": {
-            "bankName": { "type": "string" },
-            "accountNumber": { "type": "string" },
-            "accountName": { "type": "string" }
+      "title": "Bank Account Details",
+      "description": "Nigerian bank account details for withdrawals.",
+      "type": "object",
+      "properties": {
+        "bankName": {
+          "type": "string"
         },
-        "required": ["bankName", "accountNumber", "accountName"]
+        "accountNumber": {
+          "type": "string"
+        },
+        "accountName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bankName",
+        "accountNumber",
+        "accountName"
+      ]
     }
   },
   "auth": {
-    "providers": ["email", "google"]
+    "providers": [
+      "email",
+      "google"
+    ]
   },
   "firestore": {
     "/users/{userId}": {
@@ -284,40 +546,40 @@
       "description": "Stores public and private user profile information."
     },
     "/daily_logins/{loginId}": {
-        "schema": {
-            "$ref": "#/entities/DailyLogin"
-        },
-        "description": "Tracks daily login bonus claims. The document ID is a composite of 'userId_YYYY-MM-DD'."
+      "schema": {
+        "$ref": "#/entities/DailyLogin"
+      },
+      "description": "Tracks daily login bonus claims. The document ID is a composite of 'userId_YYYY-MM-DD'."
     },
     "/games/{gameId}": {
-        "schema": {
-            "$ref": "#/entities/Game"
-        },
-        "description": "Stores information about playable games."
+      "schema": {
+        "$ref": "#/entities/Game"
+      },
+      "description": "Stores information about playable games."
     },
     "/offers/{offerId}": {
-        "schema": {
-            "$ref": "#/entities/Offer"
-        },
-        "description": "Stores information about affiliate offers."
+      "schema": {
+        "$ref": "#/entities/Offer"
+      },
+      "description": "Stores information about affiliate offers."
     },
     "/products/{productId}": {
-        "schema": {
-            "$ref": "#/entities/Product"
-        },
-        "description": "Stores information about shop products."
+      "schema": {
+        "$ref": "#/entities/Product"
+      },
+      "description": "Stores information about shop products."
     },
-     "/giftCards/{giftCardId}": {
+    "/giftCards/{giftCardId}": {
       "schema": {
         "$ref": "#/entities/GiftCard"
       },
       "description": "Stores information about available gift cards."
     },
     "/offer_submissions/{submissionId}": {
-        "schema": {
-            "$ref": "#/entities/OfferSubmission"
-        },
-        "description": "Stores user submissions for offer completion."
+      "schema": {
+        "$ref": "#/entities/OfferSubmission"
+      },
+      "description": "Stores user submissions for offer completion."
     },
     "/redemption_requests/{requestId}": {
       "schema": {
@@ -326,10 +588,10 @@
       "description": "Stores user requests for gift card redemption."
     },
     "/withdrawal_requests/{requestId}": {
-        "schema": {
-            "$ref": "#/entities/WithdrawalRequest"
-        },
-        "description": "Stores user requests to withdraw coins for cash."
+      "schema": {
+        "$ref": "#/entities/WithdrawalRequest"
+      },
+      "description": "Stores user requests to withdraw coins for cash."
     },
     "/challenges/{challengeId}": {
       "schema": {
@@ -351,5 +613,3 @@
     }
   }
 }
-
-    

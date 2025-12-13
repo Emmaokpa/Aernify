@@ -2,6 +2,7 @@
 
 
 
+
 export type NavItem = {
   title: string;
   href: string;
@@ -90,6 +91,7 @@ export interface UserProfile {
     isVip: boolean;
     currentStreak: number;
     lastLoginDate: string; // YYYY-MM-DD
+    wishlist?: string[];
 }
 
 export interface OfferSubmission {

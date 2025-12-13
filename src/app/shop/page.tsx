@@ -134,7 +134,7 @@ export default function ShopPage() {
                 <h3 className="text-lg font-semibold">{product.name}</h3>
                 <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
               </CardContent>
-              <CardFooter className="p-4 flex flex-col items-start gap-3 bg-muted/30">
+              <CardFooter className="p-4 flex flex-col items-start gap-3 bg-card/50">
                 <div className="font-bold text-primary text-lg">
                   <span>{formatPrice(product.price)}</span>
                 </div>
