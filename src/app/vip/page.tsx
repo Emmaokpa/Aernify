@@ -20,13 +20,17 @@ export default function VipPage() {
     if (!user || !profile) return;
     setIsGenerating(true);
     try {
+      // 1. The server-side flow generates the account and returns the details
       const result = await generateDva({ userId: user.uid });
+      
       if (result.success && result.bankName && result.accountNumber) {
+        // 2. The client-side performs the Firestore update
         const userRef = doc(firestore, 'users', user.uid);
         await updateDoc(userRef, {
           dvaBankName: result.bankName,
           dvaAccountNumber: result.accountNumber,
         });
+
         toast({
           title: 'Account Generated!',
           description: 'Your unique payment account is ready.',

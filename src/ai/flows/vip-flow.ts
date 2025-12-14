@@ -48,6 +48,7 @@ const generateDvaFlow = ai.defineFlow(
       // Call the Paystack service to create the DVA
       const dva = await createDedicatedAccount(userProfile);
 
+      // Return the account details to the client instead of writing here.
       return {
         success: true,
         message: 'Dedicated account created successfully.',
