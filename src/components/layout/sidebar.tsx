@@ -16,6 +16,7 @@ import {
   LogOut,
   Shield,
   Banknote,
+  Crown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/types';
@@ -80,6 +81,21 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
                 </Link>
               </li>
             ))}
+             {profile?.isVip ? null : (
+                 <li>
+                    <Link
+                        href="/vip"
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                            'flex items-center gap-3 rounded-lg px-3 py-2 text-primary transition-all bg-primary/10 hover:bg-primary/20',
+                             pathname === '/vip' && 'bg-primary/20 text-primary font-semibold'
+                        )}
+                        >
+                        <Crown />
+                        VIP Upgrade
+                    </Link>
+                </li>
+             )}
              {profile?.isAdmin && (
                 <>
                     <li className='px-3 pt-4 pb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider'>Admin</li>
@@ -124,5 +140,3 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
     </>
   );
 }
-
-    

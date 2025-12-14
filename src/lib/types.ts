@@ -3,6 +3,7 @@
 
 
 
+
 export type NavItem = {
   title: string;
   href: string;
@@ -92,6 +93,8 @@ export interface UserProfile {
     currentStreak: number;
     lastLoginDate: string; // YYYY-MM-DD
     wishlist?: string[];
+    dvaBankName?: string;
+    dvaAccountNumber?: string;
 }
 
 export interface OfferSubmission {

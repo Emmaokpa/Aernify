@@ -39,7 +39,7 @@ service cloud.firestore {
       // an admin can update any profile.
       // A user cannot change their own admin status.
       // Allow user to update their wishlist.
-      allow update: if (isOwner(userId) && (request.resource.data.isAdmin == resource.data.isAdmin && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['wishlist']) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL'])))) || isAdmin();
+      allow update: if (isOwner(userId) && (request.resource.data.isAdmin == resource.data.isAdmin && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['wishlist', 'dvaBankName', 'dvaAccountNumber']) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL'])))) || isAdmin();
 
 
       // Only admins can delete user documents

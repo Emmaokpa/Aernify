@@ -47,7 +47,7 @@ const ProfileMenuItem = ({ icon, text, href }: { icon: React.ReactNode, text: st
 export default function ProfilePage() {
   const router = useRouter();
   const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { user, profile, isUserLoading } = useUser();
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -93,26 +93,37 @@ export default function ProfilePage() {
       <Card className="bg-primary/10 border border-primary/20 mb-8">
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-primary">VIP Subscription</h3>
-            <p className="font-semibold text-foreground">₦5,000/month</p>
+             <h3 className="text-xl font-bold text-primary">
+              {profile?.isVip ? 'You are a VIP!' : 'VIP Subscription'}
+            </h3>
+            {!profile?.isVip && <p className="font-semibold text-foreground">₦5,000/month</p>}
           </div>
-          <ul className="space-y-3 text-foreground/90 mb-6">
-            <li className="flex items-center gap-3">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <span>2x Earnings on all rewards</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <ShieldOff className="w-5 h-5 text-primary" />
-              <span>Remove all ads</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <Crown className="w-5 h-5 text-primary" />
-              <span>Claim exclusive gift cards</span>
-            </li>
-          </ul>
-          <Button className="w-full">
-            Upgrade
-          </Button>
+           {profile?.isVip ? (
+             <div className="text-center text-green-400 font-semibold flex items-center justify-center gap-2">
+                <Crown className="w-5 h-5" />
+                <span>Your 2x earning rate is active!</span>
+             </div>
+           ) : (
+            <>
+              <ul className="space-y-3 text-foreground/90 mb-6">
+                <li className="flex items-center gap-3">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                  <span>2x Earnings on all rewards</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <ShieldOff className="w-5 h-5 text-primary" />
+                  <span>Remove all ads</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Crown className="w-5 h-5 text-primary" />
+                  <span>Claim exclusive gift cards</span>
+                </li>
+              </ul>
+              <Button className="w-full" asChild>
+                <Link href="/vip">Upgrade to VIP</Link>
+              </Button>
+            </>
+           )}
         </CardContent>
       </Card>
 

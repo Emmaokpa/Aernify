@@ -58,6 +58,14 @@
           "items": {
             "type": "string"
           }
+        },
+        "dvaBankName": {
+          "type": "string",
+          "description": "The bank name for the user's dedicated virtual account."
+        },
+        "dvaAccountNumber": {
+          "type": "string",
+          "description": "The user's dedicated virtual account number for VIP payments."
         }
       },
       "required": [
