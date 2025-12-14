@@ -35,13 +35,11 @@ service cloud.firestore {
       
       // An owner can update their own profile fields, but not their admin status or coins.
       // An admin can update any profile.
-      // This rule also allows the DVA server flow to update only the DVA fields.
       allow update: if (isOwner(userId) && 
                        request.resource.data.isAdmin == resource.data.isAdmin && 
                        request.resource.data.coins == resource.data.coins &&
                        request.resource.data.weeklyCoins == resource.data.weeklyCoins &&
                        request.resource.data.referralCode == resource.data.referralCode)
-                    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dvaBankName', 'dvaAccountNumber']))
                     || isAdmin();
 
       // Only admins can delete user documents
@@ -86,6 +84,14 @@ service cloud.firestore {
         // Only admins can write (create, update, delete) offer data.
         allow write: if isAdmin();
     }
+    
+    // Rules for the affiliate_products collection
+    match /affiliate_products/{productId} {
+        // Any signed-in user can read affiliate product data.
+        allow read: if isSignedIn();
+        // Only admins can write (create, update, delete) affiliate product data.
+        allow write: if isAdmin();
+    }
 
     // Rules for the products collection
     match /products/{productId} {
@@ -105,6 +111,21 @@ service cloud.firestore {
 
     // Rules for the offer_submissions collection
     match /offer_submissions/{submissionId} {
+        // A user can create their own submission.
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        
+        // Admins can read all submissions. Users can read their own.
+        allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+        // Only admins can update the status of a submission. A user cannot change their own submission.
+        allow update: if isAdmin();
+        
+        // Nobody can delete submissions for now.
+        allow delete: if false;
+    }
+    
+    // Rules for the affiliate_sale_submissions collection
+    match /affiliate_sale_submissions/{submissionId} {
         // A user can create their own submission.
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
         

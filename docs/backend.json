@@ -538,6 +538,89 @@
         "accountNumber",
         "accountName"
       ]
+    },
+    "AffiliateProduct": {
+      "title": "Affiliate Product",
+      "description": "Represents a high-value affiliate product (e.g., from JVZoo).",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "vendor": {
+          "type": "string"
+        },
+        "reward": {
+          "type": "number"
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "imageHint": {
+          "type": "string"
+        },
+        "productUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "vendor",
+        "reward",
+        "imageUrl",
+        "productUrl",
+        "description"
+      ]
+    },
+    "AffiliateSaleSubmission": {
+      "title": "Affiliate Sale Submission",
+      "description": "A user's submission for a completed affiliate product sale.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "userDisplayName": {
+          "type": "string"
+        },
+        "affiliateProductId": {
+          "type": "string"
+        },
+        "affiliateProductTitle": {
+          "type": "string"
+        },
+        "reward": {
+          "type": "number"
+        },
+        "proofOfSale": {
+          "type": "string",
+          "description": "Proof of the sale, e.g., a transaction ID or customer email."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "affiliateProductId",
+        "proofOfSale",
+        "status",
+        "submittedAt"
+      ]
     }
   },
   "auth": {
@@ -618,6 +701,18 @@
         "$ref": "#/entities/Order"
       },
       "description": "Stores user orders for physical products."
+    },
+    "/affiliate_products/{productId}": {
+      "schema": {
+        "$ref": "#/entities/AffiliateProduct"
+      },
+      "description": "Stores high-value affiliate products."
+    },
+    "/affiliate_sale_submissions/{submissionId}": {
+      "schema": {
+        "$ref": "#/entities/AffiliateSaleSubmission"
+      },
+      "description": "Stores user submissions for completed affiliate sales."
     }
   }
 }

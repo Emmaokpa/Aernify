@@ -1,9 +1,4 @@
 
-
-
-
-
-
 export type NavItem = {
   title: string;
   href: string;
@@ -48,6 +43,17 @@ export type Offer = {
   imageUrl: string;
   imageHint: string;
   link: string;
+};
+
+export type AffiliateProduct = {
+  id: string;
+  title: string;
+  vendor: string;
+  reward: number;
+  imageUrl: string;
+  imageHint: string;
+  productUrl: string;
+  description: string;
 };
 
 export type Product = {
@@ -105,6 +111,18 @@ export interface OfferSubmission {
     offerTitle: string;
     reward: number;
     proofImageUrl: string;
+    status: 'pending' | 'approved' | 'rejected';
+    submittedAt: any; // Firestore Timestamp
+}
+
+export interface AffiliateSaleSubmission {
+    id: string;
+    userId: string;
+    userDisplayName: string;
+    affiliateProductId: string;
+    affiliateProductTitle: string;
+    reward: number;
+    proofOfSale: string;
     status: 'pending' | 'approved' | 'rejected';
     submittedAt: any; // Firestore Timestamp
 }
@@ -175,8 +193,3 @@ export interface WithdrawalRequest {
     status: 'pending' | 'processed' | 'rejected';
     requestedAt: any; // Firestore Timestamp
 }
-    
-
-    
-
-    

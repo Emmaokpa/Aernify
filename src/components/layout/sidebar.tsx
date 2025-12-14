@@ -31,7 +31,7 @@ const navItems: NavItem[] = [
   { title: 'Play Games', href: '/play', icon: <Gamepad2 /> },
   { title: 'Challenges', href: '/challenges', icon: <Sparkles /> },
   { title: 'Earn', href: '/earn', icon: <Coins /> },
-  { title: 'Affiliate', href: '/offers', icon: <ListChecks /> },
+  { title: 'Affiliate Hub', href: '/offers', icon: <ListChecks /> },
   { title: 'Shop', href: '/shop', icon: <ShoppingBag /> },
   { title: 'Redeem', href: '/redeem', icon: <Gift /> },
   { title: 'Withdraw', href: '/withdraw', icon: <Banknote /> },

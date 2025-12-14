@@ -20,6 +20,7 @@ import {
   PackageCheck,
   UserCog,
   Banknote,
+  DollarSign,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 
@@ -38,6 +39,11 @@ const adminFeatures: NavItem[] = [
     title: 'Manage Offers',
     href: '/admin/offers',
     icon: <Briefcase className="w-8 h-8" />,
+  },
+  {
+    title: 'Manage Affiliate Products',
+    href: '/admin/affiliate-products',
+    icon: <DollarSign className="w-8 h-8" />,
   },
    {
     title: 'Manage Challenges',
@@ -58,6 +64,11 @@ const adminFeatures: NavItem[] = [
     title: 'Verify Offers',
     href: '/admin/verify-offers',
     icon: <CheckSquare className="w-8 h-8" />,
+  },
+  {
+    title: 'Verify Affiliate Sales',
+    href: '/admin/verify-sales',
+    icon: <TicketCheck className="w-8 h-8" />,
   },
   {
     title: 'Verify Redemptions',
@@ -110,5 +121,3 @@ export default function AdminDashboardPage() {
     </AdminAuthWrapper>
   );
 }
-
-    
