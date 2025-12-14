@@ -13,9 +13,11 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import type { Product } from '@/lib/types';
-import { doc, writeBatch, collection } from 'firebase/firestore';
+import { doc, writeBatch, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import PaystackPop from '@paystack/inline-js';
+
 
 const shippingSchema = z.object({
   fullName: z.string().min(2, 'Full name is required'),
@@ -28,6 +30,8 @@ const shippingSchema = z.object({
   postalCode: z.string().min(4, 'Postal code is required'),
   country: z.string().min(2, 'Country is required'),
 });
+
+type ShippingFormData = z.infer<typeof shippingSchema>;
 
 function CheckoutSkeleton() {
     return (
@@ -50,10 +54,139 @@ function CheckoutSkeleton() {
     )
 }
 
+function CheckoutForm({ product, user, profile, form }: { product: Product; user: any; profile: any; form: any }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const firestore = useFirestore();
+
+  const createOrderInFirestore = async (shippingValues: ShippingFormData) => {
+    try {
+      const batch = writeBatch(firestore);
+      const orderRef = doc(collection(firestore, 'orders'));
+
+      batch.set(orderRef, {
+        userId: user.uid,
+        userDisplayName: profile.displayName,
+        productId: product.id,
+        productName: product.name,
+        productImageUrl: product.imageUrl,
+        coinsSpent: product.price, // This field represents the Naira amount paid
+        shippingInfo: shippingValues,
+        status: 'pending',
+        orderedAt: serverTimestamp(),
+      });
+
+      await batch.commit();
+
+      toast({ title: 'Order Placed!', description: 'Your order has been successfully placed.' });
+      router.push('/shop');
+    } catch (error) {
+      console.error('Order placement error:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to save order after payment.' });
+    }
+  };
+
+  const handleCheckout = async () => {
+    const isFormValid = await form.trigger();
+    if (!isFormValid) {
+        toast({variant: 'destructive', title: 'Invalid Form', description: 'Please fill out all required shipping details.'});
+        return;
+    }
+
+    const paystack = new PaystackPop();
+    paystack.newTransaction({
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+        email: form.getValues('email'),
+        amount: product.price * 100, // Amount in kobo
+        onSuccess: (transaction) => {
+            toast({ title: 'Payment Successful!', description: 'Creating your order...' });
+            createOrderInFirestore(form.getValues());
+        },
+        onCancel: () => {
+            toast({ variant: 'destructive', title: 'Payment Cancelled', description: 'The payment process was cancelled.' });
+        },
+    });
+  }
+
+  return (
+    <Form {...form}>
+      <div className="grid md:grid-cols-2 gap-12">
+        {/* Left Side: Product Info */}
+        <div className="md:col-span-1 space-y-6">
+          <h1 className="text-3xl font-bold">Your Order</h1>
+          <Card className="overflow-hidden">
+            <div className="relative aspect-square">
+              <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+            </div>
+            <CardHeader>
+              <CardTitle>{product.name}</CardTitle>
+              <CardDescription>{product.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-between items-center font-bold text-2xl">
+              <span>Total Cost:</span>
+              <div className='flex items-center gap-2 text-primary'>
+                <span>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(product.price)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Side: Shipping Form */}
+        <div className="md:col-span-1 space-y-6">
+          <h1 className="text-3xl font-bold">Shipping Details</h1>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="grid gap-6">
+                <FormField control={form.control} name="fullName" render={({ field }) => (
+                  <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="email" render={({ field }) => (
+                    <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="phoneNumber" render={({ field }) => (
+                    <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </div>
+                <FormField control={form.control} name="addressLine1" render={({ field }) => (
+                  <FormItem><FormLabel>Address Line 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="addressLine2" render={({ field }) => (
+                  <FormItem><FormLabel>Address Line 2 (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="city" render={({ field }) => (
+                    <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="state" render={({ field }) => (
+                    <FormItem><FormLabel>State / Province</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="postalCode" render={({ field }) => (
+                    <FormItem><FormLabel>Postal Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="country" render={({ field }) => (
+                    <FormItem><FormLabel>Country</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>
+                  )} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Button onClick={handleCheckout} size="lg" className="w-full text-lg" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+            Proceed to Payment
+          </Button>
+        </div>
+      </div>
+    </Form>
+  );
+}
+
+
 export default function CheckoutPage() {
   const params = useParams();
   const router = useRouter();
-  const { toast } = useToast();
   const firestore = useFirestore();
   const { user, profile, isUserLoading } = useUser();
   const productId = params.productId as string;
@@ -65,7 +198,7 @@ export default function CheckoutPage() {
 
   const { data: product, isLoading: isProductLoading } = useDoc<Product>(productDocRef);
 
-  const form = useForm<z.infer<typeof shippingSchema>>({
+  const form = useForm<ShippingFormData>({
     resolver: zodResolver(shippingSchema),
     defaultValues: {
       email: profile?.email || '',
@@ -80,59 +213,13 @@ export default function CheckoutPage() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof shippingSchema>) => {
-    if (!user || !profile || !product) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not process order. User or product not found.' });
-        return;
-    }
-    
-    // TODO: Implement Paystack payment logic here.
-    // For now, we will simulate a successful payment and create the order.
-    
-    toast({ title: 'Simulating Payment...', description: 'Preparing to create order.' });
-
-    try {
-        const batch = writeBatch(firestore);
-        
-        const orderRef = doc(collection(firestore, 'orders'));
-        batch.set(orderRef, {
-            userId: user.uid,
-            userDisplayName: profile.displayName,
-            productId: product.id,
-            productName: product.name,
-            productImageUrl: product.imageUrl,
-            // 'coinsSpent' will be repurposed or replaced with payment details
-            coinsSpent: product.price, 
-            shippingInfo: values,
-            status: 'pending',
-            orderedAt: new Date(),
-        });
-        
-        await batch.commit();
-        
-        toast({ title: 'Order Placed!', description: 'Your order has been successfully placed.' });
-        router.push('/shop');
-
-    } catch (error) {
-        console.error('Order placement error:', error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to place order.' });
-    }
-  };
-  
   const isLoading = isUserLoading || isProductLoading;
-  
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-NG', {
-        style: 'currency',
-        currency: 'NGN',
-    }).format(price);
-  };
 
   if (isLoading) {
     return <CheckoutSkeleton />;
   }
 
-  if (!product) {
+  if (!product || !user || !profile) {
      return (
       <div className="max-w-6xl mx-auto text-center">
          <Button variant="outline" onClick={() => router.back()} className="mb-6">
@@ -143,9 +230,12 @@ export default function CheckoutPage() {
                 <div className="mx-auto bg-destructive/20 rounded-full p-3 w-fit">
                     <AlertTriangle className="h-10 w-10 text-destructive" />
                 </div>
-                <CardTitle className="mt-4">Product Not Found</CardTitle>
+                <CardTitle className="mt-4">{!product ? 'Product Not Found' : 'Authentication Error'}</CardTitle>
                 <CardDescription>
-                    The product you are trying to purchase could not be found. It may have been removed or the link is incorrect.
+                    {!product 
+                        ? 'The product you are trying to purchase could not be found.'
+                        : 'You must be logged in to proceed with checkout.'
+                    }
                 </CardDescription>
             </CardHeader>
         </Card>
@@ -158,77 +248,7 @@ export default function CheckoutPage() {
       <Button variant="outline" onClick={() => router.back()} className="mb-6">
         <ChevronLeft className="mr-2 h-4 w-4" /> Back to Shop
       </Button>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid md:grid-cols-2 gap-12">
-          {/* Left Side: Product Info */}
-          <div className="md:col-span-1 space-y-6">
-            <h1 className="text-3xl font-bold">Your Order</h1>
-            <Card className="overflow-hidden">
-                <div className="relative aspect-square">
-                    <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
-                </div>
-                <CardHeader>
-                    <CardTitle>{product.name}</CardTitle>
-                    <CardDescription>{product.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex justify-between items-center font-bold text-2xl">
-                    <span>Total Cost:</span>
-                    <div className='flex items-center gap-2 text-primary'>
-                        <span>{formatPrice(product.price)}</span>
-                    </div>
-                </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Side: Shipping Form */}
-          <div className="md:col-span-1 space-y-6">
-            <h1 className="text-3xl font-bold">Shipping Details</h1>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="grid gap-6">
-                  <FormField control={form.control} name="fullName" render={({ field }) => (
-                      <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <div className="grid md:grid-cols-2 gap-4">
-                     <FormField control={form.control} name="email" render={({ field }) => (
-                      <FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                     <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                      <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
-                  <FormField control={form.control} name="addressLine1" render={({ field }) => (
-                      <FormItem><FormLabel>Address Line 1</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                   <FormField control={form.control} name="addressLine2" render={({ field }) => (
-                      <FormItem><FormLabel>Address Line 2 (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="city" render={({ field }) => (
-                        <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="state" render={({ field }) => (
-                        <FormItem><FormLabel>State / Province</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
-                   <div className="grid md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="postalCode" render={({ field }) => (
-                        <FormItem><FormLabel>Postal Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="country" render={({ field }) => (
-                        <FormItem><FormLabel>Country</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>
-                    )} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Button type="submit" size="lg" className="w-full text-lg" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                 Proceed to Payment
-            </Button>
-          </div>
-        </form>
-      </Form>
+      <CheckoutForm product={product} user={user} profile={profile} form={form} />
     </div>
   );
 }
