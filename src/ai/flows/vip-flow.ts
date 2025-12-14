@@ -7,7 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 import { createDedicatedAccount } from '@/lib/paystack';
 import type { UserProfile } from '@/lib/types';
@@ -19,8 +19,6 @@ const DvaInputSchema = z.object({
 const DvaOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
-  bankName: z.string().optional(),
-  accountNumber: z.string().optional(),
 });
 
 export async function generateDva(input: z.infer<typeof DvaInputSchema>): Promise<z.infer<typeof DvaOutputSchema>> {
@@ -37,6 +35,7 @@ const generateDvaFlow = ai.defineFlow(
     const { firestore } = initializeFirebase();
     try {
       const userRef = doc(firestore, 'users', userId);
+      // We need to get the user's profile to get their email for Paystack
       const userSnap = await getDoc(userRef);
 
       if (!userSnap.exists()) {
@@ -48,12 +47,15 @@ const generateDvaFlow = ai.defineFlow(
       // Call the Paystack service to create the DVA
       const dva = await createDedicatedAccount(userProfile);
 
-      // Return the account details to the client instead of writing here.
+      // Write the new DVA details back to the user's document
+      await updateDoc(userRef, {
+        dvaBankName: dva.bankName,
+        dvaAccountNumber: dva.accountNumber,
+      });
+
       return {
         success: true,
         message: 'Dedicated account created successfully.',
-        bankName: dva.bankName,
-        accountNumber: dva.accountNumber,
       };
     } catch (error: any) {
       console.error('Error in generateDvaFlow:', error);

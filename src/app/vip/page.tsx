@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { useUser, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { generateDva } from '@/ai/flows/vip-flow';
-import { doc, updateDoc } from 'firebase/firestore';
 import { Loader2, Sparkles, ShieldOff, Crown, Landmark, Copy } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -20,21 +19,14 @@ export default function VipPage() {
     if (!user || !profile) return;
     setIsGenerating(true);
     try {
-      // 1. The server-side flow generates the account and returns the details
       const result = await generateDva({ userId: user.uid });
       
-      if (result.success && result.bankName && result.accountNumber) {
-        // 2. The client-side performs the Firestore update
-        const userRef = doc(firestore, 'users', user.uid);
-        await updateDoc(userRef, {
-          dvaBankName: result.bankName,
-          dvaAccountNumber: result.accountNumber,
-        });
-
+      if (result.success) {
         toast({
           title: 'Account Generated!',
-          description: 'Your unique payment account is ready.',
+          description: 'Your unique payment account is ready. The page will now refresh.',
         });
+        // The page will automatically update due to the real-time listener in useUser
       } else {
         throw new Error(result.message || 'Failed to generate account.');
       }
