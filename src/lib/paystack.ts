@@ -1,4 +1,5 @@
 'use server';
+import 'server-only';
 import type { UserProfile } from './types';
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
