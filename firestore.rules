@@ -21,8 +21,6 @@ service cloud.firestore {
     // Rules for the users collection
     match /users/{userId} {
       // A user can create their own profile.
-      // The document must not exist yet.
-      // weeklyCoins must be initialized.
       allow create: if isSignedIn() 
                     && isOwner(userId) 
                     && request.resource.data.isAdmin == false
@@ -37,8 +35,14 @@ service cloud.firestore {
       
       // An owner can update their own profile fields, but not their admin status or coins.
       // An admin can update any profile.
-      allow update: if (isOwner(userId) && request.resource.data.isAdmin == resource.data.isAdmin && request.resource.data.coins == resource.data.coins) || isAdmin();
-
+      // This rule also allows the DVA server flow to update only the DVA fields.
+      allow update: if (isOwner(userId) && 
+                       request.resource.data.isAdmin == resource.data.isAdmin && 
+                       request.resource.data.coins == resource.data.coins &&
+                       request.resource.data.weeklyCoins == resource.data.weeklyCoins &&
+                       request.resource.data.referralCode == resource.data.referralCode)
+                    || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dvaBankName', 'dvaAccountNumber']))
+                    || isAdmin();
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
