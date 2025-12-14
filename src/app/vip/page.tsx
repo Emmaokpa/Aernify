@@ -7,7 +7,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { generateDva } from '@/ai/flows/vip-flow';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Loader2, Sparkles, ShieldOff, Crown, Bank, Copy } from 'lucide-react';
+import { Loader2, Sparkles, ShieldOff, Crown, Landmark, Copy } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function VipPage() {
@@ -116,7 +116,7 @@ export default function VipPage() {
             {!isLoading && hasDva && profile && (
               <div className="space-y-4 rounded-lg border bg-muted/50 p-4 text-center">
                  <div className="flex items-center justify-center gap-2 font-semibold">
-                    <Bank className="h-5 w-5 text-muted-foreground" />
+                    <Landmark className="h-5 w-5 text-muted-foreground" />
                     <h3>Your Payment Account</h3>
                  </div>
                 <div className="space-y-2">
