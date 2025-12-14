@@ -35,11 +35,9 @@ service cloud.firestore {
       // Any signed-in user can read public user data and list users for the leaderboard.
       allow get, list: if isSignedIn();
       
-      // An owner can update their own profile,
-      // an admin can update any profile.
-      // A user cannot change their own admin status.
-      // Allow user to update their wishlist and DVA details.
-      allow update: if (isOwner(userId) && (request.resource.data.isAdmin == resource.data.isAdmin && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['wishlist']) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dvaBankName', 'dvaAccountNumber']) || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL'])))) || isAdmin();
+      // An owner can update their own profile fields, but not their admin status or coins.
+      // An admin can update any profile.
+      allow update: if (isOwner(userId) && request.resource.data.isAdmin == resource.data.isAdmin && request.resource.data.coins == resource.data.coins) || isAdmin();
 
 
       // Only admins can delete user documents
