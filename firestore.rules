@@ -33,27 +33,15 @@ service cloud.firestore {
       // Any signed-in user can read public user data and list users for the leaderboard.
       allow get, list: if isSignedIn();
       
-      // An owner can update their own profile, but only non-sensitive fields.
-      // Admins can update any field.
+      // An owner can update their own profile, but not sensitive fields.
+      // Admins can update any field on any user.
       allow update: if (isOwner(userId) &&
-                       request.resource.data.displayName == resource.data.displayName &&
-                       request.resource.data.photoURL == resource.data.photoURL &&
-                       request.resource.data.wishlist == resource.data.wishlist &&
-                       // Allow coin updates ONLY if it's from a legitimate increment.
-                       // This is a simplified check. A more robust system might use server-side validation.
-                       (request.resource.data.coins >= resource.data.coins) &&
                        request.resource.data.isAdmin == resource.data.isAdmin &&
                        request.resource.data.referralCode == resource.data.referralCode)
                     || isAdmin();
 
       // Only admins can delete user documents
       allow delete: if isAdmin();
-    }
-
-    function incomingCoinChange() {
-        // This function calculates the change in coins. It can be positive (earning) or negative (spending).
-        // This prevents a user from arbitrarily setting their coin value to any number.
-        return request.resource.data.coins - resource.data.coins;
     }
     
     // Rules for the daily_logins collection
