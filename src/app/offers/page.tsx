@@ -4,7 +4,7 @@ import PageHeader from "@/components/page-header";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { Coins, Loader2, CheckCircle, Clock, ExternalLink, DollarSign } from "lucide-react";
+import { Coins, Loader2, CheckCircle, Clock, ExternalLink, DollarSign, Sparkles } from "lucide-react";
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import type { Offer, AffiliateProduct } from '@/lib/types';
@@ -27,6 +27,10 @@ import { incrementChallengeProgress } from '@/lib/challenges';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { generateSalesCopy } from '@/ai/flows/sales-copy-flow';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Submission dialog for simple offers
 function SubmitOfferDialog({ offer, children, disabled }: { offer: Offer, children: React.ReactNode, disabled?: boolean }) {
@@ -180,6 +184,86 @@ function SubmitSaleDialog({ product, children, disabled }: { product: AffiliateP
   );
 }
 
+// AI Sales Copy Generator Dialog (VIP Only)
+function SalesCopyGeneratorDialog({ product, children, disabled }: { product: AffiliateProduct, children: React.ReactNode, disabled?: boolean }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [format, setFormat] = useState<'Tweet' | 'Facebook Post' | 'Email'>('Tweet');
+  const [generatedCopy, setGeneratedCopy] = useState('');
+  const { toast } = useToast();
+
+  const handleGenerate = async () => {
+    setIsLoading(true);
+    setGeneratedCopy('');
+    try {
+      const result = await generateSalesCopy({
+        productName: product.title,
+        productDescription: product.description,
+        productUrl: product.productUrl,
+        format: format,
+      });
+      setGeneratedCopy(result.salesCopy);
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate sales copy.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(generatedCopy);
+    toast({ title: 'Copied to clipboard!' });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild disabled={disabled}>{children}</DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>AI Sales Assistant (VIP)</DialogTitle>
+          <DialogDescription>
+            Generate marketing copy for &quot;{product.title}&quot; to use in your promotions.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-6">
+          <div>
+            <Label className="font-semibold">Choose a format:</Label>
+            <RadioGroup defaultValue="Tweet" className="mt-2 grid grid-cols-3 gap-4" onValueChange={(value: 'Tweet' | 'Facebook Post' | 'Email') => setFormat(value)}>
+              <div>
+                <RadioGroupItem value="Tweet" id="r1" className="sr-only" />
+                <Label htmlFor="r1" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">Tweet</Label>
+              </div>
+              <div>
+                <RadioGroupItem value="Facebook Post" id="r2" className="sr-only" />
+                <Label htmlFor="r2" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">Facebook Post</Label>
+              </div>
+              <div>
+                <RadioGroupItem value="Email" id="r3" className="sr-only" />
+                <Label htmlFor="r3" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">Email</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <Button onClick={handleGenerate} disabled={isLoading} className="w-full">
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+            Generate Copy
+          </Button>
+
+          {generatedCopy && (
+            <div className="space-y-2">
+              <Label>Generated Copy:</Label>
+              <Textarea value={generatedCopy} readOnly rows={8} />
+              <Button onClick={handleCopy} variant="secondary" className="w-full">Copy Text</Button>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 function OfferList() {
   const firestore = useFirestore();
   const { user } = useUser();
@@ -274,7 +358,7 @@ function OfferList() {
 
 function AffiliateProductList() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, profile } = useUser();
 
   const productsCollection = useMemo(() => collection(firestore, 'affiliate_products'), [firestore]);
   const { data: products, isLoading: isLoadingProducts } = useCollection<AffiliateProduct>(productsCollection);
@@ -308,6 +392,16 @@ function AffiliateProductList() {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {augmentedProducts.map((product) => {
         const isPending = product.status === 'pending';
+        const isVip = profile?.isVip ?? false;
+        
+        const salesAssistantButton = (
+          <SalesCopyGeneratorDialog product={product} disabled={!isVip}>
+            <Button variant="default" className="w-full rounded-full" size="sm" disabled={!isVip}>
+                <Sparkles className="w-4 h-4 mr-2" /> AI Sales Assistant
+            </Button>
+          </SalesCopyGeneratorDialog>
+        );
+
         return (
           <Card key={product.id} className="overflow-hidden flex flex-col rounded-2xl group">
              <CardHeader className="p-0 relative">
@@ -328,9 +422,22 @@ function AffiliateProductList() {
                 <span>{product.reward.toLocaleString()}</span>
               </div>
             </CardContent>
-            <CardFooter className="p-4 bg-card">
+            <CardFooter className="p-4 bg-card flex-col gap-2">
+              {!isVip ? (
+                 <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger className="w-full">{salesAssistantButton}</TooltipTrigger>
+                    <TooltipContent>
+                      <p>Upgrade to VIP to use the AI Sales Assistant!</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                salesAssistantButton
+              )}
+
               <div className="flex w-full gap-2">
-                 <Button asChild className="flex-1 rounded-full" size="sm">
+                 <Button asChild className="flex-1 rounded-full" size="sm" variant="secondary">
                     <a href={product.productUrl} target="_blank" rel="noopener noreferrer">
                     Get Link <ExternalLink className='ml-1.5 h-4 w-4' />
                     </a>
