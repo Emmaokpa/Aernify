@@ -8,10 +8,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useCollection } from '@/firebase';
 import { collection, doc, writeBatch, increment, query, where } from 'firebase/firestore';
 import type { AffiliateSaleSubmission } from '@/lib/types';
-import { Loader2, Check, X, FileQuestion, User, Coins, DollarSign } from 'lucide-react';
+import { Loader2, Check, X, FileQuestion, User, Coins } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
 function SubmissionList() {
@@ -106,7 +105,7 @@ function SubmissionList() {
                 </div>
                 <div className='flex items-center gap-2'>
                     <Coins className='w-4 h-4 text-primary' />
-                    <span className='font-semibold text-primary'>{submission.reward} Coins</span>
+                    <span className='font-semibold text-primary'>{submission.reward.toLocaleString()} Coins</span>
                 </div>
             </CardDescription>
           </CardHeader>
