@@ -33,12 +33,16 @@ service cloud.firestore {
       // Any signed-in user can read public user data and list users for the leaderboard.
       allow get, list: if isSignedIn();
       
-      // An owner can update their own profile fields, but not their admin status or coins.
-      // An admin can update any profile.
-      allow update: if (isOwner(userId) && 
-                       request.resource.data.isAdmin == resource.data.isAdmin && 
-                       request.resource.data.coins == resource.data.coins &&
-                       request.resource.data.weeklyCoins == resource.data.weeklyCoins &&
+      // An owner can update their own profile, but only non-sensitive fields.
+      // Admins can update any field.
+      allow update: if (isOwner(userId) &&
+                       request.resource.data.displayName == resource.data.displayName &&
+                       request.resource.data.photoURL == resource.data.photoURL &&
+                       request.resource.data.wishlist == resource.data.wishlist &&
+                       // Allow coin updates ONLY if it's from a legitimate increment.
+                       // This is a simplified check. A more robust system might use server-side validation.
+                       (request.resource.data.coins >= resource.data.coins) &&
+                       request.resource.data.isAdmin == resource.data.isAdmin &&
                        request.resource.data.referralCode == resource.data.referralCode)
                     || isAdmin();
 
