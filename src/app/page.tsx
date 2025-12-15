@@ -35,11 +35,18 @@ export default function DashboardPage() {
   const { data: games, isLoading: isGamesLoading } = useCollection<Game>(gamesCollection);
 
   useEffect(() => {
-    if (isUserLoading || !user || !profile) {
+    if (isUserLoading || !user) {
       return;
     }
 
     const checkDailyLogin = async () => {
+      // Manually fetch the latest profile inside the effect to avoid dependency loop
+      const userDocRefForRead = doc(firestore, 'users', user.uid);
+      const profileSnap = await getDoc(userDocRefForRead);
+      if (!profileSnap.exists()) return;
+      const currentProfile = profileSnap.data();
+
+
       const todayStr = getTodayString();
       const dailyLoginDocRef = doc(firestore, 'daily_logins', `${user.uid}_${todayStr}`);
       
@@ -54,7 +61,7 @@ export default function DashboardPage() {
           let streakBonus = 0;
           let newStreak = 1;
           
-          const lastLoginDate = profile.lastLoginDate;
+          const lastLoginDate = currentProfile.lastLoginDate;
           const today = new Date(todayStr);
 
           if (lastLoginDate) {
@@ -63,13 +70,14 @@ export default function DashboardPage() {
 
               if (daysDiff === 1) {
                   // Streak continues
-                  newStreak = (profile.currentStreak || 0) + 1;
+                  newStreak = (currentProfile.currentStreak || 0) + 1;
               } else if (daysDiff > 1) {
                   // Streak broken
                   newStreak = 1;
               } else {
                   // Already logged in today, but something went wrong. Let's be safe.
-                  newStreak = profile.currentStreak || 1;
+                  newStreak = currentProfile.currentStreak || 1;
+                  return; // Exit if already logged in today
               }
           }
 
@@ -106,7 +114,7 @@ export default function DashboardPage() {
     const timer = setTimeout(checkDailyLogin, 1500);
     return () => clearTimeout(timer);
 
-  }, [user, profile, isUserLoading, firestore]);
+  }, [user, isUserLoading, firestore]);
 
   const heroGame = games?.[0];
   const isLoading = isGamesLoading || isUserLoading;
@@ -182,5 +190,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    
