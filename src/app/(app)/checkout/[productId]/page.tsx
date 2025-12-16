@@ -1,18 +1,18 @@
 
 'use client';
 import { useMemo, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, ChevronLeft, AlertTriangle, Coins } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useUser, useFirestore, useDoc } from '@/firebase';
-import type { Product } from '@/lib/types';
+import type { Product, ProductVariant } from '@/lib/types';
 import { doc, writeBatch, collection, serverTimestamp, increment } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 
 const shippingSchema = z.object({
@@ -64,15 +65,20 @@ function CheckoutSkeleton() {
     )
 }
 
-function CheckoutForm({ product, user, profile, form }: { product: Product; user: any; profile: any; form: any }) {
+function CheckoutForm({ product, user, profile, form }: { product: Product & {id: string}; user: any; profile: any; form: any }) {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(product.variants?.[0] || null);
+  
   const hasSufficientCoins = profile.coins >= product.price;
 
   const handleCheckout: SubmitHandler<ShippingFormData> = async (shippingValues) => {
+    if (!selectedVariant) {
+        toast({ variant: 'destructive', title: 'Variant Not Selected', description: 'Please select a color for the product.' });
+        return;
+    }
     if (!hasSufficientCoins) {
         toast({ variant: 'destructive', title: 'Insufficient Coins', description: `You need ${product.price.toLocaleString()} coins for this.` });
         return;
@@ -84,15 +90,25 @@ function CheckoutForm({ product, user, profile, form }: { product: Product; user
       const batch = writeBatch(firestore);
       const userRef = doc(firestore, 'users', user.uid);
       const orderRef = doc(collection(firestore, 'orders'));
+      const productRef = doc(firestore, 'products', product.id);
       
+      // 1. Decrement user coins
       batch.update(userRef, { coins: increment(-product.price) });
       
+      // 2. Decrement stock for the selected variant
+      const newVariants = product.variants.map(v => 
+        v.color === selectedVariant.color ? { ...v, stock: v.stock - 1 } : v
+      );
+      batch.update(productRef, { variants: newVariants });
+      
+      // 3. Create the order
       batch.set(orderRef, {
         userId: user.uid,
         userDisplayName: profile.displayName,
         productId: product.id,
         productName: product.name,
-        productImageUrl: product.imageUrl,
+        productImageUrl: selectedVariant.imageUrl, // Image of the specific variant
+        selectedVariant: selectedVariant,
         coinsSpent: product.price,
         shippingInfo: shippingValues,
         status: 'pending',
@@ -121,17 +137,47 @@ function CheckoutForm({ product, user, profile, form }: { product: Product; user
           <h1 className="text-3xl font-bold">Your Order</h1>
           <Card className="overflow-hidden">
             <div className="relative aspect-square">
-              <Image src={product.imageUrl || '/placeholder.png'} alt={product.name} fill className="object-cover" />
+              <Image src={selectedVariant?.imageUrl || product.imageUrls?.[0] || '/placeholder.png'} alt={product.name} fill className="object-cover" />
             </div>
             <CardHeader>
               <CardTitle>{product.name}</CardTitle>
             </CardHeader>
-            <CardContent className="flex justify-between items-center font-bold text-2xl">
-              <span>Total Cost:</span>
-              <div className='flex items-center gap-2 text-primary'>
-                <Coins className="w-7 h-7" />
-                <span>{product.price.toLocaleString()}</span>
-              </div>
+            <CardContent>
+                {product.variants && product.variants.length > 0 && (
+                    <div className="mb-4">
+                        <Label>Color: {selectedVariant?.color}</Label>
+                        <div className="flex items-center gap-2 mt-2">
+                        {product.variants.map((variant) => (
+                            <button
+                            key={variant.color}
+                            type="button"
+                            onClick={() => setSelectedVariant(variant)}
+                            className={cn(
+                                'w-8 h-8 rounded-full border-2 transition-all',
+                                selectedVariant?.color === variant.color ? 'border-primary scale-110' : 'border-border',
+                                variant.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                            )}
+                            style={{ backgroundColor: variant.colorHex }}
+                            title={variant.color}
+                            disabled={variant.stock === 0}
+                            />
+                        ))}
+                        </div>
+                         {selectedVariant && selectedVariant.stock < 10 && selectedVariant.stock > 0 && (
+                            <p className="text-xs text-amber-500 mt-2">Only {selectedVariant.stock} left in stock!</p>
+                         )}
+                         {selectedVariant && selectedVariant.stock === 0 && (
+                             <p className="text-xs text-destructive mt-2">Out of stock</p>
+                         )}
+                    </div>
+                )}
+                 <div className="flex justify-between items-center font-bold text-2xl">
+                    <span>Total Cost:</span>
+                    <div className='flex items-center gap-2 text-primary'>
+                        <Coins className="w-7 h-7" />
+                        <span>{product.price.toLocaleString()}</span>
+                    </div>
+                </div>
             </CardContent>
           </Card>
         </div>
@@ -181,16 +227,16 @@ function CheckoutForm({ product, user, profile, form }: { product: Product; user
           
           <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="lg" className="w-full text-lg" disabled={isSubmitting}>
+                <Button size="lg" className="w-full text-lg" disabled={isSubmitting || selectedVariant?.stock === 0}>
                   {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                  Confirm & Place Order
+                  {selectedVariant?.stock === 0 ? 'Out of Stock' : 'Confirm & Place Order'}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Confirm Your Order</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will spend <span className="font-bold text-primary">{product.price.toLocaleString()}</span> coins from your balance. Are you sure you want to proceed?
+                    This will spend <span className="font-bold text-primary">{product.price.toLocaleString()}</span> coins for the {product.name} ({selectedVariant?.color}). Are you sure?
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

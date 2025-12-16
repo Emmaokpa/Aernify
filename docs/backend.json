@@ -174,19 +174,56 @@
           "type": "number",
           "description": "Price in coins."
         },
-        "imageUrl": {
-          "type": "string",
-          "format": "uri"
+        "imageUrls": {
+          "type": "array",
+          "description": "A list of URLs for product images.",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
         },
-        "imageHint": {
-          "type": "string"
+        "variants": {
+          "type": "array",
+          "description": "Different versions of the product, e.g., by color or size.",
+          "items": {
+            "$ref": "#/entities/ProductVariant"
+          }
         }
       },
       "required": [
         "name",
         "description",
         "price",
-        "imageUrl"
+        "imageUrls"
+      ]
+    },
+    "ProductVariant": {
+      "title": "Product Variant",
+      "description": "A specific version of a product, such as a different color.",
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string",
+          "description": "The color of the variant, e.g., 'Black', 'Space Gray'."
+        },
+        "colorHex": {
+          "type": "string",
+          "description": "The hex code for the color, e.g., '#000000'."
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "The specific image URL for this color variant."
+        },
+        "stock": {
+          "type": "number",
+          "description": "The available stock for this variant."
+        }
+      },
+      "required": [
+        "color",
+        "imageUrl",
+        "stock"
       ]
     },
     "GiftCard": {
@@ -402,6 +439,9 @@
         },
         "productImageUrl": {
           "type": "string"
+        },
+        "selectedVariant": {
+          "$ref": "#/entities/ProductVariant"
         },
         "coinsSpent": {
           "type": "number"

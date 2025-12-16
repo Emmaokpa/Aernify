@@ -1,4 +1,5 @@
 
+
 export type NavItem = {
   title: string;
   href: string;
@@ -61,8 +62,15 @@ export type Product = {
   name: string;
   description: string;
   price: number;
+  imageUrls: string[];
+  variants: ProductVariant[];
+};
+
+export type ProductVariant = {
+  color: string;
+  colorHex: string;
   imageUrl: string;
-  imageHint: string;
+  stock: number;
 };
 
 export type GiftCard = {
@@ -171,7 +179,8 @@ export interface Order {
   productId: string;
   productName: string;
   productImageUrl: string;
-  coinsSpent: number; // This will likely change to a currency amount
+  selectedVariant?: ProductVariant;
+  coinsSpent: number;
   shippingInfo: ShippingInfo;
   status: 'pending' | 'shipped' | 'delivered' | 'cancelled';
   orderedAt: any; // Firestore Timestamp
