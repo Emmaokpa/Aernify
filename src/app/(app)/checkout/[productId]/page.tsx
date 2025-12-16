@@ -1,12 +1,11 @@
-
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, ChevronLeft, AlertTriangle, Coins } from 'lucide-react';
+import { Loader2, ChevronLeft, AlertTriangle } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,19 +15,8 @@ import type { Product, ProductVariant } from '@/lib/types';
 import { doc, writeBatch, collection, serverTimestamp, increment } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
-
+import usePaystack from '@paystack/inline-js';
 
 const shippingSchema = z.object({
   fullName: z.string().min(2, 'Full name is required'),
@@ -43,6 +31,8 @@ const shippingSchema = z.object({
 });
 
 type ShippingFormData = z.infer<typeof shippingSchema>;
+
+const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
 
 function CheckoutSkeleton() {
     return (
@@ -70,49 +60,46 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(product.variants?.[0] || null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   
-  const hasSufficientCoins = profile.coins >= product.price;
-
-  const handleCheckout: SubmitHandler<ShippingFormData> = async (shippingValues) => {
-    if (!selectedVariant) {
-        toast({ variant: 'destructive', title: 'Variant Not Selected', description: 'Please select a color for the product.' });
-        return;
+  const paystack = usePaystack();
+  
+  useEffect(() => {
+    if (product?.variants?.length) {
+      setSelectedVariant(product.variants[0]);
     }
-    if (!hasSufficientCoins) {
-        toast({ variant: 'destructive', title: 'Insufficient Coins', description: `You need ${product.price.toLocaleString()} coins for this.` });
+  }, [product]);
+
+  const placeOrderInFirestore = async (shippingValues: ShippingFormData, transactionRef: string) => {
+     if (!selectedVariant) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Product variant not selected.' });
         return;
     }
     
-    setIsSubmitting(true);
-
     try {
       const batch = writeBatch(firestore);
-      const userRef = doc(firestore, 'users', user.uid);
       const orderRef = doc(collection(firestore, 'orders'));
       const productRef = doc(firestore, 'products', product.id);
       
-      // 1. Decrement user coins
-      batch.update(userRef, { coins: increment(-product.price) });
-      
-      // 2. Decrement stock for the selected variant
+      // Decrement stock for the selected variant
       const newVariants = product.variants.map(v => 
         v.color === selectedVariant.color ? { ...v, stock: v.stock - 1 } : v
       );
       batch.update(productRef, { variants: newVariants });
       
-      // 3. Create the order
+      // Create the order
       batch.set(orderRef, {
         userId: user.uid,
         userDisplayName: profile.displayName,
         productId: product.id,
         productName: product.name,
-        productImageUrl: selectedVariant.imageUrl, // Image of the specific variant
+        productImageUrl: selectedVariant.imageUrl,
         selectedVariant: selectedVariant,
-        coinsSpent: product.price,
+        amountPaid: product.price,
         shippingInfo: shippingValues,
         status: 'pending',
         orderedAt: serverTimestamp(),
+        paymentRef: transactionRef,
       });
 
       await batch.commit();
@@ -121,16 +108,38 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
       router.push('/shop');
     } catch (error) {
       console.error('Order placement error:', error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to place order.' });
-    } finally {
-        setIsSubmitting(false);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to save order details after payment.' });
     }
   };
 
+  const handlePayment: SubmitHandler<ShippingFormData> = async (shippingValues) => {
+    if (!selectedVariant) {
+        toast({ variant: 'destructive', title: 'Variant Not Selected', description: 'Please select a color for the product.' });
+        return;
+    }
+    
+    paystack({
+      publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+      email: shippingValues.email,
+      amount: product.price * 100, // Amount in kobo
+      currency: 'NGN',
+      ref: `AERNIFY-${Date.now()}`,
+      onSuccess: (transaction) => {
+        placeOrderInFirestore(shippingValues, transaction.reference);
+      },
+      onClose: () => {
+        toast({
+          variant: 'default',
+          title: 'Payment Closed',
+          description: 'The payment popup was closed.',
+        });
+      },
+    });
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleCheckout)}>
+      <form onSubmit={form.handleSubmit(handlePayment)}>
       <div className="grid md:grid-cols-2 gap-12">
         {/* Left Side: Product Info */}
         <div className="md:col-span-1 space-y-6">
@@ -174,8 +183,7 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
                  <div className="flex justify-between items-center font-bold text-2xl">
                     <span>Total Cost:</span>
                     <div className='flex items-center gap-2 text-primary'>
-                        <Coins className="w-7 h-7" />
-                        <span>{product.price.toLocaleString()}</span>
+                        <span>{formatToNaira(product.price)}</span>
                     </div>
                 </div>
             </CardContent>
@@ -225,29 +233,10 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
             </CardContent>
           </Card>
           
-          <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="lg" className="w-full text-lg" disabled={isSubmitting || selectedVariant?.stock === 0}>
-                  {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                  {selectedVariant?.stock === 0 ? 'Out of Stock' : 'Confirm & Place Order'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Your Order</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will spend <span className="font-bold text-primary">{product.price.toLocaleString()}</span> coins for the {product.name} ({selectedVariant?.color}). Are you sure?
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={form.handleSubmit(handleCheckout)} disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Yes, Place Order
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+           <Button type="submit" size="lg" className="w-full text-lg" disabled={isSubmitting || selectedVariant?.stock === 0}>
+                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                {selectedVariant?.stock === 0 ? 'Out of Stock' : 'Proceed to Payment'}
+            </Button>
         </div>
       </div>
       </form>
@@ -284,6 +273,17 @@ export default function CheckoutPage() {
       country: 'Nigeria', // Default to Nigeria
     },
   });
+  
+   useEffect(() => {
+    if (profile) {
+      form.reset({
+        email: profile.email || '',
+        fullName: profile.displayName || '',
+        country: 'Nigeria',
+      });
+    }
+  }, [profile, form]);
+
 
   const isLoading = isUserLoading || isProductLoading;
 

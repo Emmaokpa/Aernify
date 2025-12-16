@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -47,11 +46,12 @@ import ImageUploadForm from '@/components/image-upload-form';
 type ProductFormData = Omit<Product, 'id'>;
 type ProductWithId = Product & { id: string };
 
+const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+
 function EditProductForm({ product }: { product: ProductWithId }) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [imagesToUpload, setImagesToUpload] = useState<File[]>([]);
 
   const form = useForm<ProductFormData>({
     defaultValues: {
@@ -123,7 +123,7 @@ function EditProductForm({ product }: { product: ProductWithId }) {
               <Input id="name" {...register('name', { required: true })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="price">Price (in Coins)</Label>
+              <Label htmlFor="price">Price (in Naira ₦)</Label>
               <Input id="price" type="number" {...register('price', { required: true, valueAsNumber: true })} />
             </div>
           </div>
@@ -212,7 +212,7 @@ function AddProductForm() {
     defaultValues: {
       name: '',
       description: '',
-      price: 10000,
+      price: 5000,
       imageUrls: [],
       variants: [],
     },
@@ -274,7 +274,7 @@ function AddProductForm() {
               <Input id="name" {...register('name', { required: true })} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="price">Price (in Coins)</Label>
+              <Label htmlFor="price">Price (in Naira ₦)</Label>
               <Input id="price" type="number" {...register('price', { required: true, valueAsNumber: true })} />
             </div>
           </div>
@@ -385,7 +385,7 @@ function ProductList() {
             <div className="p-4">
               <h3 className="font-semibold text-lg">{product.name}</h3>
               <p className="text-sm text-primary font-semibold">
-                {product.price.toLocaleString()} coins
+                {formatToNaira(product.price)}
               </p>
             </div>
             <div className="absolute top-2 right-2 flex gap-2">

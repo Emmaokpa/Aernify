@@ -1,4 +1,3 @@
-
 'use client';
 import { useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -43,23 +42,14 @@ export default function ShopPage() {
 
   const isLoading = isLoadingProducts || isUserLoading;
 
+  const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+
   return (
     <>
       <PageHeader
         title="Shop"
-        description="Purchase real tech gadgets and watches with your coins. Shipping available within Nigeria."
+        description="Purchase real tech gadgets and watches. Shipping available within Nigeria."
       />
-       <div className="text-right mb-4">
-          <div className="inline-flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary border">
-            <Coins className="h-5 w-5" />
-            <span>Your Balance:</span>
-            {isUserLoading ? (
-              <Skeleton className="h-5 w-12" />
-            ) : (
-              <span>{profile?.coins?.toLocaleString() ?? 0}</span>
-            )}
-          </div>
-        </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {isLoading &&
           Array.from({ length: 4 }).map((_, i) => <ProductSkeleton key={i} />)}
@@ -82,8 +72,7 @@ export default function ShopPage() {
                 </CardContent>
                 <CardFooter className="p-4 bg-card/50">
                   <div className="font-bold text-primary flex items-center gap-1.5 text-lg">
-                    <Coins className="w-5 h-5" />
-                    <span>{product.price.toLocaleString()}</span>
+                    <span>{formatToNaira(product.price)}</span>
                   </div>
                 </CardFooter>
               </Card>

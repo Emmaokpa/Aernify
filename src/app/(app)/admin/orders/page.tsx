@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -8,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useCollection } from '@/firebase';
 import { collection, doc, updateDoc, query, where, orderBy } from 'firebase/firestore';
-import type { Order, ShippingInfo } from '@/lib/types';
+import type { Order } from '@/lib/types';
 import Image from 'next/image';
-import { Loader2, PackageCheck, FileQuestion, User, Coins, Truck, CheckCircle } from 'lucide-react';
+import { Loader2, PackageCheck, FileQuestion, Truck, CheckCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,6 +23,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 type OrderStatus = 'pending' | 'shipped' | 'delivered' | 'cancelled';
+
+const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+
 
 function OrderList({ status }: { status: OrderStatus }) {
   const firestore = useFirestore();
@@ -116,9 +118,8 @@ function OrderList({ status }: { status: OrderStatus }) {
             </p>
           </CardContent>
           <CardFooter className="flex justify-between items-center">
-            <div className="flex items-center gap-2 text-sm text-primary font-bold">
-                <Coins className="w-4 h-4" />
-                <span>{order.coinsSpent.toLocaleString()}</span>
+            <div className="text-sm text-primary font-bold">
+                <span>{formatToNaira(order.amountPaid)}</span>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

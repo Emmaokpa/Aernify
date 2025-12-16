@@ -61,7 +61,7 @@ export type Product = {
   id: string;
   name: string;
   description: string;
-  price: number;
+  price: number; // Price in Naira
   imageUrls: string[];
   variants: ProductVariant[];
 };
@@ -180,10 +180,11 @@ export interface Order {
   productName: string;
   productImageUrl: string;
   selectedVariant?: ProductVariant;
-  coinsSpent: number;
+  amountPaid: number; // Amount in Naira
   shippingInfo: ShippingInfo;
   status: 'pending' | 'shipped' | 'delivered' | 'cancelled';
   orderedAt: any; // Firestore Timestamp
+  paymentRef?: string;
 }
 
 export interface BankDetails {

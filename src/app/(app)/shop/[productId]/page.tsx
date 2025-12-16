@@ -1,15 +1,13 @@
-
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Coins, ChevronLeft } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { ChevronLeft } from 'lucide-react';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import type { Product, ProductVariant } from '@/lib/types';
 import { doc } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -21,6 +19,8 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { AspectRatio } from "@/components/ui/aspect-ratio"
+import { Label } from '@/components/ui/label';
+
 
 function ProductDetailSkeleton() {
   return (
@@ -47,7 +47,7 @@ function ProductDetailSkeleton() {
 export default function ProductDetailPage() {
   const params = useParams();
   const firestore = useFirestore();
-  const { user, profile, isUserLoading } = useUser();
+  const { user, isUserLoading } = useUser();
   const productId = params.productId as string;
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [mainImage, setMainImage] = useState<string>('');
@@ -59,8 +59,7 @@ export default function ProductDetailPage() {
 
   const { data: product, isLoading: isProductLoading } = useDoc<Product>(productDocRef);
 
-  // Effect to set initial selected variant and main image
-  useState(() => {
+  useEffect(() => {
     if (product) {
       if (product.variants && product.variants.length > 0) {
         setSelectedVariant(product.variants[0]);
@@ -69,13 +68,16 @@ export default function ProductDetailPage() {
         setMainImage(product.imageUrls[0]);
       }
     }
-  });
+  }, [product]);
 
 
   const handleVariantSelect = (variant: ProductVariant) => {
     setSelectedVariant(variant);
     setMainImage(variant.imageUrl);
   }
+  
+  const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+
 
   const isLoading = isUserLoading || isProductLoading;
 
@@ -83,7 +85,6 @@ export default function ProductDetailPage() {
     return <ProductDetailSkeleton />;
   }
 
-  const hasSufficientCoins = profile ? profile.coins >= product.price : false;
   const isOutOfStock = selectedVariant ? selectedVariant.stock === 0 : false;
   
   const allImages = [...(product.imageUrls || []), ...(product.variants?.map(v => v.imageUrl) || [])];
@@ -133,8 +134,7 @@ export default function ProductDetailPage() {
         <div className="space-y-6">
           <h1 className="text-4xl font-bold">{product.name}</h1>
           <p className="text-3xl font-bold text-primary flex items-center gap-2">
-            <Coins className="w-8 h-8" />
-            <span>{product.price.toLocaleString()}</span>
+            <span>{formatToNaira(product.price)}</span>
           </p>
           <div className="text-muted-foreground prose prose-invert">
             <p>{product.description}</p>
@@ -167,27 +167,12 @@ export default function ProductDetailPage() {
             <p className="text-sm text-amber-500 font-semibold">Only {selectedVariant.stock} left in stock - order soon!</p>
           )}
 
-          <Button size="lg" className="w-full text-lg" disabled={!hasSufficientCoins || isOutOfStock} asChild>
+          <Button size="lg" className="w-full text-lg" disabled={isOutOfStock} asChild>
             <Link href={`/checkout/${product.id}`}>
-              {!hasSufficientCoins
-                ? 'Insufficient Coins'
-                : isOutOfStock
-                ? 'Out of Stock'
-                : 'Buy Now'}
+              {isOutOfStock ? 'Out of Stock' : 'Buy Now'}
             </Link>
           </Button>
 
-           <div className="text-right mb-4">
-              <div className="inline-flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary border">
-                <Coins className="h-5 w-5" />
-                <span>Your Balance:</span>
-                {isUserLoading ? (
-                  <Skeleton className="h-5 w-12" />
-                ) : (
-                  <span>{profile?.coins?.toLocaleString() ?? 0}</span>
-                )}
-              </div>
-            </div>
         </div>
       </div>
     </div>

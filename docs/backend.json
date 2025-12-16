@@ -161,7 +161,7 @@
     },
     "Product": {
       "title": "Product",
-      "description": "Represents a product available for purchase with coins.",
+      "description": "Represents a product available for purchase.",
       "type": "object",
       "properties": {
         "name": {
@@ -172,7 +172,7 @@
         },
         "price": {
           "type": "number",
-          "description": "Price in coins."
+          "description": "Price in Naira (NGN)."
         },
         "imageUrls": {
           "type": "array",
@@ -443,8 +443,13 @@
         "selectedVariant": {
           "$ref": "#/entities/ProductVariant"
         },
-        "coinsSpent": {
-          "type": "number"
+        "amountPaid": {
+          "type": "number",
+          "description": "Amount paid in Naira (NGN)."
+        },
+        "paymentRef": {
+          "type": "string",
+          "description": "The payment reference from Paystack."
         },
         "shippingInfo": {
           "$ref": "#/entities/ShippingInfo"
@@ -466,7 +471,7 @@
       "required": [
         "userId",
         "productId",
-        "coinsSpent",
+        "amountPaid",
         "shippingInfo",
         "status",
         "orderedAt"
