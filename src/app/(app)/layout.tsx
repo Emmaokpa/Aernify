@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Sidebar from './sidebar';
-import Header from './header';
-import BottomNav from './bottom-nav';
+import Sidebar from '@/components/layout/sidebar';
+import Header from '@/components/layout/header';
+import BottomNav from '@/components/layout/bottom-nav';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function AppSkeleton() {
   return (
@@ -71,7 +71,7 @@ function AppSkeleton() {
 }
 
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();

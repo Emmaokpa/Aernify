@@ -27,7 +27,7 @@ import { useAuth, useUser } from '@/firebase';
 import { useAuthContext } from '@/firebase/auth-provider';
 
 const navItems: NavItem[] = [
-  { title: 'Dashboard', href: '/', icon: <LayoutDashboard /> },
+  { title: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard /> },
   { title: 'Play Games', href: '/play', icon: <Gamepad2 /> },
   { title: 'Challenges', href: '/challenges', icon: <Sparkles /> },
   { title: 'Earn', href: '/earn', icon: <Coins /> },
@@ -58,7 +58,7 @@ export default function Sidebar({ isOpen, setOpen }: SidebarProps) {
   const content = (
     <div className="flex h-full flex-col">
        <div className="flex items-center justify-between p-4 border-b border-border md:border-none">
-          <Logo />
+          <Logo href="/dashboard" />
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen(false)}>
             <X className="h-6 w-6" />
           </Button>

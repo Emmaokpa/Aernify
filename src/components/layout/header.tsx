@@ -28,7 +28,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   const handleLogout = async () => {
     await auth.signOut();
-    // The redirect is handled by MainLayout
+    // The redirect is handled by AppLayout
   };
 
   // Do not render the header on the profile page or auth pages
@@ -48,7 +48,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <span className="sr-only">Toggle Menu</span>
       </Button>
       <div className="hidden md:block">
-        <Logo />
+        <Logo href="/dashboard"/>
       </div>
       <div className="flex w-full items-center justify-end gap-4">
         <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary">

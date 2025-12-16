@@ -112,7 +112,7 @@ export default function SignUpPage() {
           title: 'Account Created!',
           description: "You've successfully signed up with Google.",
       });
-      router.push('/');
+      router.push('/dashboard');
     } catch (err: any) {
       console.error('Google sign-in error:', err);
       if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
@@ -162,7 +162,7 @@ export default function SignUpPage() {
         description: "You've successfully signed up. Redirecting...",
       });
       
-      router.push('/');
+      router.push('/dashboard');
 
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
@@ -189,7 +189,7 @@ export default function SignUpPage() {
           </div>
           <CardTitle>Create an Account</CardTitle>
           <CardDescription>
-            Join Earnify to start earning rewards today!
+            Join Aernify to start earning rewards today!
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -273,5 +273,3 @@ export default function SignUpPage() {
     </main>
   );
 }
-
-    

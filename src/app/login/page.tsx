@@ -82,7 +82,7 @@ export default function LoginPage() {
       const userCredential = await signInWithPopup(auth, provider);
       // Ensure profile exists for users signing in for the first time via Google on the login page.
       await createUserProfile(firestore, userCredential.user);
-      router.push('/');
+      router.push('/dashboard');
     } catch (err: any) {
       console.error('Google sign-in error:', err);
       if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
@@ -107,7 +107,7 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/');
+      router.push('/dashboard');
     } catch (err: any) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Invalid email or password. Please try again.');
@@ -128,7 +128,7 @@ export default function LoginPage() {
             <Logo />
           </div>
           <CardTitle>Welcome Back!</CardTitle>
-          <CardDescription>Sign in to continue to Earnify</CardDescription>
+          <CardDescription>Sign in to continue to Aernify</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">

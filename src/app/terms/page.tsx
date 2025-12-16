@@ -7,7 +7,7 @@ import { ChevronLeft } from 'lucide-react';
 
 export default function TermsAndConditionsPage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto p-4 md:p-6">
       <div className="mb-4">
         <Button asChild variant="outline">
           <Link href="/profile">
@@ -26,7 +26,7 @@ export default function TermsAndConditionsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-2">1. Introduction</h2>
             <p className="text-muted-foreground">
-              Welcome to Earnify! These Terms and Conditions outline the rules and regulations for the use of our application. By accessing or using Earnify, you agree to comply with and be bound by these terms. If you disagree with any part of the terms, you may not access the service.
+              Welcome to Aernify! These Terms and Conditions outline the rules and regulations for the use of our application. By accessing or using Aernify, you agree to comply with and be bound by these terms. If you disagree with any part of the terms, you may not access the service.
             </p>
           </section>
           <section>
@@ -56,7 +56,7 @@ export default function TermsAndConditionsPage() {
            <section>
             <h2 className="text-xl font-semibold mb-2">6. Limitation of Liability</h2>
             <p className="text-muted-foreground">
-              In no event shall Earnify, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
+              In no event shall Aernify, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service.
             </p>
           </section>
         </CardContent>
