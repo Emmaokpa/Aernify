@@ -16,8 +16,13 @@ import { doc, writeBatch, collection, serverTimestamp, increment } from 'firebas
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import usePaystack from '@paystack/inline-js';
 import { Label } from '@/components/ui/label';
+
+declare global {
+  interface Window {
+    PaystackPop: any;
+  }
+}
 
 const shippingSchema = z.object({
   fullName: z.string().min(2, 'Full name is required'),
@@ -56,14 +61,36 @@ function CheckoutSkeleton() {
     )
 }
 
+function PaystackButton({ config, onTransactionComplete, onTransactionClose }: any) {
+  const { toast } = useToast();
+  
+  const handlePayment = () => {
+    const handler = window.PaystackPop.setup({
+      ...config,
+      onSuccess: (transaction: any) => {
+        onTransactionComplete(transaction);
+      },
+      onClose: () => {
+        onTransactionClose();
+      },
+    });
+    handler.openIframe();
+  }
+
+  return (
+    <Button type="button" onClick={handlePayment} size="lg" className="w-full text-lg" disabled={config.disabled}>
+      {config.isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+      {config.disabled && !config.isSubmitting ? 'Out of Stock' : 'Proceed to Payment'}
+    </Button>
+  );
+}
+
 function CheckoutForm({ product, user, profile, form }: { product: Product & {id: string}; user: any; profile: any; form: any }) {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
-  
-  const paystack = usePaystack();
   
   useEffect(() => {
     if (product?.variants?.length) {
@@ -113,34 +140,49 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
     }
   };
 
-  const handlePayment: SubmitHandler<ShippingFormData> = async (shippingValues) => {
-    if (!selectedVariant) {
-        toast({ variant: 'destructive', title: 'Variant Not Selected', description: 'Please select a color for the product.' });
-        return;
-    }
-    
-    paystack({
-      publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
-      email: shippingValues.email,
-      amount: product.price * 100, // Amount in kobo
-      currency: 'NGN',
-      ref: `AERNIFY-${Date.now()}`,
-      onSuccess: (transaction) => {
-        placeOrderInFirestore(shippingValues, transaction.reference);
-      },
-      onClose: () => {
-        toast({
-          variant: 'default',
-          title: 'Payment Closed',
-          description: 'The payment popup was closed.',
-        });
-      },
+  const handleSuccess = (transaction: any) => {
+    placeOrderInFirestore(form.getValues(), transaction.reference);
+  };
+
+  const handleClose = () => {
+    toast({
+      variant: 'default',
+      title: 'Payment Closed',
+      description: 'The payment popup was closed.',
     });
   };
 
+  const config = {
+      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+      email: form.getValues('email'),
+      amount: product.price * 100, // Amount in kobo
+      currency: 'NGN',
+      ref: `AERNIFY-${Date.now()}`,
+      metadata: {
+        custom_fields: [
+            {
+                display_name: "Full Name",
+                variable_name: "full_name",
+                value: form.getValues('fullName'),
+            },
+        ],
+      },
+      disabled: isSubmitting || selectedVariant?.stock === 0,
+      isSubmitting: isSubmitting,
+    };
+    
+    const handleFormSubmit: SubmitHandler<ShippingFormData> = (shippingValues) => {
+       if (!selectedVariant) {
+        toast({ variant: 'destructive', title: 'Variant Not Selected', description: 'Please select a color for the product.' });
+        return;
+       }
+       // The PaystackButton will now handle the payment initiation
+    };
+
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handlePayment)}>
+      <form onSubmit={form.handleSubmit(handleFormSubmit)}>
       <div className="grid md:grid-cols-2 gap-12">
         {/* Left Side: Product Info */}
         <div className="md:col-span-1 space-y-6">
@@ -234,10 +276,11 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
             </CardContent>
           </Card>
           
-           <Button type="submit" size="lg" className="w-full text-lg" disabled={isSubmitting || selectedVariant?.stock === 0}>
-                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                {selectedVariant?.stock === 0 ? 'Out of Stock' : 'Proceed to Payment'}
-            </Button>
+          <PaystackButton
+              config={config}
+              onTransactionComplete={handleSuccess}
+              onTransactionClose={handleClose}
+          />
         </div>
       </div>
       </form>
