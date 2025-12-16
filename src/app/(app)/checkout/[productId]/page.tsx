@@ -1,7 +1,6 @@
-
 'use client';
 import { useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,7 +53,7 @@ function CheckoutSkeleton() {
     )
 }
 
-function CheckoutForm({ product, user, profile, form }: { product: Product; user: any; profile: any; form: any }) {
+function CheckoutForm({ product, user, profile, form, variantIndex }: { product: Product; user: any; profile: any; form: any, variantIndex: number }) {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
@@ -69,7 +68,8 @@ function CheckoutForm({ product, user, profile, form }: { product: Product; user
         userDisplayName: profile.displayName,
         productId: product.id,
         productName: product.name,
-        productImageUrl: product.imageUrl,
+        productImageUrl: product.imageUrls?.[0],
+        variant: product.variants?.[variantIndex],
         coinsSpent: product.price, // This field represents the Naira amount paid
         shippingInfo: shippingValues,
         status: 'pending',
@@ -108,6 +108,8 @@ function CheckoutForm({ product, user, profile, form }: { product: Product; user
     });
   }
 
+  const selectedVariant = product.variants?.[variantIndex];
+
   return (
     <Form {...form}>
       <div className="grid md:grid-cols-2 gap-12">
@@ -116,11 +118,11 @@ function CheckoutForm({ product, user, profile, form }: { product: Product; user
           <h1 className="text-3xl font-bold">Your Order</h1>
           <Card className="overflow-hidden">
             <div className="relative aspect-square">
-              <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+              <Image src={product.imageUrls?.[variantIndex] || product.imageUrls?.[0] || '/placeholder.png'} alt={product.name} fill className="object-cover" />
             </div>
             <CardHeader>
               <CardTitle>{product.name}</CardTitle>
-              <CardDescription>{product.description}</CardDescription>
+              {selectedVariant && <CardDescription>Color: {selectedVariant.colorName}</CardDescription>}
             </CardHeader>
             <CardContent className="flex justify-between items-center font-bold text-2xl">
               <span>Total Cost:</span>
@@ -186,10 +188,12 @@ function CheckoutForm({ product, user, profile, form }: { product: Product; user
 
 export default function CheckoutPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const firestore = useFirestore();
   const { user, profile, isUserLoading } = useUser();
   const productId = params.productId as string;
+  const variantIndex = parseInt(searchParams.get('variant') || '0', 10);
 
   const productDocRef = useMemo(() => {
     if (!productId) return null;
@@ -248,7 +252,7 @@ export default function CheckoutPage() {
       <Button variant="outline" onClick={() => router.back()} className="mb-6">
         <ChevronLeft className="mr-2 h-4 w-4" /> Back to Shop
       </Button>
-      <CheckoutForm product={product} user={user} profile={profile} form={form} />
+      <CheckoutForm product={product} user={user} profile={profile} form={form} variantIndex={variantIndex} />
     </div>
   );
 }
