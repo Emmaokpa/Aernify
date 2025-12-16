@@ -77,22 +77,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
 
-  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password' || pathname === '/auth/action';
   const isGamePage = pathname.startsWith('/play/');
 
   useEffect(() => {
-    if (!isUserLoading && !user && !isAuthPage) {
+    if (!isUserLoading && !user) {
       router.push('/login');
     }
-  }, [isUserLoading, user, isAuthPage, router]);
+  }, [isUserLoading, user, router]);
 
 
-  if (isUserLoading && !isAuthPage) {
+  if (isUserLoading) {
      return <AppSkeleton />;
   }
 
-  if (isAuthPage) {
-    return <main className="flex items-center justify-center min-h-screen">{children}</main>;
+  if (!user) {
+    return null; // or a redirect component
   }
   
   return (

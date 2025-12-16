@@ -52,6 +52,15 @@ export default function LandingLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const authPages = ['/login', '/signup', '/forgot-password', '/auth/action'];
+  // A bit of a hack to get the pathname on the server.
+  // In a real app, you might use middleware or a different approach.
+  const isAuthPage = typeof window !== 'undefined' && authPages.includes(window.location.pathname);
+
+  if (isAuthPage) {
+    return <main className="flex items-center justify-center min-h-screen">{children}</main>;
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <LandingHeader />
