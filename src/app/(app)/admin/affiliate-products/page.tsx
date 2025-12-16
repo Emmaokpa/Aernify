@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -12,6 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -20,7 +22,7 @@ import {
   useCollection,
 } from '@/firebase';
 import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import type { GiftCard } from '@/lib/types';
+import type { AffiliateProduct } from '@/lib/types';
 import Image from 'next/image';
 import {
   AlertDialog,
@@ -45,10 +47,10 @@ import {
 } from '@/components/ui/dialog';
 import ImageUploadForm from '@/components/image-upload-form';
 
-type GiftCardFormData = Omit<GiftCard, 'id'>;
-type GiftCardWithId = GiftCard & { id: string };
+type AffiliateProductFormData = Omit<AffiliateProduct, 'id'>;
+type ProductWithId = AffiliateProduct & { id: string };
 
-function EditGiftCardForm({ giftCard }: { giftCard: GiftCardWithId }) {
+function EditAffiliateProductForm({ product }: { product: ProductWithId }) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -58,33 +60,31 @@ function EditGiftCardForm({ giftCard }: { giftCard: GiftCardWithId }) {
     handleSubmit,
     setValue,
     formState: { isSubmitting },
-  } = useForm<GiftCardFormData>({
+  } = useForm<AffiliateProductFormData>({
     defaultValues: {
-      ...giftCard,
-      price: Number(giftCard.price),
-      value: Number(giftCard.value),
+      ...product,
+      reward: Number(product.reward),
     },
   });
 
-  const onSubmit: SubmitHandler<GiftCardFormData> = async (data) => {
+  const onSubmit: SubmitHandler<AffiliateProductFormData> = async (data) => {
     try {
-      const giftCardDocRef = doc(firestore, 'giftCards', giftCard.id);
-      await updateDoc(giftCardDocRef, {
+      const productDocRef = doc(firestore, 'affiliate_products', product.id);
+      await updateDoc(productDocRef, {
         ...data,
-        price: Number(data.price),
-        value: Number(data.value),
+        reward: Number(data.reward),
       });
       toast({
-        title: 'Gift Card Updated!',
-        description: `${data.name} has been successfully updated.`,
+        title: 'Product Updated!',
+        description: `${data.title} has been successfully updated.`,
       });
       setIsDialogOpen(false);
     } catch (err: any) {
-      console.error('Error updating gift card:', err);
+      console.error('Error updating product:', err);
       toast({
         variant: 'destructive',
         title: 'An error occurred.',
-        description: 'Failed to update gift card. Please try again.',
+        description: 'Failed to update product. Please try again.',
       });
     }
   };
@@ -100,52 +100,64 @@ function EditGiftCardForm({ giftCard }: { giftCard: GiftCardWithId }) {
           <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit Gift Card</DialogTitle>
+          <DialogTitle>Edit Affiliate Product</DialogTitle>
           <DialogDescription>
-            Make changes to &quot;{giftCard.name}&quot;. Click save when you&apos;re done.
+            Make changes to &quot;{product.title}&quot;. Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-           <div className="space-y-2">
-            <Label htmlFor="name">Card Name</Label>
-            <Input id="name" {...register('name', { required: true })} />
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Product Title</Label>
+            <Input id="title" {...register('title', { required: true })} />
           </div>
            <div className="space-y-2">
-            <Label>Card Image</Label>
-             {giftCard.imageUrl && <Image src={giftCard.imageUrl} alt={giftCard.name} width={100} height={60} className='rounded-md aspect-video object-contain border p-1' />}
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              {...register('description', { required: true })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="vendor">Vendor</Label>
+            <Input id="vendor" {...register('vendor', { required: true })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Product Image</Label>
+             {product.imageUrl && <Image src={product.imageUrl} alt={product.title} width={100} height={100} className='rounded-md aspect-video object-cover' />}
             <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
           </div>
-           <div className="space-y-2">
+          <div className="space-y-2">
             <Label htmlFor="imageHint">Image Hint</Label>
             <Input
               id="imageHint"
               {...register('imageHint')}
-              placeholder="e.g. 'brand logo'"
-            />
-          </div>
-           <div className="space-y-2">
-            <Label htmlFor="value">Value (e.g., in USD)</Label>
-            <Input
-              id="value"
-              type="number"
-              {...register('value', { required: true, valueAsNumber: true })}
+              placeholder="e.g. 'e-book cover'"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="price">Price (in Coins)</Label>
+            <Label htmlFor="productUrl">Product URL</Label>
             <Input
-              id="price"
-              type="number"
-              {...register('price', { required: true, valueAsNumber: true })}
+              id="productUrl"
+              type="url"
+              {...register('productUrl', { required: true })}
+              placeholder="https://jvzoo.com/c/..."
             />
           </div>
-          <DialogFooter>
-             <DialogClose asChild>
-                <Button type="button" variant="secondary">
-                    Cancel
-                </Button>
+          <div className="space-y-2">
+            <Label htmlFor="reward">Reward Coins</Label>
+            <Input
+              id="reward"
+              type="number"
+              {...register('reward', { required: true, valueAsNumber: true })}
+            />
+          </div>
+          <DialogFooter className="mt-4">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Cancel
+              </Button>
             </DialogClose>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -158,7 +170,7 @@ function EditGiftCardForm({ giftCard }: { giftCard: GiftCardWithId }) {
   );
 }
 
-function AddGiftCardForm() {
+function AddAffiliateProductForm() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const {
@@ -167,30 +179,29 @@ function AddGiftCardForm() {
     reset,
     setValue,
     formState: { isSubmitting },
-  } = useForm<GiftCardFormData>();
+  } = useForm<AffiliateProductFormData>();
   const [error, setError] = useState<string | null>(null);
 
-  const onSubmit: SubmitHandler<GiftCardFormData> = async (data) => {
+  const onSubmit: SubmitHandler<AffiliateProductFormData> = async (data) => {
     setError(null);
-    if (!data.imageUrl) {
-        setError("Please upload an image for the gift card.");
+     if (!data.imageUrl) {
+        setError("Please upload an image for the product.");
         return;
     }
     try {
-      const giftCardsCollection = collection(firestore, 'giftCards');
-      await addDoc(giftCardsCollection, {
+      const productsCollection = collection(firestore, 'affiliate_products');
+      await addDoc(productsCollection, {
         ...data,
-        price: Number(data.price),
-        value: Number(data.value)
+        reward: Number(data.reward)
       });
       toast({
-        title: 'Gift Card Added!',
-        description: `${data.name} has been added to the redeem section.`,
+        title: 'Product Added!',
+        description: `${data.title} has been added to the affiliate section.`,
       });
       reset();
     } catch (err: any) {
       console.error(err);
-      setError('Failed to add gift card. Please check the console for errors.');
+      setError('Failed to add product. Please check the console for errors.');
       toast({
         variant: 'destructive',
         title: 'An error occurred.',
@@ -202,51 +213,59 @@ function AddGiftCardForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Add New Gift Card</CardTitle>
+        <CardTitle>Add New Affiliate Product</CardTitle>
         <CardDescription>
-          Fill out the form below to add a new gift card to the redeem section.
+          Fill out the form to add a new high-value product for affiliates to promote.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && <p className="text-destructive">{error}</p>}
           <div className="space-y-2">
-            <Label htmlFor="name">Card Name</Label>
-            <Input id="name" {...register('name', { required: true })} placeholder="e.g. Amazon Gift Card" />
+            <Label htmlFor="title">Product Title</Label>
+            <Input id="title" {...register('title', { required: true })} />
           </div>
           <div className="space-y-2">
-            <Label>Card Image</Label>
+            <Label htmlFor="description">Description</Label>
+            <Textarea id="description" {...register('description', { required: true })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="vendor">Vendor (e.g., JVZoo)</Label>
+            <Input id="vendor" {...register('vendor', { required: true })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Product Image</Label>
             <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
           </div>
-           <div className="space-y-2">
+          <div className="space-y-2">
             <Label htmlFor="imageHint">Image Hint</Label>
             <Input
               id="imageHint"
               {...register('imageHint')}
-              placeholder="e.g. 'brand logo'"
+              placeholder="e.g. 'e-book cover'"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="value">Value (e.g., in USD)</Label>
+            <Label htmlFor="productUrl">Product URL</Label>
             <Input
-              id="value"
-              type="number"
-              {...register('value', { required: true, valueAsNumber: true })}
-              defaultValue={10}
+              id="productUrl"
+              type="url"
+              {...register('productUrl', { required: true })}
+              placeholder="https://jvzoo.com/c/..."
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="price">Price (in Coins)</Label>
+            <Label htmlFor="reward">Reward Coins</Label>
             <Input
-              id="price"
+              id="reward"
               type="number"
-              {...register('price', { required: true, valueAsNumber: true })}
-              defaultValue={10000}
+              {...register('reward', { required: true, valueAsNumber: true })}
+              defaultValue={1000}
             />
           </div>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Add Gift Card
+            Add Affiliate Product
           </Button>
         </form>
       </CardContent>
@@ -254,50 +273,51 @@ function AddGiftCardForm() {
   );
 }
 
-function GiftCardList() {
+function AffiliateProductList() {
     const firestore = useFirestore();
     const { toast } = useToast();
-    const giftCardsCollection = useMemo(() => collection(firestore, 'giftCards'), [firestore]);
-    const { data: giftCards, isLoading } = useCollection<GiftCardWithId>(giftCardsCollection);
+    const productsCollection = useMemo(() => collection(firestore, 'affiliate_products'), [firestore]);
+    const { data: products, isLoading } = useCollection<ProductWithId>(productsCollection);
 
-    const handleDelete = async (giftCardId: string) => {
+    const handleDelete = async (productId: string) => {
         try {
-            await deleteDoc(doc(firestore, 'giftCards', giftCardId));
+            await deleteDoc(doc(firestore, 'affiliate_products', productId));
             toast({
-                title: 'Gift Card Deleted',
-                description: 'The gift card has been removed.',
+                title: 'Product Deleted',
+                description: 'The affiliate product has been removed.',
             });
         } catch (error: any) {
-            console.error("Error deleting gift card: ", error);
+            console.error("Error deleting product: ", error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not delete the gift card.',
+                description: 'Could not delete the product.',
             });
         }
     };
 
     if (isLoading) {
-        return <p>Loading gift cards...</p>
+        return <p>Loading products...</p>
     }
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Existing Gift Cards</CardTitle>
+                <CardTitle>Existing Affiliate Products</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {giftCards?.map(card => (
-                    <Card key={card.id} className="group relative">
-                        <div className="relative aspect-[1.6] w-full overflow-hidden rounded-t-lg bg-muted flex items-center justify-center p-2">
-                           <Image src={card.imageUrl} alt={card.name} width={120} height={75} className="object-contain" />
+                {products?.map(product => (
+                    <Card key={product.id} className="group relative">
+                        <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">
+                           <Image src={product.imageUrl} alt={product.title} fill className="object-cover" />
                         </div>
                         <div className="p-4">
-                            <h3 className="font-semibold text-lg">{card.name}</h3>
-                            <p className="text-sm text-muted-foreground">${card.value} for {card.price} coins</p>
+                            <h3 className="font-semibold text-lg">{product.title}</h3>
+                             <p className="text-sm text-muted-foreground">{product.vendor}</p>
+                            <p className="text-sm text-primary font-semibold">{product.reward} coins</p>
                         </div>
                         <div className="absolute top-2 right-2 flex gap-2">
-                             <EditGiftCardForm giftCard={card} />
+                            <EditAffiliateProductForm product={product} />
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="destructive" size="icon" className="h-8 w-8 opacity-80 group-hover:opacity-100 transition-opacity">
@@ -308,34 +328,34 @@ function GiftCardList() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                    This will permanently delete the gift card &quot;{card.name}&quot;. This action cannot be undone.
+                                    This will permanently delete the product &quot;{product.title}&quot;. This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(card.id)}>Delete</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDelete(product.id)}>Delete</AlertDialogAction>
                                 </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </div>
                     </Card>
                 ))}
-                {giftCards?.length === 0 && <p className='text-muted-foreground'>No gift cards found.</p>}
+                {products?.length === 0 && <p className='text-muted-foreground'>No affiliate products found.</p>}
             </CardContent>
         </Card>
     )
 }
 
-export default function AdminGiftCardsPage() {
+export default function AdminAffiliateProductsPage() {
   return (
     <AdminAuthWrapper>
       <PageHeader
-        title="Admin: Manage Gift Cards"
-        description="Add, edit, or delete gift cards available for redemption."
+        title="Admin: Manage Affiliate Products"
+        description="Add, edit, or delete high-value affiliate products."
       />
       <div className="space-y-8">
-        <AddGiftCardForm />
-        <GiftCardList />
+        <AddAffiliateProductForm />
+        <AffiliateProductList />
       </div>
     </AdminAuthWrapper>
   );

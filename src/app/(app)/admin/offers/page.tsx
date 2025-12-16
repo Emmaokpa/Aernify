@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -12,7 +13,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -21,7 +21,7 @@ import {
   useCollection,
 } from '@/firebase';
 import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import type { AffiliateProduct } from '@/lib/types';
+import type { Offer } from '@/lib/types';
 import Image from 'next/image';
 import {
   AlertDialog,
@@ -46,10 +46,10 @@ import {
 } from '@/components/ui/dialog';
 import ImageUploadForm from '@/components/image-upload-form';
 
-type AffiliateProductFormData = Omit<AffiliateProduct, 'id'>;
-type ProductWithId = AffiliateProduct & { id: string };
+type OfferFormData = Omit<Offer, 'id'>;
+type OfferWithId = Offer & { id: string };
 
-function EditAffiliateProductForm({ product }: { product: ProductWithId }) {
+function EditOfferForm({ offer }: { offer: OfferWithId }) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -59,31 +59,31 @@ function EditAffiliateProductForm({ product }: { product: ProductWithId }) {
     handleSubmit,
     setValue,
     formState: { isSubmitting },
-  } = useForm<AffiliateProductFormData>({
+  } = useForm<OfferFormData>({
     defaultValues: {
-      ...product,
-      reward: Number(product.reward),
+      ...offer,
+      reward: Number(offer.reward),
     },
   });
 
-  const onSubmit: SubmitHandler<AffiliateProductFormData> = async (data) => {
+  const onSubmit: SubmitHandler<OfferFormData> = async (data) => {
     try {
-      const productDocRef = doc(firestore, 'affiliate_products', product.id);
-      await updateDoc(productDocRef, {
+      const offerDocRef = doc(firestore, 'offers', offer.id);
+      await updateDoc(offerDocRef, {
         ...data,
         reward: Number(data.reward),
       });
       toast({
-        title: 'Product Updated!',
+        title: 'Offer Updated!',
         description: `${data.title} has been successfully updated.`,
       });
       setIsDialogOpen(false);
     } catch (err: any) {
-      console.error('Error updating product:', err);
+      console.error('Error updating offer:', err);
       toast({
         variant: 'destructive',
         title: 'An error occurred.',
-        description: 'Failed to update product. Please try again.',
+        description: 'Failed to update offer. Please try again.',
       });
     }
   };
@@ -99,32 +99,25 @@ function EditAffiliateProductForm({ product }: { product: ProductWithId }) {
           <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Affiliate Product</DialogTitle>
+          <DialogTitle>Edit Offer</DialogTitle>
           <DialogDescription>
-            Make changes to &quot;{product.title}&quot;. Click save when you&apos;re done.
+            Make changes to &quot;{offer.title}&quot;. Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Product Title</Label>
+            <Label htmlFor="title">Offer Title</Label>
             <Input id="title" {...register('title', { required: true })} />
           </div>
-           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              {...register('description', { required: true })}
-            />
+          <div className="space-y-2">
+            <Label htmlFor="company">Company</Label>
+            <Input id="company" {...register('company', { required: true })} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="vendor">Vendor</Label>
-            <Input id="vendor" {...register('vendor', { required: true })} />
-          </div>
-          <div className="space-y-2">
-            <Label>Product Image</Label>
-             {product.imageUrl && <Image src={product.imageUrl} alt={product.title} width={100} height={100} className='rounded-md aspect-video object-cover' />}
+            <Label>Offer Image</Label>
+             {offer.imageUrl && <Image src={offer.imageUrl} alt={offer.title} width={100} height={100} className='rounded-md aspect-video object-cover' />}
             <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
           </div>
           <div className="space-y-2">
@@ -132,16 +125,16 @@ function EditAffiliateProductForm({ product }: { product: ProductWithId }) {
             <Input
               id="imageHint"
               {...register('imageHint')}
-              placeholder="e.g. 'e-book cover'"
+              placeholder="e.g. 'analytics chart'"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="productUrl">Product URL</Label>
+            <Label htmlFor="link">Offer Link</Label>
             <Input
-              id="productUrl"
+              id="link"
               type="url"
-              {...register('productUrl', { required: true })}
-              placeholder="https://jvzoo.com/c/..."
+              {...register('link', { required: true })}
+              placeholder="https://partner.com/offer/..."
             />
           </div>
           <div className="space-y-2">
@@ -152,7 +145,7 @@ function EditAffiliateProductForm({ product }: { product: ProductWithId }) {
               {...register('reward', { required: true, valueAsNumber: true })}
             />
           </div>
-          <DialogFooter className="mt-4">
+          <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="secondary">
                 Cancel
@@ -169,7 +162,7 @@ function EditAffiliateProductForm({ product }: { product: ProductWithId }) {
   );
 }
 
-function AddAffiliateProductForm() {
+function AddOfferForm() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const {
@@ -178,29 +171,29 @@ function AddAffiliateProductForm() {
     reset,
     setValue,
     formState: { isSubmitting },
-  } = useForm<AffiliateProductFormData>();
+  } = useForm<OfferFormData>();
   const [error, setError] = useState<string | null>(null);
 
-  const onSubmit: SubmitHandler<AffiliateProductFormData> = async (data) => {
+  const onSubmit: SubmitHandler<OfferFormData> = async (data) => {
     setError(null);
      if (!data.imageUrl) {
-        setError("Please upload an image for the product.");
+        setError("Please upload an image for the offer.");
         return;
     }
     try {
-      const productsCollection = collection(firestore, 'affiliate_products');
-      await addDoc(productsCollection, {
+      const offersCollection = collection(firestore, 'offers');
+      await addDoc(offersCollection, {
         ...data,
-        reward: Number(data.reward)
+        reward: Number(data.reward) // Ensure reward is a number
       });
       toast({
-        title: 'Product Added!',
-        description: `${data.title} has been added to the affiliate section.`,
+        title: 'Offer Added!',
+        description: `${data.title} has been added to the database.`,
       });
       reset();
     } catch (err: any) {
       console.error(err);
-      setError('Failed to add product. Please check the console for errors.');
+      setError('Failed to add offer. Please check the console for errors.');
       toast({
         variant: 'destructive',
         title: 'An error occurred.',
@@ -212,28 +205,24 @@ function AddAffiliateProductForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Add New Affiliate Product</CardTitle>
+        <CardTitle>Add New Affiliate Offer</CardTitle>
         <CardDescription>
-          Fill out the form to add a new high-value product for affiliates to promote.
+          Fill out the form below to add a new offer.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && <p className="text-destructive">{error}</p>}
           <div className="space-y-2">
-            <Label htmlFor="title">Product Title</Label>
+            <Label htmlFor="title">Offer Title</Label>
             <Input id="title" {...register('title', { required: true })} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" {...register('description', { required: true })} />
+            <Label htmlFor="company">Company</Label>
+            <Input id="company" {...register('company', { required: true })} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="vendor">Vendor (e.g., JVZoo)</Label>
-            <Input id="vendor" {...register('vendor', { required: true })} />
-          </div>
-          <div className="space-y-2">
-            <Label>Product Image</Label>
+            <Label>Offer Image</Label>
             <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
           </div>
           <div className="space-y-2">
@@ -241,16 +230,16 @@ function AddAffiliateProductForm() {
             <Input
               id="imageHint"
               {...register('imageHint')}
-              placeholder="e.g. 'e-book cover'"
+              placeholder="e.g. 'analytics chart'"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="productUrl">Product URL</Label>
+            <Label htmlFor="link">Offer Link</Label>
             <Input
-              id="productUrl"
+              id="link"
               type="url"
-              {...register('productUrl', { required: true })}
-              placeholder="https://jvzoo.com/c/..."
+              {...register('link', { required: true })}
+              placeholder="https://partner.com/offer/..."
             />
           </div>
           <div className="space-y-2">
@@ -259,12 +248,12 @@ function AddAffiliateProductForm() {
               id="reward"
               type="number"
               {...register('reward', { required: true, valueAsNumber: true })}
-              defaultValue={1000}
+              defaultValue={100}
             />
           </div>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Add Affiliate Product
+            Add Offer
           </Button>
         </form>
       </CardContent>
@@ -272,51 +261,51 @@ function AddAffiliateProductForm() {
   );
 }
 
-function AffiliateProductList() {
+function OfferList() {
     const firestore = useFirestore();
     const { toast } = useToast();
-    const productsCollection = useMemo(() => collection(firestore, 'affiliate_products'), [firestore]);
-    const { data: products, isLoading } = useCollection<ProductWithId>(productsCollection);
+    const offersCollection = useMemo(() => collection(firestore, 'offers'), [firestore]);
+    const { data: offers, isLoading } = useCollection<OfferWithId>(offersCollection);
 
-    const handleDelete = async (productId: string) => {
+    const handleDelete = async (offerId: string) => {
         try {
-            await deleteDoc(doc(firestore, 'affiliate_products', productId));
+            await deleteDoc(doc(firestore, 'offers', offerId));
             toast({
-                title: 'Product Deleted',
-                description: 'The affiliate product has been removed.',
+                title: 'Offer Deleted',
+                description: 'The offer has been removed.',
             });
         } catch (error: any) {
-            console.error("Error deleting product: ", error);
+            console.error("Error deleting offer: ", error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not delete the product.',
+                description: 'Could not delete the offer.',
             });
         }
     };
 
     if (isLoading) {
-        return <p>Loading products...</p>
+        return <p>Loading offers...</p>
     }
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Existing Affiliate Products</CardTitle>
+                <CardTitle>Existing Offers</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {products?.map(product => (
-                    <Card key={product.id} className="group relative">
+                {offers?.map(offer => (
+                    <Card key={offer.id} className="group relative">
                         <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">
-                           <Image src={product.imageUrl} alt={product.title} fill className="object-cover" />
+                           <Image src={offer.imageUrl} alt={offer.title} fill className="object-cover" />
                         </div>
                         <div className="p-4">
-                            <h3 className="font-semibold text-lg">{product.title}</h3>
-                             <p className="text-sm text-muted-foreground">{product.vendor}</p>
-                            <p className="text-sm text-primary font-semibold">{product.reward} coins</p>
+                            <h3 className="font-semibold text-lg">{offer.title}</h3>
+                             <p className="text-sm text-muted-foreground">{offer.company}</p>
+                            <p className="text-sm text-primary font-semibold">{offer.reward} coins</p>
                         </div>
                         <div className="absolute top-2 right-2 flex gap-2">
-                            <EditAffiliateProductForm product={product} />
+                            <EditOfferForm offer={offer} />
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="destructive" size="icon" className="h-8 w-8 opacity-80 group-hover:opacity-100 transition-opacity">
@@ -327,34 +316,34 @@ function AffiliateProductList() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                    This will permanently delete the product &quot;{product.title}&quot;. This action cannot be undone.
+                                    This will permanently delete the offer &quot;{offer.title}&quot;. This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(product.id)}>Delete</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDelete(offer.id)}>Delete</AlertDialogAction>
                                 </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </div>
                     </Card>
                 ))}
-                {products?.length === 0 && <p className='text-muted-foreground'>No affiliate products found.</p>}
+                {offers?.length === 0 && <p className='text-muted-foreground'>No offers found.</p>}
             </CardContent>
         </Card>
     )
 }
 
-export default function AdminAffiliateProductsPage() {
+export default function AdminOffersPage() {
   return (
     <AdminAuthWrapper>
       <PageHeader
-        title="Admin: Manage Affiliate Products"
-        description="Add, edit, or delete high-value affiliate products."
+        title="Admin: Manage Offers"
+        description="Add, edit, or delete affiliate offers available in the app."
       />
       <div className="space-y-8">
-        <AddAffiliateProductForm />
-        <AffiliateProductList />
+        <AddOfferForm />
+        <OfferList />
       </div>
     </AdminAuthWrapper>
   );

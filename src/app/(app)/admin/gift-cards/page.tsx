@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -20,7 +21,7 @@ import {
   useCollection,
 } from '@/firebase';
 import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import type { Offer } from '@/lib/types';
+import type { GiftCard } from '@/lib/types';
 import Image from 'next/image';
 import {
   AlertDialog,
@@ -45,10 +46,10 @@ import {
 } from '@/components/ui/dialog';
 import ImageUploadForm from '@/components/image-upload-form';
 
-type OfferFormData = Omit<Offer, 'id'>;
-type OfferWithId = Offer & { id: string };
+type GiftCardFormData = Omit<GiftCard, 'id'>;
+type GiftCardWithId = GiftCard & { id: string };
 
-function EditOfferForm({ offer }: { offer: OfferWithId }) {
+function EditGiftCardForm({ giftCard }: { giftCard: GiftCardWithId }) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -58,31 +59,33 @@ function EditOfferForm({ offer }: { offer: OfferWithId }) {
     handleSubmit,
     setValue,
     formState: { isSubmitting },
-  } = useForm<OfferFormData>({
+  } = useForm<GiftCardFormData>({
     defaultValues: {
-      ...offer,
-      reward: Number(offer.reward),
+      ...giftCard,
+      price: Number(giftCard.price),
+      value: Number(giftCard.value),
     },
   });
 
-  const onSubmit: SubmitHandler<OfferFormData> = async (data) => {
+  const onSubmit: SubmitHandler<GiftCardFormData> = async (data) => {
     try {
-      const offerDocRef = doc(firestore, 'offers', offer.id);
-      await updateDoc(offerDocRef, {
+      const giftCardDocRef = doc(firestore, 'giftCards', giftCard.id);
+      await updateDoc(giftCardDocRef, {
         ...data,
-        reward: Number(data.reward),
+        price: Number(data.price),
+        value: Number(data.value),
       });
       toast({
-        title: 'Offer Updated!',
-        description: `${data.title} has been successfully updated.`,
+        title: 'Gift Card Updated!',
+        description: `${data.name} has been successfully updated.`,
       });
       setIsDialogOpen(false);
     } catch (err: any) {
-      console.error('Error updating offer:', err);
+      console.error('Error updating gift card:', err);
       toast({
         variant: 'destructive',
         title: 'An error occurred.',
-        description: 'Failed to update offer. Please try again.',
+        description: 'Failed to update gift card. Please try again.',
       });
     }
   };
@@ -100,55 +103,50 @@ function EditOfferForm({ offer }: { offer: OfferWithId }) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Offer</DialogTitle>
+          <DialogTitle>Edit Gift Card</DialogTitle>
           <DialogDescription>
-            Make changes to &quot;{offer.title}&quot;. Click save when you&apos;re done.
+            Make changes to &quot;{giftCard.name}&quot;. Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Offer Title</Label>
-            <Input id="title" {...register('title', { required: true })} />
+           <div className="space-y-2">
+            <Label htmlFor="name">Card Name</Label>
+            <Input id="name" {...register('name', { required: true })} />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="company">Company</Label>
-            <Input id="company" {...register('company', { required: true })} />
-          </div>
-          <div className="space-y-2">
-            <Label>Offer Image</Label>
-             {offer.imageUrl && <Image src={offer.imageUrl} alt={offer.title} width={100} height={100} className='rounded-md aspect-video object-cover' />}
+           <div className="space-y-2">
+            <Label>Card Image</Label>
+             {giftCard.imageUrl && <Image src={giftCard.imageUrl} alt={giftCard.name} width={100} height={60} className='rounded-md aspect-video object-contain border p-1' />}
             <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
           </div>
-          <div className="space-y-2">
+           <div className="space-y-2">
             <Label htmlFor="imageHint">Image Hint</Label>
             <Input
               id="imageHint"
               {...register('imageHint')}
-              placeholder="e.g. 'analytics chart'"
+              placeholder="e.g. 'brand logo'"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="link">Offer Link</Label>
+           <div className="space-y-2">
+            <Label htmlFor="value">Value (e.g., in USD)</Label>
             <Input
-              id="link"
-              type="url"
-              {...register('link', { required: true })}
-              placeholder="https://partner.com/offer/..."
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="reward">Reward Coins</Label>
-            <Input
-              id="reward"
+              id="value"
               type="number"
-              {...register('reward', { required: true, valueAsNumber: true })}
+              {...register('value', { required: true, valueAsNumber: true })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="price">Price (in Coins)</Label>
+            <Input
+              id="price"
+              type="number"
+              {...register('price', { required: true, valueAsNumber: true })}
             />
           </div>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">
-                Cancel
-              </Button>
+             <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                    Cancel
+                </Button>
             </DialogClose>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -161,7 +159,7 @@ function EditOfferForm({ offer }: { offer: OfferWithId }) {
   );
 }
 
-function AddOfferForm() {
+function AddGiftCardForm() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const {
@@ -170,29 +168,30 @@ function AddOfferForm() {
     reset,
     setValue,
     formState: { isSubmitting },
-  } = useForm<OfferFormData>();
+  } = useForm<GiftCardFormData>();
   const [error, setError] = useState<string | null>(null);
 
-  const onSubmit: SubmitHandler<OfferFormData> = async (data) => {
+  const onSubmit: SubmitHandler<GiftCardFormData> = async (data) => {
     setError(null);
-     if (!data.imageUrl) {
-        setError("Please upload an image for the offer.");
+    if (!data.imageUrl) {
+        setError("Please upload an image for the gift card.");
         return;
     }
     try {
-      const offersCollection = collection(firestore, 'offers');
-      await addDoc(offersCollection, {
+      const giftCardsCollection = collection(firestore, 'giftCards');
+      await addDoc(giftCardsCollection, {
         ...data,
-        reward: Number(data.reward) // Ensure reward is a number
+        price: Number(data.price),
+        value: Number(data.value)
       });
       toast({
-        title: 'Offer Added!',
-        description: `${data.title} has been added to the database.`,
+        title: 'Gift Card Added!',
+        description: `${data.name} has been added to the redeem section.`,
       });
       reset();
     } catch (err: any) {
       console.error(err);
-      setError('Failed to add offer. Please check the console for errors.');
+      setError('Failed to add gift card. Please check the console for errors.');
       toast({
         variant: 'destructive',
         title: 'An error occurred.',
@@ -204,55 +203,51 @@ function AddOfferForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Add New Affiliate Offer</CardTitle>
+        <CardTitle>Add New Gift Card</CardTitle>
         <CardDescription>
-          Fill out the form below to add a new offer.
+          Fill out the form below to add a new gift card to the redeem section.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && <p className="text-destructive">{error}</p>}
           <div className="space-y-2">
-            <Label htmlFor="title">Offer Title</Label>
-            <Input id="title" {...register('title', { required: true })} />
+            <Label htmlFor="name">Card Name</Label>
+            <Input id="name" {...register('name', { required: true })} placeholder="e.g. Amazon Gift Card" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="company">Company</Label>
-            <Input id="company" {...register('company', { required: true })} />
-          </div>
-          <div className="space-y-2">
-            <Label>Offer Image</Label>
+            <Label>Card Image</Label>
             <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
           </div>
-          <div className="space-y-2">
+           <div className="space-y-2">
             <Label htmlFor="imageHint">Image Hint</Label>
             <Input
               id="imageHint"
               {...register('imageHint')}
-              placeholder="e.g. 'analytics chart'"
+              placeholder="e.g. 'brand logo'"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="link">Offer Link</Label>
+            <Label htmlFor="value">Value (e.g., in USD)</Label>
             <Input
-              id="link"
-              type="url"
-              {...register('link', { required: true })}
-              placeholder="https://partner.com/offer/..."
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="reward">Reward Coins</Label>
-            <Input
-              id="reward"
+              id="value"
               type="number"
-              {...register('reward', { required: true, valueAsNumber: true })}
-              defaultValue={100}
+              {...register('value', { required: true, valueAsNumber: true })}
+              defaultValue={10}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="price">Price (in Coins)</Label>
+            <Input
+              id="price"
+              type="number"
+              {...register('price', { required: true, valueAsNumber: true })}
+              defaultValue={10000}
             />
           </div>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Add Offer
+            Add Gift Card
           </Button>
         </form>
       </CardContent>
@@ -260,51 +255,50 @@ function AddOfferForm() {
   );
 }
 
-function OfferList() {
+function GiftCardList() {
     const firestore = useFirestore();
     const { toast } = useToast();
-    const offersCollection = useMemo(() => collection(firestore, 'offers'), [firestore]);
-    const { data: offers, isLoading } = useCollection<OfferWithId>(offersCollection);
+    const giftCardsCollection = useMemo(() => collection(firestore, 'giftCards'), [firestore]);
+    const { data: giftCards, isLoading } = useCollection<GiftCardWithId>(giftCardsCollection);
 
-    const handleDelete = async (offerId: string) => {
+    const handleDelete = async (giftCardId: string) => {
         try {
-            await deleteDoc(doc(firestore, 'offers', offerId));
+            await deleteDoc(doc(firestore, 'giftCards', giftCardId));
             toast({
-                title: 'Offer Deleted',
-                description: 'The offer has been removed.',
+                title: 'Gift Card Deleted',
+                description: 'The gift card has been removed.',
             });
         } catch (error: any) {
-            console.error("Error deleting offer: ", error);
+            console.error("Error deleting gift card: ", error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not delete the offer.',
+                description: 'Could not delete the gift card.',
             });
         }
     };
 
     if (isLoading) {
-        return <p>Loading offers...</p>
+        return <p>Loading gift cards...</p>
     }
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Existing Offers</CardTitle>
+                <CardTitle>Existing Gift Cards</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {offers?.map(offer => (
-                    <Card key={offer.id} className="group relative">
-                        <div className="relative aspect-video w-full overflow-hidden rounded-t-lg">
-                           <Image src={offer.imageUrl} alt={offer.title} fill className="object-cover" />
+                {giftCards?.map(card => (
+                    <Card key={card.id} className="group relative">
+                        <div className="relative aspect-[1.6] w-full overflow-hidden rounded-t-lg bg-muted flex items-center justify-center p-2">
+                           <Image src={card.imageUrl} alt={card.name} width={120} height={75} className="object-contain" />
                         </div>
                         <div className="p-4">
-                            <h3 className="font-semibold text-lg">{offer.title}</h3>
-                             <p className="text-sm text-muted-foreground">{offer.company}</p>
-                            <p className="text-sm text-primary font-semibold">{offer.reward} coins</p>
+                            <h3 className="font-semibold text-lg">{card.name}</h3>
+                            <p className="text-sm text-muted-foreground">${card.value} for {card.price} coins</p>
                         </div>
                         <div className="absolute top-2 right-2 flex gap-2">
-                            <EditOfferForm offer={offer} />
+                             <EditGiftCardForm giftCard={card} />
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="destructive" size="icon" className="h-8 w-8 opacity-80 group-hover:opacity-100 transition-opacity">
@@ -315,34 +309,34 @@ function OfferList() {
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                    This will permanently delete the offer &quot;{offer.title}&quot;. This action cannot be undone.
+                                    This will permanently delete the gift card &quot;{card.name}&quot;. This action cannot be undone.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(offer.id)}>Delete</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDelete(card.id)}>Delete</AlertDialogAction>
                                 </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </div>
                     </Card>
                 ))}
-                {offers?.length === 0 && <p className='text-muted-foreground'>No offers found.</p>}
+                {giftCards?.length === 0 && <p className='text-muted-foreground'>No gift cards found.</p>}
             </CardContent>
         </Card>
     )
 }
 
-export default function AdminOffersPage() {
+export default function AdminGiftCardsPage() {
   return (
     <AdminAuthWrapper>
       <PageHeader
-        title="Admin: Manage Offers"
-        description="Add, edit, or delete affiliate offers available in the app."
+        title="Admin: Manage Gift Cards"
+        description="Add, edit, or delete gift cards available for redemption."
       />
       <div className="space-y-8">
-        <AddOfferForm />
-        <OfferList />
+        <AddGiftCardForm />
+        <GiftCardList />
       </div>
     </AdminAuthWrapper>
   );

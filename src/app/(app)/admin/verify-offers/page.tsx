@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -169,5 +170,3 @@ export default function AdminVerifyOffersPage() {
     </AdminAuthWrapper>
   );
 }
-
-    
