@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import usePaystack from '@paystack/inline-js';
+import { Label } from '@/components/ui/label';
 
 const shippingSchema = z.object({
   fullName: z.string().min(2, 'Full name is required'),
@@ -320,7 +321,7 @@ export default function CheckoutPage() {
       <Button variant="outline" onClick={() => router.back()} className="mb-6">
         <ChevronLeft className="mr-2 h-4 w-4" /> Back to Shop
       </Button>
-      <CheckoutForm product={product} user={user} profile={profile} form={form} />
+      <CheckoutForm product={{...product, id: productId}} user={user} profile={profile} form={form} />
     </div>
   );
 }
