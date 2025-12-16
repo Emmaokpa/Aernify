@@ -1,3 +1,4 @@
+
 export type NavItem = {
   title: string;
   href: string;
@@ -55,21 +56,14 @@ export type AffiliateProduct = {
   description: string;
 };
 
-export type ProductVariant = {
-  colorName: string;
-  colorHex: string;
-};
-
 export type Product = {
   id: string;
   name: string;
   description: string;
-  price: number; // Price will now be in a real currency (e.g., NGN)
-  imageUrls: string[];
+  price: number;
+  imageUrl: string;
   imageHint: string;
-  variants?: ProductVariant[];
 };
-
 
 export type GiftCard = {
   id:string;

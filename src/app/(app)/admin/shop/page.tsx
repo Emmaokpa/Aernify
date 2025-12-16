@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -13,8 +14,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useForm, SubmitHandler, useFieldArray } from 'react-hook-form';
-import { Loader2, Trash2, Pencil, PlusCircle, X } from 'lucide-react';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useCollection } from '@/firebase';
 import {
@@ -61,20 +62,13 @@ function EditProductForm({ product }: { product: ProductWithId }) {
     register,
     handleSubmit,
     setValue,
-    control,
     formState: { isSubmitting },
   } = useForm<ProductFormData>({
     defaultValues: {
       ...product,
       price: Number(product.price),
-      imageUrls: product.imageUrls || [],
-      variants: product.variants || [],
     },
   });
-
-  const { fields: imageUrls, append: appendImageUrl, remove: removeImageUrl } = useFieldArray({ control, name: 'imageUrls' });
-  const { fields: variants, append: appendVariant, remove: removeVariant } = useFieldArray({ control, name: 'variants' });
-
 
   const onSubmit: SubmitHandler<ProductFormData> = async (data) => {
     try {
@@ -109,7 +103,7 @@ function EditProductForm({ product }: { product: ProductWithId }) {
           <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Product</DialogTitle>
           <DialogDescription>
@@ -127,48 +121,17 @@ function EditProductForm({ product }: { product: ProductWithId }) {
             <Textarea id="description" {...register('description', { required: true })} />
           </div>
           <div className="space-y-2">
-            <Label>Product Images</Label>
-            <div className="space-y-2">
-                {imageUrls.map((field, index) => (
-                     <div key={field.id} className="flex items-center gap-2">
-                         <Input {...register(`imageUrls.${index}`)} readOnly />
-                         <Button type="button" variant="destructive" size="icon" onClick={() => removeImageUrl(index)}><Trash2 className="h-4 w-4" /></Button>
-                     </div>
-                ))}
-            </div>
-            <ImageUploadForm onUploadSuccess={(url) => appendImageUrl(url)} />
+            <Label>Product Image</Label>
+             {product.imageUrl && <Image src={product.imageUrl} alt={product.name} width={100} height={100} className='rounded-md aspect-square object-cover' />}
+            <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
           </div>
            <div className="space-y-2">
             <Label htmlFor="imageHint">Image Hint</Label>
             <Input id="imageHint" {...register('imageHint')} placeholder="e.g. 'wireless earbuds'" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="price">Price (in NGN)</Label>
+            <Label htmlFor="price">Price (in Coins)</Label>
             <Input id="price" type="number" {...register('price', { required: true, valueAsNumber: true })} />
-          </div>
-          <div className="space-y-4 rounded-lg border p-4">
-            <Label>Variants (e.g., Colors)</Label>
-            <div className="space-y-3">
-                {variants.map((field, index) => (
-                     <div key={field.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
-                         <div className="space-y-1">
-                             <Label className='text-xs'>Color Name</Label>
-                             <Input {...register(`variants.${index}.colorName`)} placeholder="e.g., Midnight Black"/>
-                         </div>
-                          <div className="space-y-1">
-                             <Label className='text-xs'>Color Hex</Label>
-                             <div className='flex items-center gap-2'>
-                                <Input {...register(`variants.${index}.colorHex`)} placeholder="#000000"/>
-                                <div className='h-8 w-8 rounded border' style={{backgroundColor: field.colorHex}}></div>
-                             </div>
-                         </div>
-                         <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)}><X className="h-4 w-4" /></Button>
-                     </div>
-                ))}
-            </div>
-             <Button type="button" variant="outline" size="sm" onClick={() => appendVariant({ colorName: '', colorHex: '#ffffff'})}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
-            </Button>
           </div>
           <DialogFooter>
             <DialogClose asChild>
@@ -192,26 +155,16 @@ function AddProductForm() {
     register,
     handleSubmit,
     reset,
-    control,
-    watch,
+    setValue,
     formState: { isSubmitting },
-  } = useForm<ProductFormData>({
-      defaultValues: {
-        imageUrls: [],
-        variants: [],
-      }
-  });
-
-  const { fields: imageUrls, append: appendImageUrl, remove: removeImageUrl } = useFieldArray({ control, name: 'imageUrls' });
-  const { fields: variants, append: appendVariant, remove: removeVariant } = useFieldArray({ control, name: 'variants' });
-  const watchedVariants = watch('variants');
+  } = useForm<ProductFormData>();
 
   const [error, setError] = useState<string | null>(null);
 
   const onSubmit: SubmitHandler<ProductFormData> = async (data) => {
     setError(null);
-    if (!data.imageUrls || data.imageUrls.length === 0) {
-      setError('Please upload at least one image for the product.');
+    if (!data.imageUrl) {
+      setError('Please upload an image for the product.');
       return;
     }
     try {
@@ -259,16 +212,8 @@ function AddProductForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Product Images</Label>
-             <div className="space-y-2">
-                {imageUrls.map((field, index) => (
-                     <div key={field.id} className="flex items-center gap-2">
-                         <Input {...register(`imageUrls.${index}`)} readOnly />
-                         <Button type="button" variant="destructive" size="icon" onClick={() => removeImageUrl(index)}><Trash2 className="h-4 w-4" /></Button>
-                     </div>
-                ))}
-            </div>
-            <ImageUploadForm onUploadSuccess={(url) => appendImageUrl(url)} />
+            <Label>Product Image</Label>
+            <ImageUploadForm onUploadSuccess={(url) => setValue('imageUrl', url, { shouldValidate: true })} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="imageHint">Image Hint</Label>
@@ -279,7 +224,7 @@ function AddProductForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="price">Price (in NGN)</Label>
+            <Label htmlFor="price">Price (in Coins)</Label>
             <Input
               id="price"
               type="number"
@@ -287,31 +232,6 @@ function AddProductForm() {
               defaultValue={10000}
             />
           </div>
-          <div className="space-y-4 rounded-lg border p-4">
-            <Label>Variants (e.g., Colors)</Label>
-            <div className="space-y-3">
-                {variants.map((field, index) => (
-                     <div key={field.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
-                         <div className="space-y-1">
-                             <Label className='text-xs'>Color Name</Label>
-                             <Input {...register(`variants.${index}.colorName`)} placeholder="e.g., Midnight Black"/>
-                         </div>
-                          <div className="space-y-1">
-                             <Label className='text-xs'>Color Hex</Label>
-                              <div className='flex items-center gap-2'>
-                                <Input {...register(`variants.${index}.colorHex`)} placeholder="#000000"/>
-                                <div className='h-8 w-8 rounded border' style={{backgroundColor: watchedVariants?.[index]?.colorHex}}></div>
-                             </div>
-                         </div>
-                         <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(index)}><X className="h-4 w-4" /></Button>
-                     </div>
-                ))}
-            </div>
-             <Button type="button" variant="outline" size="sm" onClick={() => appendVariant({ colorName: '', colorHex: '#ffffff' })}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Variant
-            </Button>
-          </div>
-
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Add Product
@@ -350,13 +270,6 @@ function ProductList() {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-    }).format(price);
-  };
-
   if (isLoading) {
     return <p>Loading products...</p>;
   }
@@ -371,7 +284,7 @@ function ProductList() {
           <Card key={product.id} className="group relative">
             <div className="relative aspect-square w-full overflow-hidden rounded-t-lg">
               <Image
-                src={product.imageUrls?.[0] || '/placeholder.png'}
+                src={product.imageUrl || '/placeholder.png'}
                 alt={product.name}
                 fill
                 className="object-cover"
@@ -379,8 +292,8 @@ function ProductList() {
             </div>
             <div className="p-4">
               <h3 className="font-semibold text-lg">{product.name}</h3>
-              <p className="text-sm text-muted-foreground">
-                {formatPrice(product.price)}
+              <p className="text-sm text-primary font-semibold">
+                {product.price.toLocaleString()} coins
               </p>
             </div>
             <div className="absolute top-2 right-2 flex gap-2">

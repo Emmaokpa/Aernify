@@ -161,7 +161,7 @@
     },
     "Product": {
       "title": "Product",
-      "description": "Represents a product available for purchase in the shop.",
+      "description": "Represents a product available for purchase with coins.",
       "type": "object",
       "properties": {
         "name": {
@@ -172,36 +172,21 @@
         },
         "price": {
           "type": "number",
-          "description": "Price in the local currency (e.g., NGN)."
+          "description": "Price in coins."
         },
-        "imageUrls": {
-          "type": "array",
-          "description": "A list of URLs for the product's images.",
-          "items": {
-            "type": "string",
-            "format": "uri"
-          }
+        "imageUrl": {
+          "type": "string",
+          "format": "uri"
         },
         "imageHint": {
           "type": "string"
-        },
-        "variants": {
-            "type": "array",
-            "description": "Different versions of the product, like colors.",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "colorName": { "type": "string"},
-                    "colorHex": { "type": "string"}
-                }
-            }
         }
       },
       "required": [
         "name",
         "description",
         "price",
-        "imageUrls"
+        "imageUrl"
       ]
     },
     "GiftCard": {

@@ -1,21 +1,32 @@
+
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, ChevronLeft, AlertTriangle } from 'lucide-react';
+import { Loader2, ChevronLeft, AlertTriangle, Coins } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import type { Product } from '@/lib/types';
-import { doc, writeBatch, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, writeBatch, collection, serverTimestamp, increment } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import PaystackPop from '@paystack/inline-js';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 
 const shippingSchema = z.object({
@@ -53,24 +64,36 @@ function CheckoutSkeleton() {
     )
 }
 
-function CheckoutForm({ product, user, profile, form, variantIndex }: { product: Product; user: any; profile: any; form: any, variantIndex: number }) {
+function CheckoutForm({ product, user, profile, form }: { product: Product; user: any; profile: any; form: any }) {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createOrderInFirestore = async (shippingValues: ShippingFormData) => {
+  const hasSufficientCoins = profile.coins >= product.price;
+
+  const handleCheckout: SubmitHandler<ShippingFormData> = async (shippingValues) => {
+    if (!hasSufficientCoins) {
+        toast({ variant: 'destructive', title: 'Insufficient Coins', description: `You need ${product.price.toLocaleString()} coins for this.` });
+        return;
+    }
+    
+    setIsSubmitting(true);
+
     try {
       const batch = writeBatch(firestore);
+      const userRef = doc(firestore, 'users', user.uid);
       const orderRef = doc(collection(firestore, 'orders'));
-
+      
+      batch.update(userRef, { coins: increment(-product.price) });
+      
       batch.set(orderRef, {
         userId: user.uid,
         userDisplayName: profile.displayName,
         productId: product.id,
         productName: product.name,
-        productImageUrl: product.imageUrls?.[0],
-        variant: product.variants?.[variantIndex],
-        coinsSpent: product.price, // This field represents the Naira amount paid
+        productImageUrl: product.imageUrl,
+        coinsSpent: product.price,
         shippingInfo: shippingValues,
         status: 'pending',
         orderedAt: serverTimestamp(),
@@ -82,52 +105,32 @@ function CheckoutForm({ product, user, profile, form, variantIndex }: { product:
       router.push('/shop');
     } catch (error) {
       console.error('Order placement error:', error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to save order after payment.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to place order.' });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
-  const handleCheckout = async () => {
-    const isFormValid = await form.trigger();
-    if (!isFormValid) {
-        toast({variant: 'destructive', title: 'Invalid Form', description: 'Please fill out all required shipping details.'});
-        return;
-    }
-
-    const paystack = new PaystackPop();
-    paystack.newTransaction({
-        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
-        email: form.getValues('email'),
-        amount: product.price * 100, // Amount in kobo
-        onSuccess: (transaction) => {
-            toast({ title: 'Payment Successful!', description: 'Creating your order...' });
-            createOrderInFirestore(form.getValues());
-        },
-        onCancel: () => {
-            toast({ variant: 'destructive', title: 'Payment Cancelled', description: 'The payment process was cancelled.' });
-        },
-    });
-  }
-
-  const selectedVariant = product.variants?.[variantIndex];
 
   return (
     <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleCheckout)}>
       <div className="grid md:grid-cols-2 gap-12">
         {/* Left Side: Product Info */}
         <div className="md:col-span-1 space-y-6">
           <h1 className="text-3xl font-bold">Your Order</h1>
           <Card className="overflow-hidden">
             <div className="relative aspect-square">
-              <Image src={product.imageUrls?.[variantIndex] || product.imageUrls?.[0] || '/placeholder.png'} alt={product.name} fill className="object-cover" />
+              <Image src={product.imageUrl || '/placeholder.png'} alt={product.name} fill className="object-cover" />
             </div>
             <CardHeader>
               <CardTitle>{product.name}</CardTitle>
-              {selectedVariant && <CardDescription>Color: {selectedVariant.colorName}</CardDescription>}
             </CardHeader>
             <CardContent className="flex justify-between items-center font-bold text-2xl">
               <span>Total Cost:</span>
               <div className='flex items-center gap-2 text-primary'>
-                <span>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(product.price)}</span>
+                <Coins className="w-7 h-7" />
+                <span>{product.price.toLocaleString()}</span>
               </div>
             </CardContent>
           </Card>
@@ -169,18 +172,39 @@ function CheckoutForm({ product, user, profile, form, variantIndex }: { product:
                     <FormItem><FormLabel>Postal Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
                   <FormField control={form.control} name="country" render={({ field }) => (
-                    <FormItem><FormLabel>Country</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Country</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Button onClick={handleCheckout} size="lg" className="w-full text-lg" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-            Proceed to Payment
-          </Button>
+          
+          <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="lg" className="w-full text-lg" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                  Confirm & Place Order
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Your Order</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will spend <span className="font-bold text-primary">{product.price.toLocaleString()}</span> coins from your balance. Are you sure you want to proceed?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={form.handleSubmit(handleCheckout)} disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Yes, Place Order
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
         </div>
       </div>
+      </form>
     </Form>
   );
 }
@@ -188,12 +212,10 @@ function CheckoutForm({ product, user, profile, form, variantIndex }: { product:
 
 export default function CheckoutPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const firestore = useFirestore();
   const { user, profile, isUserLoading } = useUser();
   const productId = params.productId as string;
-  const variantIndex = parseInt(searchParams.get('variant') || '0', 10);
 
   const productDocRef = useMemo(() => {
     if (!productId) return null;
@@ -252,7 +274,7 @@ export default function CheckoutPage() {
       <Button variant="outline" onClick={() => router.back()} className="mb-6">
         <ChevronLeft className="mr-2 h-4 w-4" /> Back to Shop
       </Button>
-      <CheckoutForm product={product} user={user} profile={profile} form={form} variantIndex={variantIndex} />
+      <CheckoutForm product={product} user={user} profile={profile} form={form} />
     </div>
   );
 }
