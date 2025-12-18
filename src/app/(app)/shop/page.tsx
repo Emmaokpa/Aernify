@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -10,15 +11,14 @@ import Image from 'next/image';
 
 function ProductSkeleton() {
   return (
-    <div className="relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-card border border-border shadow-lg shadow-background/20 w-full">
-       <div className="relative p-2 sm:p-2.5">
-        <Skeleton className="w-full object-cover aspect-square rounded-xl sm:rounded-2xl" />
-        <div className="mt-3 sm:mt-4 px-1 sm:px-1.5 pb-2 sm:pb-3 pt-1 sm:pt-2">
-            <Skeleton className="h-6 w-3/4 mb-2" />
-            <Skeleton className="h-4 w-full" />
-            <div className="mt-3 sm:mt-4 flex justify-between items-center">
-              <Skeleton className="h-5 w-1/4" />
-              <Skeleton className="h-6 w-1/3" />
+    <div className="relative group overflow-hidden rounded-xl bg-card border border-border shadow-sm w-full">
+       <div className="relative p-2">
+        <Skeleton className="w-full object-cover aspect-square rounded-lg" />
+        <div className="mt-2 px-1 pb-2">
+            <Skeleton className="h-5 w-3/4 mb-1.5" />
+            <Skeleton className="h-3 w-full mb-2" />
+            <div className="mt-2 flex justify-end items-center">
+              <Skeleton className="h-5 w-1/3" />
             </div>
         </div>
        </div>
@@ -50,7 +50,7 @@ export default function ShopPage() {
       />
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
         {isLoading &&
-          Array.from({ length: 5 }).map((_, i) => <ProductSkeleton key={i} />)}
+          Array.from({ length: 10 }).map((_, i) => <ProductSkeleton key={i} />)}
         
         {products?.map((product) => {
           return (
@@ -70,13 +70,12 @@ export default function ShopPage() {
 
                         {/* Card Content Section */}
                         <div className="mt-2 px-1 pb-2">
-                            <h3 className="text-sm font-bold text-foreground truncate" title={product.name}>
+                            <h3 className="text-xs font-bold text-foreground truncate" title={product.name}>
                                 {product.name}
                             </h3>
-                            <p className="text-xs text-muted-foreground mt-1 truncate">{product.description}</p>
-                            <div className="mt-2 flex justify-between items-center">
-                                <p className="text-xs font-bold text-muted-foreground">Price</p>
-                                <p className="text-base font-bold text-primary">{formatToNaira(product.price)}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1 truncate">{product.description}</p>
+                            <div className="mt-2 flex justify-end items-center">
+                                <p className="text-sm font-bold text-primary">{formatToNaira(product.price)}</p>
                             </div>
                         </div>
                     </div>
