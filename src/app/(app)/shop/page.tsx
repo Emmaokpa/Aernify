@@ -55,8 +55,8 @@ export default function ShopPage() {
         {products?.map((product) => {
           return (
              <Link href={`/shop/${product.id}`} key={product.id} className="block">
-                <div className="relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-card border border-border shadow-lg shadow-background/20 transition-all duration-300 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 hover:border-border/80 w-full">
-                    <div className="relative p-2 sm:p-2.5">
+                <div className="relative group overflow-hidden rounded-xl bg-card border border-border shadow-sm transition-all duration-300 hover:shadow-md hover:shadow-primary/20 hover:-translate-y-1 w-full">
+                    <div className="relative p-2">
                         {/* Card Image Section */}
                         <div className="relative">
                             <Image
@@ -64,19 +64,19 @@ export default function ShopPage() {
                                 alt={product.name}
                                 width={400}
                                 height={400}
-                                className="w-full h-auto rounded-xl sm:rounded-2xl object-cover aspect-square"
+                                className="w-full h-auto rounded-lg object-cover aspect-square"
                             />
                         </div>
 
                         {/* Card Content Section */}
-                        <div className="mt-3 sm:mt-4 px-1 sm:px-1.5 pb-2 sm:pb-3 pt-1 sm:pt-2">
-                            <h3 className="text-base sm:text-lg font-bold text-foreground truncate pr-2" title={product.name}>
+                        <div className="mt-2 px-1 pb-2">
+                            <h3 className="text-sm font-bold text-foreground truncate" title={product.name}>
                                 {product.name}
                             </h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">{product.description}</p>
-                            <div className="mt-3 sm:mt-4 flex justify-between items-center">
-                                <p className="text-xs sm:text-sm font-bold text-muted-foreground">Price</p>
-                                <p className="text-sm sm:text-lg font-bold text-primary">{formatToNaira(product.price)}</p>
+                            <p className="text-xs text-muted-foreground mt-1 truncate">{product.description}</p>
+                            <div className="mt-2 flex justify-between items-center">
+                                <p className="text-xs font-bold text-muted-foreground">Price</p>
+                                <p className="text-base font-bold text-primary">{formatToNaira(product.price)}</p>
                             </div>
                         </div>
                     </div>
