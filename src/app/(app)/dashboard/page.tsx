@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -10,7 +11,7 @@ import { ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Game } from '@/lib/types';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, doc, getDoc, serverTimestamp, setDoc, updateDoc, increment, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDoc, serverTimestamp, setDoc, writeBatch, increment } from 'firebase/firestore';
 import { incrementChallengeProgress } from '@/lib/challenges';
 import { getTodayString } from '@/lib/utils';
 import { differenceInCalendarDays } from 'date-fns';
@@ -35,26 +36,28 @@ export default function DashboardPage() {
   const { data: games, isLoading: isGamesLoading } = useCollection<Game>(gamesCollection);
 
   useEffect(() => {
-    if (isUserLoading || !user) {
+    if (isUserLoading || !user || !firestore) {
       return;
     }
 
     const checkDailyLogin = async () => {
       // Manually fetch the latest profile inside the effect to avoid dependency loop
-      const userDocRefForRead = doc(firestore, 'users', user.uid);
-      const profileSnap = await getDoc(userDocRefForRead);
+      // and ensure we have the most up-to-date streak and lastLoginDate info.
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const profileSnap = await getDoc(userDocRef);
       if (!profileSnap.exists()) return;
       const currentProfile = profileSnap.data();
 
 
       const todayStr = getTodayString();
-      const dailyLoginDocRef = doc(firestore, 'daily_logins', `${user.uid}_${todayStr}`);
+      const dailyLoginDocId = `${user.uid}_${todayStr}`;
+      const dailyLoginDocRef = doc(firestore, 'daily_logins', dailyLoginDocId);
       
       try {
         const docSnap = await getDoc(dailyLoginDocRef);
 
+        // Only proceed if the daily login for today has NOT been claimed.
         if (!docSnap.exists()) {
-          const userDocRef = doc(firestore, 'users', user.uid);
           const batch = writeBatch(firestore);
 
           let totalReward = DAILY_REWARD;
@@ -62,10 +65,10 @@ export default function DashboardPage() {
           let newStreak = 1;
           
           const lastLoginDate = currentProfile.lastLoginDate;
-          const today = new Date(todayStr);
-
+          
           if (lastLoginDate) {
               const lastLogin = new Date(lastLoginDate);
+              const today = new Date(todayStr);
               const daysDiff = differenceInCalendarDays(today, lastLogin);
 
               if (daysDiff === 1) {
@@ -75,9 +78,9 @@ export default function DashboardPage() {
                   // Streak broken
                   newStreak = 1;
               } else {
-                  // Already logged in today, but something went wrong. Let's be safe.
-                  newStreak = currentProfile.currentStreak || 1;
-                  return; // Exit if already logged in today
+                  // Already logged in today, but the daily_logins doc was missing.
+                  // Let's be safe and assume they logged in. Don't grant bonus again.
+                  return;
               }
           }
 
@@ -87,7 +90,7 @@ export default function DashboardPage() {
             totalReward += streakBonus;
           }
 
-          // Update user's profile
+          // Update user's profile with new coins, streak, and login date
           batch.update(userDocRef, { 
             coins: increment(totalReward),
             weeklyCoins: increment(totalReward),
@@ -95,14 +98,15 @@ export default function DashboardPage() {
             lastLoginDate: todayStr
           });
 
-          // Mark daily login as claimed
+          // Mark this daily login as claimed to prevent re-triggering
           batch.set(dailyLoginDocRef, { claimedAt: serverTimestamp() });
           
           await batch.commit();
 
-          // Also update challenge progress for daily check-in
+          // This will correctly update the "Daily Check-in" challenge progress
           await incrementChallengeProgress(firestore, user.uid, 'dailyCheckIn');
           
+          // Show the user their reward
           setModalState({ isOpen: true, reward: DAILY_REWARD, bonus: streakBonus, streak: newStreak });
         }
       } catch (error) {
@@ -110,11 +114,11 @@ export default function DashboardPage() {
       }
     };
 
-    // Check after a short delay to not be too intrusive
-    const timer = setTimeout(checkDailyLogin, 1500);
+    // Use a short delay to ensure the app is fully loaded before checking.
+    const timer = setTimeout(checkDailyLogin, 1000);
     return () => clearTimeout(timer);
 
-  }, [user, isUserLoading, firestore]);
+  }, [isUserLoading, user, firestore]);
 
   const heroGame = games?.[0];
   const isLoading = isGamesLoading || isUserLoading;
