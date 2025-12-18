@@ -15,6 +15,7 @@ function ProductSkeleton() {
         <Skeleton className="w-full object-cover aspect-square rounded-xl sm:rounded-2xl" />
         <div className="mt-3 sm:mt-4 px-1 sm:px-1.5 pb-2 sm:pb-3 pt-1 sm:pt-2">
             <Skeleton className="h-6 w-3/4 mb-2" />
+            <Skeleton className="h-4 w-full" />
             <div className="mt-3 sm:mt-4 flex justify-between items-center">
               <Skeleton className="h-5 w-1/4" />
               <Skeleton className="h-6 w-1/3" />
@@ -24,13 +25,6 @@ function ProductSkeleton() {
     </div>
   );
 }
-
-const NairaIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-        <path d="M6 3V12M18 12V21M6 12H18M6 12L18 21M6 3H18M6 21L18 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-);
-
 
 export default function ShopPage() {
   const firestore = useFirestore();
@@ -76,13 +70,10 @@ export default function ShopPage() {
 
                         {/* Card Content Section */}
                         <div className="mt-3 sm:mt-4 px-1 sm:px-1.5 pb-2 sm:pb-3 pt-1 sm:pt-2">
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-base sm:text-xl font-bold text-foreground truncate pr-2" title={product.name}>
-                                    {product.name}
-                                </h3>
-                                <NairaIcon className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground flex-shrink-0" />
-                            </div>
-
+                            <h3 className="text-base sm:text-xl font-bold text-foreground truncate pr-2" title={product.name}>
+                                {product.name}
+                            </h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">{product.description}</p>
                             <div className="mt-3 sm:mt-4 flex justify-between items-center">
                                 <p className="text-xs sm:text-sm font-bold text-muted-foreground">Price</p>
                                 <p className="text-sm sm:text-lg font-bold text-primary">{formatToNaira(product.price)}</p>

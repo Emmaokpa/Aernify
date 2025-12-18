@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import type { Product, ProductVariant } from '@/lib/types';
-import { doc, writeBatch, collection, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, writeBatch, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -62,7 +62,6 @@ function CheckoutSkeleton() {
 }
 
 function PaystackButton({ config, onTransactionComplete, onTransactionClose, disabled }: any) {
-  const { toast } = useToast();
   
   const handlePayment = () => {
     const handler = window.PaystackPop.setup({
@@ -99,7 +98,7 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
   }, [product]);
 
   const placeOrderInFirestore = async (shippingValues: ShippingFormData, transactionRef: string) => {
-     if (!selectedVariant) {
+     if (product.variants && product.variants.length > 0 && !selectedVariant) {
         toast({ variant: 'destructive', title: 'Error', description: 'Product variant not selected.' });
         return;
     }
@@ -109,11 +108,15 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
       const orderRef = doc(collection(firestore, 'orders'));
       const productRef = doc(firestore, 'products', product.id);
       
-      // Decrement stock for the selected variant
-      const newVariants = product.variants.map(v => 
-        v.color === selectedVariant.color ? { ...v, stock: v.stock - 1 } : v
-      );
-      batch.update(productRef, { variants: newVariants });
+      let finalVariant = selectedVariant;
+      
+      // Decrement stock if variants exist
+      if (product.variants && product.variants.length > 0 && finalVariant) {
+        const newVariants = product.variants.map(v => 
+          v.color === finalVariant!.color ? { ...v, stock: v.stock - 1 } : v
+        );
+        batch.update(productRef, { variants: newVariants });
+      }
       
       // Create the order
       batch.set(orderRef, {
@@ -121,8 +124,8 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
         userDisplayName: profile.displayName,
         productId: product.id,
         productName: product.name,
-        productImageUrl: selectedVariant.imageUrl,
-        selectedVariant: selectedVariant,
+        productImageUrl: finalVariant?.imageUrl || product.imageUrls[0],
+        selectedVariant: finalVariant,
         amountPaid: product.price,
         shippingInfo: shippingValues,
         status: 'pending',
@@ -172,7 +175,7 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
     };
     
     const handleFormSubmit: SubmitHandler<ShippingFormData> = (shippingValues) => {
-       if (!selectedVariant) {
+       if (product.variants && product.variants.length > 0 && !selectedVariant) {
         toast({ variant: 'destructive', title: 'Variant Not Selected', description: 'Please select a color for the product.' });
         return;
        }
@@ -187,16 +190,16 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
         {/* Left Side: Product Info */}
         <div className="md:col-span-1 space-y-6">
           <h1 className="text-3xl font-bold">Your Order</h1>
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden rounded-3xl">
             <div className="relative aspect-square">
               <Image src={selectedVariant?.imageUrl || product.imageUrls?.[0] || '/placeholder.png'} alt={product.name} fill className="object-cover" />
             </div>
-            <CardHeader>
-              <CardTitle>{product.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
+            <div className='p-6'>
+                <CardTitle>{product.name}</CardTitle>
+                <CardDescription className='mt-2 line-clamp-2'>{product.description}</CardDescription>
+                
                 {product.variants && product.variants.length > 0 && (
-                    <div className="mb-4">
+                    <div className="mt-4">
                         <Label>Color: {selectedVariant?.color}</Label>
                         <div className="flex items-center gap-2 mt-2">
                         {product.variants.map((variant) => (
@@ -223,13 +226,13 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
                          )}
                     </div>
                 )}
-                 <div className="flex justify-between items-center font-bold text-2xl">
-                    <span>Total Cost:</span>
+                 <div className="flex justify-between items-center font-bold text-2xl mt-6 border-t pt-4">
+                    <span>Total:</span>
                     <div className='flex items-center gap-2 text-primary'>
                         <span>{formatToNaira(product.price)}</span>
                     </div>
                 </div>
-            </CardContent>
+            </div>
           </Card>
         </div>
 
@@ -326,12 +329,13 @@ export default function CheckoutPage() {
       form.reset({
         email: profile.email || '',
         fullName: profile.displayName || '',
-        phoneNumber: '',
-        addressLine1: '',
-        addressLine2: '',
-        city: '',
-        state: '',
-        postalCode: '',
+        // keep other fields as they were, let the user fill them
+        phoneNumber: form.getValues('phoneNumber') || '',
+        addressLine1: form.getValues('addressLine1') || '',
+        addressLine2: form.getValues('addressLine2') || '',
+        city: form.getValues('city') || '',
+        state: form.getValues('state') || '',
+        postalCode: form.getValues('postalCode') || '',
         country: 'Nigeria',
       });
     }
