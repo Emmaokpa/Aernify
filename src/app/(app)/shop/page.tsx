@@ -48,7 +48,7 @@ export default function ShopPage() {
         title="Shop"
         description="Purchase real tech gadgets and watches. Shipping available within Nigeria."
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 md:gap-6 lg:gap-8">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
         {isLoading &&
           Array.from({ length: 5 }).map((_, i) => <ProductSkeleton key={i} />)}
         
@@ -70,7 +70,7 @@ export default function ShopPage() {
 
                         {/* Card Content Section */}
                         <div className="mt-3 sm:mt-4 px-1 sm:px-1.5 pb-2 sm:pb-3 pt-1 sm:pt-2">
-                            <h3 className="text-base sm:text-xl font-bold text-foreground truncate pr-2" title={product.name}>
+                            <h3 className="text-base sm:text-lg font-bold text-foreground truncate pr-2" title={product.name}>
                                 {product.name}
                             </h3>
                             <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">{product.description}</p>

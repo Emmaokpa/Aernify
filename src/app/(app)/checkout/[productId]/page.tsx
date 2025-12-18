@@ -189,56 +189,56 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
       <div className="grid md:grid-cols-2 gap-12">
         {/* Left Side: Product Info */}
         <div className="md:col-span-1 space-y-6">
-          <h1 className="text-2xl font-bold">Your Order</h1>
-          <Card className="overflow-hidden rounded-2xl bg-card/80">
-            <div className="relative aspect-square">
-              <Image src={selectedVariant?.imageUrl || product.imageUrls?.[0] || '/placeholder.png'} alt={product.name} fill className="object-cover" />
+          <h1 className="text-xl font-bold">Your Order</h1>
+           <div className="overflow-hidden rounded-2xl bg-card/80 border">
+              <div className="relative aspect-square">
+                <Image src={selectedVariant?.imageUrl || product.imageUrls?.[0] || '/placeholder.png'} alt={product.name} fill className="object-cover" />
+              </div>
+              <div className='p-6'>
+                  <h2 className="text-lg font-bold text-foreground">{product.name}</h2>
+                  <p className='mt-1 text-sm text-muted-foreground line-clamp-2'>{product.description}</p>
+                  
+                  {product.variants && product.variants.length > 0 && (
+                      <div className="mt-4">
+                          <Label>Color: {selectedVariant?.color}</Label>
+                          <div className="flex items-center gap-2 mt-2">
+                          {product.variants.map((variant) => (
+                              <button
+                              key={variant.color}
+                              type="button"
+                              onClick={() => setSelectedVariant(variant)}
+                              className={cn(
+                                  'w-8 h-8 rounded-full border-2 transition-all',
+                                  selectedVariant?.color === variant.color ? 'border-primary scale-110' : 'border-border',
+                                  variant.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                              )}
+                              style={{ backgroundColor: variant.colorHex }}
+                              title={variant.color}
+                              disabled={variant.stock === 0}
+                              />
+                          ))}
+                          </div>
+                           {selectedVariant && selectedVariant.stock < 10 && selectedVariant.stock > 0 && (
+                              <p className="text-xs text-amber-500 mt-2">Only {selectedVariant.stock} left in stock!</p>
+                           )}
+                           {selectedVariant && selectedVariant.stock === 0 && (
+                               <p className="text-xs text-destructive mt-2">Out of stock</p>
+                           )}
+                      </div>
+                  )}
+                   <div className="flex justify-between items-center font-bold text-lg mt-6 border-t pt-4">
+                      <span>Total:</span>
+                      <div className='flex items-center gap-2 text-primary'>
+                          <span>{formatToNaira(product.price)}</span>
+                      </div>
+                  </div>
+              </div>
             </div>
-            <div className='p-6'>
-                <h2 className="text-xl font-bold text-foreground">{product.name}</h2>
-                <p className='mt-2 text-sm text-muted-foreground line-clamp-2'>{product.description}</p>
-                
-                {product.variants && product.variants.length > 0 && (
-                    <div className="mt-4">
-                        <Label>Color: {selectedVariant?.color}</Label>
-                        <div className="flex items-center gap-2 mt-2">
-                        {product.variants.map((variant) => (
-                            <button
-                            key={variant.color}
-                            type="button"
-                            onClick={() => setSelectedVariant(variant)}
-                            className={cn(
-                                'w-8 h-8 rounded-full border-2 transition-all',
-                                selectedVariant?.color === variant.color ? 'border-primary scale-110' : 'border-border',
-                                variant.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''
-                            )}
-                            style={{ backgroundColor: variant.colorHex }}
-                            title={variant.color}
-                            disabled={variant.stock === 0}
-                            />
-                        ))}
-                        </div>
-                         {selectedVariant && selectedVariant.stock < 10 && selectedVariant.stock > 0 && (
-                            <p className="text-xs text-amber-500 mt-2">Only {selectedVariant.stock} left in stock!</p>
-                         )}
-                         {selectedVariant && selectedVariant.stock === 0 && (
-                             <p className="text-xs text-destructive mt-2">Out of stock</p>
-                         )}
-                    </div>
-                )}
-                 <div className="flex justify-between items-center font-bold text-xl mt-6 border-t pt-4">
-                    <span>Total:</span>
-                    <div className='flex items-center gap-2 text-primary'>
-                        <span>{formatToNaira(product.price)}</span>
-                    </div>
-                </div>
-            </div>
-          </Card>
         </div>
 
         {/* Right Side: Shipping Form */}
         <div className="md:col-span-1 space-y-6">
-          <h1 className="text-2xl font-bold">Shipping Details</h1>
+          <h1 className="text-xl font-bold">Shipping Details</h1>
           <Card>
             <CardContent className="pt-6">
               <div className="grid gap-6">
@@ -310,8 +310,8 @@ export default function CheckoutPage() {
   const form = useForm<ShippingFormData>({
     resolver: zodResolver(shippingSchema),
     defaultValues: {
-      email: '',
-      fullName: '',
+      email: profile?.email || '',
+      fullName: profile?.displayName || '',
       phoneNumber: '',
       addressLine1: '',
       addressLine2: '',

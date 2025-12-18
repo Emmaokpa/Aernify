@@ -132,8 +132,8 @@ export default function ProductDetailPage() {
 
         {/* Right Side: Product Details */}
         <div className="space-y-6">
-          <h1 className="text-3xl font-bold">{product.name}</h1>
-          <p className="text-2xl font-bold text-primary flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{product.name}</h1>
+          <p className="text-xl font-bold text-primary flex items-center gap-2">
             <span>{formatToNaira(product.price)}</span>
           </p>
           <div className="text-muted-foreground prose prose-invert">
