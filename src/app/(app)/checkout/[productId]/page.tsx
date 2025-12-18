@@ -189,14 +189,14 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
       <div className="grid md:grid-cols-2 gap-12">
         {/* Left Side: Product Info */}
         <div className="md:col-span-1 space-y-6">
-          <h1 className="text-3xl font-bold">Your Order</h1>
-          <Card className="overflow-hidden rounded-3xl">
+          <h1 className="text-2xl font-bold">Your Order</h1>
+          <Card className="overflow-hidden rounded-2xl bg-card/80">
             <div className="relative aspect-square">
               <Image src={selectedVariant?.imageUrl || product.imageUrls?.[0] || '/placeholder.png'} alt={product.name} fill className="object-cover" />
             </div>
             <div className='p-6'>
-                <CardTitle>{product.name}</CardTitle>
-                <CardDescription className='mt-2 line-clamp-2'>{product.description}</CardDescription>
+                <h2 className="text-xl font-bold text-foreground">{product.name}</h2>
+                <p className='mt-2 text-sm text-muted-foreground line-clamp-2'>{product.description}</p>
                 
                 {product.variants && product.variants.length > 0 && (
                     <div className="mt-4">
@@ -226,7 +226,7 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
                          )}
                     </div>
                 )}
-                 <div className="flex justify-between items-center font-bold text-2xl mt-6 border-t pt-4">
+                 <div className="flex justify-between items-center font-bold text-xl mt-6 border-t pt-4">
                     <span>Total:</span>
                     <div className='flex items-center gap-2 text-primary'>
                         <span>{formatToNaira(product.price)}</span>
@@ -238,7 +238,7 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
 
         {/* Right Side: Shipping Form */}
         <div className="md:col-span-1 space-y-6">
-          <h1 className="text-3xl font-bold">Shipping Details</h1>
+          <h1 className="text-2xl font-bold">Shipping Details</h1>
           <Card>
             <CardContent className="pt-6">
               <div className="grid gap-6">

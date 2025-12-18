@@ -132,8 +132,8 @@ export default function ProductDetailPage() {
 
         {/* Right Side: Product Details */}
         <div className="space-y-6">
-          <h1 className="text-4xl font-bold">{product.name}</h1>
-          <p className="text-3xl font-bold text-primary flex items-center gap-2">
+          <h1 className="text-3xl font-bold">{product.name}</h1>
+          <p className="text-2xl font-bold text-primary flex items-center gap-2">
             <span>{formatToNaira(product.price)}</span>
           </p>
           <div className="text-muted-foreground prose prose-invert">
@@ -142,7 +142,7 @@ export default function ProductDetailPage() {
           
           {product.variants && product.variants.length > 0 && (
             <div className="space-y-3">
-              <Label className="font-semibold text-lg">Color: <span className="text-muted-foreground">{selectedVariant?.color}</span></Label>
+              <Label className="font-semibold text-base">Color: <span className="text-muted-foreground">{selectedVariant?.color}</span></Label>
               <div className="flex items-center gap-2">
                 {product.variants.map((variant) => (
                   <button
@@ -168,7 +168,7 @@ export default function ProductDetailPage() {
           )}
 
           <Button size="lg" className="w-full text-lg" disabled={isOutOfStock} asChild>
-            <Link href={`/checkout/${product.id}`}>
+            <Link href={`/checkout/${productId}`}>
               {isOutOfStock ? 'Out of Stock' : 'Buy Now'}
             </Link>
           </Button>
