@@ -1,17 +1,16 @@
 'use client';
 import { useMemo } from 'react';
 import PageHeader from '@/components/page-header';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import Image from 'next/image';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import Image from 'next/image';
 
 function ProductSkeleton() {
   return (
-    <div className="relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-card border border-border shadow-lg shadow-background/20 w-full font-space-grotesk">
+    <div className="relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-card border border-border shadow-lg shadow-background/20 w-full">
        <div className="relative p-2 sm:p-2.5">
         <Skeleton className="w-full object-cover aspect-square rounded-xl sm:rounded-2xl" />
         <div className="mt-3 sm:mt-4 px-1 sm:px-1.5 pb-2 sm:pb-3 pt-1 sm:pt-2">
@@ -51,16 +50,11 @@ export default function ShopPage() {
 
   return (
     <>
-       <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap');
-          .font-space-grotesk { font-family: 'Space Grotesk', sans-serif; }
-        `}
-      </style>
       <PageHeader
         title="Shop"
         description="Purchase real tech gadgets and watches. Shipping available within Nigeria."
       />
-      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 md:gap-6 lg:gap-8 font-space-grotesk">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 md:gap-6 lg:gap-8">
         {isLoading &&
           Array.from({ length: 5 }).map((_, i) => <ProductSkeleton key={i} />)}
         
