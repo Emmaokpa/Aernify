@@ -21,6 +21,7 @@ import { claimChallengeReward } from '@/lib/challenges';
 import { getTodayString } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
 
 const challengeIcons: { [key: string]: React.ReactNode } = {
   dailyCheckIn: <Star />,
@@ -38,6 +39,86 @@ const getDifficultyClass = (difficulty: 'Easy' | 'Medium' | 'Hard') => {
         case 'Hard':
             return 'bg-red-600/20 text-red-400 border-red-600/30';
     }
+}
+
+const getChallengeLink = (type: DailyChallenge['type']): string | null => {
+    switch(type) {
+        case 'playGame':
+            return '/play';
+        case 'completeOffer':
+            return '/offers';
+        case 'watchAd':
+            return '/earn';
+        default:
+            return null;
+    }
+}
+
+function ChallengeCard({ challenge, onClaim, claimingId }: { challenge: any, onClaim: (challenge: DailyChallenge) => void, claimingId: string | null }) {
+    const cardContent = (
+        <Card
+            className={cn(
+            'bg-card/80 overflow-hidden rounded-2xl transition-all flex flex-col h-full',
+            challenge.isClaimed && 'bg-green-600/10 border-green-600/30'
+            )}
+        >
+            <CardHeader className="flex flex-row items-start gap-4 p-4">
+                <div className="w-12 h-12 flex items-center justify-center text-primary bg-primary/10 rounded-lg shrink-0">
+                    {challengeIcons[challenge.type] || <Sparkles />}
+                </div>
+                <div className='flex-grow'>
+                    <CardTitle className="text-lg">{challenge.title}</CardTitle>
+                    <CardDescription className="text-xs leading-tight mt-1">
+                        {challenge.description}
+                    </CardDescription>
+                </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 flex-grow">
+                    <div className="space-y-2">
+                    <Progress value={challenge.progress} className="h-2" />
+                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>
+                            Progress: {challenge.currentValue}/{challenge.targetValue}
+                        </span>
+                        <Badge variant="outline" className={cn('text-xs', getDifficultyClass(challenge.difficulty))}>{challenge.difficulty}</Badge>
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter className="p-4 bg-muted/20 flex-col items-stretch gap-4">
+                    <div className="font-bold text-primary flex items-center justify-center gap-1.5 text-lg w-full">
+                    <span>Reward:</span>
+                    <Coins className="w-5 h-5" />
+                    <span>{challenge.reward}</span>
+                </div>
+                    <Button
+                    className={cn("w-full", challenge.isClaimed && "bg-green-600 hover:bg-green-700")}
+                    disabled={!challenge.isCompleted || challenge.isClaimed || claimingId === challenge.id}
+                    size="sm"
+                    onClick={(e) => {
+                        e.preventDefault(); // Prevent link navigation when claiming
+                        onClaim(challenge);
+                    }}
+                >
+                    {claimingId === challenge.id ? (
+                    <Loader2 className='w-4 h-4 animate-spin' />
+                    ) : challenge.isClaimed ? (
+                    <>
+                        <CheckCircle className='w-4 h-4 mr-2' />
+                        Claimed
+                    </>
+                    ) : 'Claim'}
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+
+    const link = getChallengeLink(challenge.type);
+
+    if (link) {
+        return <Link href={link} className='block h-full'>{cardContent}</Link>
+    }
+    
+    return cardContent;
 }
 
 export default function ChallengesPage() {
@@ -132,58 +213,7 @@ export default function ChallengesPage() {
       />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {augmentedChallenges.map((challenge) => (
-          <Card
-            key={challenge.id}
-            className={cn(
-              'bg-card/80 overflow-hidden rounded-2xl transition-all flex flex-col',
-              challenge.isClaimed && 'bg-green-600/10 border-green-600/30'
-            )}
-          >
-            <CardHeader className="flex flex-row items-start gap-4 p-4">
-               <div className="w-12 h-12 flex items-center justify-center text-primary bg-primary/10 rounded-lg shrink-0">
-                  {challengeIcons[challenge.type] || <Sparkles />}
-                </div>
-                <div className='flex-grow'>
-                    <CardTitle className="text-lg">{challenge.title}</CardTitle>
-                    <CardDescription className="text-xs leading-tight mt-1">
-                        {challenge.description}
-                    </CardDescription>
-                </div>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 flex-grow">
-                 <div className="space-y-2">
-                    <Progress value={challenge.progress} className="h-2" />
-                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                        <span>
-                            Progress: {challenge.currentValue}/{challenge.targetValue}
-                        </span>
-                        <Badge variant="outline" className={cn('text-xs', getDifficultyClass(challenge.difficulty))}>{challenge.difficulty}</Badge>
-                    </div>
-                </div>
-            </CardContent>
-            <CardFooter className="p-4 bg-muted/20 flex-col items-stretch gap-4">
-                 <div className="font-bold text-primary flex items-center justify-center gap-1.5 text-lg w-full">
-                    <span>Reward:</span>
-                    <Coins className="w-5 h-5" />
-                    <span>{challenge.reward}</span>
-                </div>
-                 <Button
-                  className={cn("w-full", challenge.isClaimed && "bg-green-600 hover:bg-green-700")}
-                  disabled={!challenge.isCompleted || challenge.isClaimed || claimingId === challenge.id}
-                  size="sm"
-                  onClick={() => handleClaim(challenge)}
-                >
-                  {claimingId === challenge.id ? (
-                    <Loader2 className='w-4 h-4 animate-spin' />
-                  ) : challenge.isClaimed ? (
-                    <>
-                      <CheckCircle className='w-4 h-4 mr-2' />
-                      Claimed
-                    </>
-                  ) : 'Claim'}
-                </Button>
-            </CardFooter>
-          </Card>
+            <ChallengeCard key={challenge.id} challenge={challenge} onClaim={handleClaim} claimingId={claimingId} />
         ))}
         {augmentedChallenges.length === 0 && (
           <div className="text-muted-foreground col-span-full text-center py-10">
