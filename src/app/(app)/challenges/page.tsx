@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo, useState } from 'react';
 import PageHeader from '@/components/page-header';
@@ -59,7 +60,7 @@ function ChallengeCard({ challenge, onClaim, claimingId }: { challenge: any, onC
         <Card
             className={cn(
             'bg-card/80 overflow-hidden rounded-2xl transition-all flex flex-col h-full',
-            challenge.isClaimed && 'bg-green-600/10 border-green-600/30'
+            challenge.isClaimed && 'bg-amber-500/10 border-amber-500/30'
             )}
         >
             <CardHeader className="flex flex-row items-start gap-4 p-4">
@@ -91,7 +92,7 @@ function ChallengeCard({ challenge, onClaim, claimingId }: { challenge: any, onC
                     <span>{challenge.reward}</span>
                 </div>
                     <Button
-                    className={cn("w-full", challenge.isClaimed && "bg-green-600 hover:bg-green-700")}
+                    className={cn("w-full", challenge.isClaimed && "bg-amber-500 hover:bg-amber-600 text-black")}
                     disabled={!challenge.isCompleted || challenge.isClaimed || claimingId === challenge.id}
                     size="sm"
                     onClick={(e) => {
