@@ -8,6 +8,7 @@ import {
   collection,
   getDocs,
   query,
+  where,
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { DailyChallenge } from './types';
