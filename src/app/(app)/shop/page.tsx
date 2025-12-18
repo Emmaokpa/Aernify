@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -17,7 +18,7 @@ function ProductSkeleton() {
         <div className="mt-2 px-1 pb-2">
             <Skeleton className="h-5 w-3/4 mb-1.5" />
             <Skeleton className="h-3 w-full mb-2" />
-            <div className="mt-2 flex justify-end items-center">
+            <div className="mt-2 flex justify-start items-center">
               <Skeleton className="h-5 w-1/3" />
             </div>
         </div>
@@ -74,7 +75,7 @@ export default function ShopPage() {
                                 {product.name}
                             </h3>
                             <p className="text-[10px] text-muted-foreground mt-1 truncate">{product.description}</p>
-                            <div className="mt-2 flex justify-end items-center">
+                            <div className="mt-2 flex justify-start items-center">
                                 <p className="text-sm font-bold text-primary">{formatToNaira(product.price)}</p>
                             </div>
                         </div>
