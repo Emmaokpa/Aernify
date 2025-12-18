@@ -16,7 +16,7 @@ import { Coins, CheckCircle, Trophy, Sparkles, Gamepad2, Video, ListChecks, Star
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 import type { DailyChallenge, UserChallengeProgress } from '@/lib/types';
 import { claimChallengeReward } from '@/lib/challenges';
 import { getTodayString } from '@/lib/utils';
@@ -128,7 +128,12 @@ export default function ChallengesPage() {
   const { toast } = useToast();
   const [claimingId, setClaimingId] = useState<string | null>(null);
 
-  const challengesQuery = useMemo(() => collection(firestore, 'challenges'), [firestore]);
+  const challengesQuery = useMemo(() => {
+    if (!firestore) return null;
+    const today = getTodayString();
+    return query(collection(firestore, 'challenges'), where('date', '==', today));
+  }, [firestore]);
+  
   const { data: challenges, isLoading: isLoadingChallenges } = useCollection<DailyChallenge>(challengesQuery);
 
   const progressDocId = useMemo(() => {

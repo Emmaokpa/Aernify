@@ -15,10 +15,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
-import { Loader2, Trash2, Pencil, Sparkles, Trophy } from 'lucide-react';
+import { Loader2, Trash2, Pencil, Sparkles, Trophy, CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import type { DailyChallenge } from '@/lib/types';
 import {
   AlertDialog,
@@ -42,6 +42,10 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn, getTodayString } from '@/lib/utils';
 
 type ChallengeFormData = Omit<DailyChallenge, 'id' | 'icon'>;
 type ChallengeWithId = DailyChallenge & { id: string };
@@ -61,6 +65,7 @@ function EditChallengeForm({ challenge }: { challenge: ChallengeWithId }) {
       ...challenge,
       reward: Number(challenge.reward),
       targetValue: Number(challenge.targetValue),
+      date: challenge.date,
     },
   });
 
@@ -70,7 +75,7 @@ function EditChallengeForm({ challenge }: { challenge: ChallengeWithId }) {
       await updateDoc(challengeDocRef, {
           ...data,
           reward: Number(data.reward),
-          targetValue: Number(data.targetValue)
+          targetValue: Number(data.targetValue),
       });
       toast({
         title: 'Challenge Updated!',
@@ -161,6 +166,37 @@ function EditChallengeForm({ challenge }: { challenge: ChallengeWithId }) {
               <Input id="reward" type="number" {...register('reward', { required: true, valueAsNumber: true })} />
             </div>
           </div>
+          <div className="space-y-2">
+              <Label>Date</Label>
+               <Controller
+                control={control}
+                name="date"
+                render={({ field }) => (
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <Button
+                            variant={"outline"}
+                            className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                            )}
+                        >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                        <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(field.value) : new Date()}
+                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                            initialFocus
+                        />
+                        </PopoverContent>
+                    </Popover>
+                )}
+              />
+          </div>
           <DialogFooter>
              <DialogClose asChild>
                 <Button type="button" variant="secondary">Cancel</Button>
@@ -185,7 +221,11 @@ function AddChallengeForm() {
     reset,
     control,
     formState: { isSubmitting },
-  } = useForm<ChallengeFormData>();
+  } = useForm<ChallengeFormData>({
+    defaultValues: {
+        date: getTodayString()
+    }
+  });
 
   const onSubmit: SubmitHandler<ChallengeFormData> = async (data) => {
     try {
@@ -199,7 +239,7 @@ function AddChallengeForm() {
         title: 'Challenge Added!',
         description: `"${data.title}" has been added to the daily challenges.`,
       });
-      reset({ title: '', description: '', reward: 0, targetValue: 1 });
+      reset({ title: '', description: '', reward: 0, targetValue: 1, date: getTodayString() });
     } catch (err: any) {
       console.error(err);
       toast({
@@ -277,6 +317,37 @@ function AddChallengeForm() {
               <Input id="reward" type="number" {...register('reward', { required: true, valueAsNumber: true })} defaultValue={10}/>
             </div>
           </div>
+          <div className="space-y-2">
+              <Label>Date</Label>
+              <Controller
+                control={control}
+                name="date"
+                render={({ field }) => (
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <Button
+                            variant={"outline"}
+                            className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                            )}
+                        >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
+                        </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                        <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(field.value) : new Date()}
+                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                            initialFocus
+                        />
+                        </PopoverContent>
+                    </Popover>
+                )}
+              />
+          </div>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Add Challenge
@@ -313,6 +384,8 @@ function ChallengeList() {
   if (isLoading) {
     return <p>Loading challenges...</p>;
   }
+  
+  const sortedChallenges = challenges?.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
     <Card>
@@ -320,7 +393,7 @@ function ChallengeList() {
         <CardTitle>Existing Challenges</CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {challenges?.map((challenge) => (
+        {sortedChallenges?.map((challenge) => (
           <Card key={challenge.id} className="group relative">
             <div className="p-4">
               <div className="flex justify-between items-start">
@@ -335,6 +408,7 @@ function ChallengeList() {
               </div>
               <p className="text-sm text-muted-foreground mt-1">{challenge.description}</p>
               <p className="text-xs text-muted-foreground mt-2">Type: {challenge.type} / Target: {challenge.targetValue}</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-2">Date: {format(new Date(challenge.date), "PPP")}</p>
             </div>
             <div className="absolute top-2 right-2 flex gap-2">
                <EditChallengeForm challenge={challenge} />

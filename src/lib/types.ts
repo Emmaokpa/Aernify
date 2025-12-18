@@ -22,6 +22,7 @@ export type DailyChallenge = {
     difficulty: 'Easy' | 'Medium' | 'Hard';
     type: 'watchAd' | 'playGame' | 'completeOffer' | 'dailyCheckIn';
     targetValue: number;
+    date: string; // YYYY-MM-DD
     icon?: React.ReactNode;
 };
 

@@ -377,6 +377,11 @@
         },
         "targetValue": {
           "type": "number"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The date for which this challenge is active, in YYYY-MM-DD format."
         }
       },
       "required": [
@@ -385,7 +390,8 @@
         "reward",
         "difficulty",
         "type",
-        "targetValue"
+        "targetValue",
+        "date"
       ]
     },
     "UserChallengeProgress": {
