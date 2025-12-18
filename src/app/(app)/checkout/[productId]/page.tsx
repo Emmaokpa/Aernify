@@ -61,7 +61,7 @@ function CheckoutSkeleton() {
     )
 }
 
-function PaystackButton({ config, onTransactionComplete, onTransactionClose }: any) {
+function PaystackButton({ config, onTransactionComplete, onTransactionClose, disabled }: any) {
   const { toast } = useToast();
   
   const handlePayment = () => {
@@ -78,9 +78,9 @@ function PaystackButton({ config, onTransactionComplete, onTransactionClose }: a
   }
 
   return (
-    <Button type="button" onClick={handlePayment} size="lg" className="w-full text-lg" disabled={config.disabled}>
+    <Button type="button" onClick={handlePayment} size="lg" className="w-full text-lg" disabled={disabled || config.isSubmitting}>
       {config.isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-      {config.disabled && !config.isSubmitting ? 'Out of Stock' : 'Proceed to Payment'}
+      {disabled && !config.isSubmitting ? 'Out of Stock' : 'Proceed to Payment'}
     </Button>
   );
 }
@@ -141,7 +141,8 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
   };
 
   const handleSuccess = (transaction: any) => {
-    placeOrderInFirestore(form.getValues(), transaction.reference);
+    setIsSubmitting(true);
+    placeOrderInFirestore(form.getValues(), transaction.reference).finally(() => setIsSubmitting(false));
   };
 
   const handleClose = () => {
@@ -167,7 +168,6 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
             },
         ],
       },
-      disabled: isSubmitting || selectedVariant?.stock === 0,
       isSubmitting: isSubmitting,
     };
     
@@ -280,6 +280,7 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
               config={config}
               onTransactionComplete={handleSuccess}
               onTransactionClose={handleClose}
+              disabled={selectedVariant?.stock === 0}
           />
         </div>
       </div>
@@ -306,23 +307,31 @@ export default function CheckoutPage() {
   const form = useForm<ShippingFormData>({
     resolver: zodResolver(shippingSchema),
     defaultValues: {
-      email: profile?.email || '',
-      fullName: profile?.displayName || '',
+      email: '',
+      fullName: '',
       phoneNumber: '',
       addressLine1: '',
       addressLine2: '',
       city: '',
       state: '',
       postalCode: '',
-      country: 'Nigeria', // Default to Nigeria
+      country: 'Nigeria',
     },
   });
   
    useEffect(() => {
+    // When the user profile loads, reset the form with the user's data.
+    // This pre-fills the form and prevents the controlled/uncontrolled warning.
     if (profile) {
       form.reset({
         email: profile.email || '',
         fullName: profile.displayName || '',
+        phoneNumber: '',
+        addressLine1: '',
+        addressLine2: '',
+        city: '',
+        state: '',
+        postalCode: '',
         country: 'Nigeria',
       });
     }
