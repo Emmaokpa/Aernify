@@ -1,13 +1,16 @@
 'use client';
 import {
   doc,
+  getDoc,
   increment,
   writeBatch,
   serverTimestamp,
-  Timestamp,
+  collection,
+  getDocs,
+  query,
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
-import type { UserProfile, DailyChallenge, UserChallengeProgress } from './types';
+import type { DailyChallenge } from './types';
 import { getTodayString } from './utils';
 
 // Helper function to create or get the daily progress document reference
@@ -25,18 +28,38 @@ export const incrementChallengeProgress = async (
 ) => {
   const progressDocRef = getProgressDocRef(firestore, userId);
 
-  const batch = writeBatch(firestore);
-
-  const progressUpdate = {
-    [`progress.${challengeType}.currentValue`]: increment(amount),
-    date: getTodayString(),
-  };
-
-  // Use set with merge to create the document if it doesn't exist, and update if it does.
-  batch.set(progressDocRef, progressUpdate, { merge: true });
-
   try {
+    const batch = writeBatch(firestore);
+
+    // Get all challenges of the specified type that are not yet claimed for today.
+    const challengesQuery = query(collection(firestore, 'challenges'), where('type', '==', challengeType));
+    const progressSnap = await getDoc(progressDocRef);
+    const progressData = progressSnap.data();
+
+    const challengesSnap = await getDocs(challengesQuery);
+    
+    // We must ensure the progress document exists before we can update it with increments.
+    // If it doesn't exist, we initialize it.
+    if (!progressSnap.exists()) {
+       batch.set(progressDocRef, { date: getTodayString(), progress: {} }, { merge: true });
+    }
+
+    challengesSnap.forEach((challengeDoc) => {
+      const challenge = { ...challengeDoc.data(), id: challengeDoc.id } as DailyChallenge;
+      const isClaimed = progressData?.progress?.[challenge.id]?.claimed ?? false;
+
+      // Only increment progress for challenges that haven't been claimed yet.
+      if (!isClaimed) {
+        const progressUpdate = {
+          [`progress.${challenge.id}.currentValue`]: increment(amount),
+        };
+         // Use update here since we've ensured the doc exists
+        batch.update(progressDocRef, progressUpdate);
+      }
+    });
+
     await batch.commit();
+
   } catch (error) {
     console.error(`Failed to increment challenge progress for ${challengeType}:`, error);
   }
@@ -62,9 +85,8 @@ export const claimChallengeReward = async (
     const progressUpdate = {
         [`progress.${challenge.id}.claimed`]: true,
     };
+    // Use update, assuming the progress doc must exist to claim.
     batch.update(progressDocRef, progressUpdate);
 
     await batch.commit();
 };
-
-    

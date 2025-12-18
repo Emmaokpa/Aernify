@@ -170,13 +170,11 @@ export default function ChallengesPage() {
     if (!challenges) return [];
     
     return challenges.map(challenge => {
-        // Correctly get progress for the challenge *type*
-        const typeProgressValue = progressData?.progress?.[challenge.type]?.currentValue ?? 0;
-        
-        // The claimed status is specific to the challenge *ID*
-        const isClaimed = progressData?.progress?.[challenge.id]?.claimed ?? false;
+        // Get progress for this specific challenge ID
+        const challengeProgress = progressData?.progress?.[challenge.id];
+        const currentValue = challengeProgress?.currentValue ?? 0;
+        const isClaimed = challengeProgress?.claimed ?? false;
 
-        const currentValue = typeProgressValue;
         const isCompleted = currentValue >= challenge.targetValue;
 
         return {
