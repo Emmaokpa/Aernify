@@ -9,9 +9,10 @@ import {
   getDocs,
   query,
   where,
+  setDoc,
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
-import type { DailyChallenge } from './types';
+import type { DailyChallenge, UserChallengeProgress } from './types';
 import { getTodayString } from './utils';
 
 // Helper function to create or get the daily progress document reference
@@ -31,46 +32,53 @@ export const incrementChallengeProgress = async (
   const todayStr = getTodayString();
 
   try {
-    const batch = writeBatch(firestore);
-
-    // 1. Get ALL challenges for today.
-    const allTodayChallengesQuery = query(
+    // 1. Get ALL of today's challenges from the `challenges` collection.
+    const challengesQuery = query(
       collection(firestore, 'challenges'),
       where('date', '==', todayStr)
     );
-    const challengesSnap = await getDocs(allTodayChallengesQuery);
+    const challengesSnap = await getDocs(challengesQuery);
 
     if (challengesSnap.empty) {
       return; // No challenges for today, nothing to do.
     }
 
-    // 2. Ensure the user's progress document for today exists.
+    // 2. Get the user's current progress document for today.
     const progressSnap = await getDoc(progressDocRef);
-    if (!progressSnap.exists()) {
-      batch.set(progressDocRef, { date: todayStr, progress: {} });
-    }
-    const progressData = progressSnap.data();
+    const progressData: UserChallengeProgress = (progressSnap.data() as UserChallengeProgress) || {
+      date: todayStr,
+      progress: {},
+    };
 
-    // 3. Iterate through today's challenges and update only the ones that match the type.
+    let wasUpdated = false;
+
+    // 3. Iterate through today's challenges and update the progress object in memory.
     challengesSnap.forEach((challengeDoc) => {
       const challenge = { ...challengeDoc.data(), id: challengeDoc.id } as DailyChallenge;
 
       // Check if the challenge type matches the one we want to increment.
       if (challenge.type === challengeType) {
-        const isClaimed = progressData?.progress?.[challenge.id]?.claimed ?? false;
-
+        const isClaimed = progressData.progress?.[challenge.id]?.claimed ?? false;
+        
         // Only increment progress for challenges that haven't been claimed yet.
         if (!isClaimed) {
-          const progressUpdate = {
-            [`progress.${challenge.id}.currentValue`]: increment(amount),
-          };
-          // Use update, assuming the doc exists or was just created in the batch.
-          batch.update(progressDocRef, progressUpdate);
+          const currentValue = progressData.progress?.[challenge.id]?.currentValue ?? 0;
+          
+          if (!progressData.progress[challenge.id]) {
+            progressData.progress[challenge.id] = { currentValue: 0, claimed: false };
+          }
+          
+          progressData.progress[challenge.id].currentValue = currentValue + amount;
+          wasUpdated = true;
         }
       }
     });
 
-    await batch.commit();
+    // 4. If any progress was updated, write the entire new progress object back to Firestore.
+    if (wasUpdated) {
+      await setDoc(progressDocRef, progressData, { merge: true });
+    }
+
   } catch (error) {
     console.error(`Failed to increment challenge progress for ${challengeType}:`, error);
   }
