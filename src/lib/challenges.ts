@@ -33,34 +33,40 @@ export const incrementChallengeProgress = async (
   try {
     const batch = writeBatch(firestore);
 
-    // Get all challenges of the specified type FOR TODAY.
-    const challengesQuery = query(
+    // 1. Get ALL challenges for today.
+    const allTodayChallengesQuery = query(
       collection(firestore, 'challenges'),
-      where('type', '==', challengeType),
-      where('date', '==', todayStr) // This is the crucial fix
+      where('date', '==', todayStr)
     );
-    const progressSnap = await getDoc(progressDocRef);
-    const progressData = progressSnap.data();
+    const challengesSnap = await getDocs(allTodayChallengesQuery);
 
-    const challengesSnap = await getDocs(challengesQuery);
-
-    // We must ensure the progress document exists before we can update it with increments.
-    // If it doesn't exist, we initialize it.
-    if (!progressSnap.exists()) {
-      batch.set(progressDocRef, { date: todayStr, progress: {} }, { merge: true });
+    if (challengesSnap.empty) {
+      return; // No challenges for today, nothing to do.
     }
 
+    // 2. Ensure the user's progress document for today exists.
+    const progressSnap = await getDoc(progressDocRef);
+    if (!progressSnap.exists()) {
+      batch.set(progressDocRef, { date: todayStr, progress: {} });
+    }
+    const progressData = progressSnap.data();
+
+    // 3. Iterate through today's challenges and update only the ones that match the type.
     challengesSnap.forEach((challengeDoc) => {
       const challenge = { ...challengeDoc.data(), id: challengeDoc.id } as DailyChallenge;
-      const isClaimed = progressData?.progress?.[challenge.id]?.claimed ?? false;
 
-      // Only increment progress for challenges that haven't been claimed yet.
-      if (!isClaimed) {
-        const progressUpdate = {
-          [`progress.${challenge.id}.currentValue`]: increment(amount),
-        };
-        // Use update here since we've ensured the doc exists
-        batch.update(progressDocRef, progressUpdate);
+      // Check if the challenge type matches the one we want to increment.
+      if (challenge.type === challengeType) {
+        const isClaimed = progressData?.progress?.[challenge.id]?.claimed ?? false;
+
+        // Only increment progress for challenges that haven't been claimed yet.
+        if (!isClaimed) {
+          const progressUpdate = {
+            [`progress.${challenge.id}.currentValue`]: increment(amount),
+          };
+          // Use update, assuming the doc exists or was just created in the batch.
+          batch.update(progressDocRef, progressUpdate);
+        }
       }
     });
 
