@@ -6,7 +6,7 @@ import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { Coins, Loader2 } from 'lucide-react';
+import { Coins, Loader2, Construction } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -26,13 +26,14 @@ import { doc, updateDoc, increment, collection, writeBatch, serverTimestamp } fr
 
 export default function RedeemPage() {
   const { toast } = useToast();
-  const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
+  // const [isRedeeming, setIsRedeeming] = useState<string | null>(null);
   const { user, profile, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const giftCardsCollection = useMemo(() => collection(firestore, 'giftCards'), [firestore]);
-  const { data: giftCards, isLoading: isLoadingGiftCards } = useCollection<GiftCard>(giftCardsCollection);
+  // const giftCardsCollection = useMemo(() => collection(firestore, 'giftCards'), [firestore]);
+  // const { data: giftCards, isLoading: isLoadingGiftCards } = useCollection<GiftCard>(giftCardsCollection);
 
+  /*
   const handleRedeem = async (card: GiftCard) => {
     if (!user || !profile) return;
 
@@ -88,8 +89,9 @@ export default function RedeemPage() {
       setIsRedeeming(null);
     }
   };
+  */
 
-  const isLoading = isUserLoading || isLoadingGiftCards;
+  // const isLoading = isUserLoading || isLoadingGiftCards;
   
   return (
     <>
@@ -108,6 +110,18 @@ export default function RedeemPage() {
             )}
           </div>
         </div>
+
+      <div className="text-center py-20 rounded-lg bg-card border">
+        <Construction className="mx-auto h-16 w-16 text-muted-foreground" />
+        <h3 className="mt-4 text-xl font-semibold">Coming Soon!</h3>
+        <p className="mt-2 text-muted-foreground">
+          The gift card redemption feature is currently under construction.
+          <br />
+          Check back later for exciting rewards!
+        </p>
+      </div>
+
+      {/* 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {isLoading && Array.from({length: 4}).map((_, i) => (
            <Skeleton key={i} className="aspect-[4/4.5] rounded-2xl" />
@@ -166,6 +180,7 @@ export default function RedeemPage() {
           )
         })}
       </div>
+      */}
     </>
   );
 }
