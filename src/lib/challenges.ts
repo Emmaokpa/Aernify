@@ -28,21 +28,26 @@ export const incrementChallengeProgress = async (
   amount = 1
 ) => {
   const progressDocRef = getProgressDocRef(firestore, userId);
+  const todayStr = getTodayString();
 
   try {
     const batch = writeBatch(firestore);
 
-    // Get all challenges of the specified type that are not yet claimed for today.
-    const challengesQuery = query(collection(firestore, 'challenges'), where('type', '==', challengeType));
+    // Get all challenges of the specified type FOR TODAY.
+    const challengesQuery = query(
+      collection(firestore, 'challenges'),
+      where('type', '==', challengeType),
+      where('date', '==', todayStr) // This is the crucial fix
+    );
     const progressSnap = await getDoc(progressDocRef);
     const progressData = progressSnap.data();
 
     const challengesSnap = await getDocs(challengesQuery);
-    
+
     // We must ensure the progress document exists before we can update it with increments.
     // If it doesn't exist, we initialize it.
     if (!progressSnap.exists()) {
-       batch.set(progressDocRef, { date: getTodayString(), progress: {} }, { merge: true });
+      batch.set(progressDocRef, { date: todayStr, progress: {} }, { merge: true });
     }
 
     challengesSnap.forEach((challengeDoc) => {
@@ -54,13 +59,12 @@ export const incrementChallengeProgress = async (
         const progressUpdate = {
           [`progress.${challenge.id}.currentValue`]: increment(amount),
         };
-         // Use update here since we've ensured the doc exists
+        // Use update here since we've ensured the doc exists
         batch.update(progressDocRef, progressUpdate);
       }
     });
 
     await batch.commit();
-
   } catch (error) {
     console.error(`Failed to increment challenge progress for ${challengeType}:`, error);
   }
@@ -76,9 +80,9 @@ export const claimChallengeReward = async (
 
     // 1. Update user's coins
     const userRef = doc(firestore, 'users', userId);
-    batch.update(userRef, { 
+    batch.update(userRef, {
       coins: increment(challenge.reward),
-      weeklyCoins: increment(challenge.reward) 
+      weeklyCoins: increment(challenge.reward)
     });
 
     // 2. Mark challenge as claimed for the day
