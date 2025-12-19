@@ -385,7 +385,11 @@ function ChallengeList() {
     return <p>Loading challenges...</p>;
   }
   
-  const sortedChallenges = challenges?.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const sortedChallenges = challenges?.sort((a, b) => {
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return new Date(b.date).getTime() - new Date(a.date).getTime()
+  });
 
   return (
     <Card>
@@ -408,7 +412,7 @@ function ChallengeList() {
               </div>
               <p className="text-sm text-muted-foreground mt-1">{challenge.description}</p>
               <p className="text-xs text-muted-foreground mt-2">Type: {challenge.type} / Target: {challenge.targetValue}</p>
-              <p className="text-xs font-semibold text-muted-foreground mt-2">Date: {format(new Date(challenge.date.replace(/-/g, '/')), "PPP")}</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-2">Date: {challenge.date ? format(new Date(challenge.date.replace(/-/g, '/')), "PPP") : "No Date"}</p>
             </div>
             <div className="absolute top-2 right-2 flex gap-2">
                <EditChallengeForm challenge={challenge} />
