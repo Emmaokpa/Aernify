@@ -182,7 +182,7 @@ function EditChallengeForm({ challenge }: { challenge: ChallengeWithId }) {
                             )}
                         >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                            {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
                         </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
@@ -408,7 +408,7 @@ function ChallengeList() {
               </div>
               <p className="text-sm text-muted-foreground mt-1">{challenge.description}</p>
               <p className="text-xs text-muted-foreground mt-2">Type: {challenge.type} / Target: {challenge.targetValue}</p>
-              <p className="text-xs font-semibold text-muted-foreground mt-2">Date: {format(new Date(challenge.date), "PPP")}</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-2">Date: {format(new Date(challenge.date.replace(/-/g, '/')), "PPP")}</p>
             </div>
             <div className="absolute top-2 right-2 flex gap-2">
                <EditChallengeForm challenge={challenge} />
