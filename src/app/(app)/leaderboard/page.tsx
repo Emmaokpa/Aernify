@@ -84,7 +84,7 @@ function TopPlayerCard({
           )}
         >
           <AvatarImage src={user.avatarUrl} alt={user.name} />
-          <AvatarFallback>{user.name?.charAt(0) ?? '?'}</AvatarFallback>
+          <AvatarFallback>{user.name?.charAt(0)?.toUpperCase() ?? '?'}</AvatarFallback>
         </Avatar>
         <p className="text-xl font-bold">{user.name}</p>
         <p className="text-2xl font-bold text-primary mt-2 flex items-center justify-center gap-2">
@@ -118,7 +118,7 @@ function RankedUser({
       </div>
       <Avatar className="w-10 h-10 mx-4">
         <AvatarImage src={user.avatarUrl} alt={user.name} />
-        <AvatarFallback>{user.name?.charAt(0) ?? '?'}</AvatarFallback>
+        <AvatarFallback>{user.name?.charAt(0)?.toUpperCase() ?? '?'}</AvatarFallback>
       </Avatar>
       <p className="font-semibold flex-grow">{user.name}</p>
       <div className="font-bold text-primary flex items-center gap-1.5">
@@ -193,8 +193,8 @@ export default function LeaderboardPage() {
           <CardContent className='p-6 text-center'>
             <div className='max-w-md mx-auto'>
                 <Award className='w-12 h-12 mx-auto text-primary mb-2' />
-                <h3 className='text-lg font-bold text-primary-foreground'>Weekly Champion's Prize</h3>
-                <p className='text-muted-foreground'>The #1 player at the end of the week wins a <span className='font-bold text-primary-foreground'>$50 Gift Card</span>. Do you have what it takes?</p>
+                <h3 className='text-lg font-bold text-foreground'>Weekly Champion's Prize</h3>
+                <p className='text-muted-foreground'>The #1 player at the end of the week wins a <span className='font-bold text-primary'>$50 Gift Card</span>. Do you have what it takes?</p>
             </div>
           </CardContent>
       </Card>
