@@ -204,7 +204,7 @@ export default function LeaderboardPage() {
             <div className='max-w-md mx-auto'>
                 <Award className='w-12 h-12 mx-auto text-primary mb-2' />
                 <h3 className='text-xl font-bold text-foreground'>Weekly Champion's Prize</h3>
-                <p className='text-muted-foreground'>The #1 player at the end of the week wins a <span className='font-bold text-primary'>$50 Gift Card</span>. Do you have what it takes?</p>
+                <p className='text-muted-foreground'>The #1 player at the end of the week with over <span className='font-bold text-primary'>30,000 coins</span> wins a <span className='font-bold text-primary'>$50 Gift Card</span>. Do you have what it takes?</p>
             </div>
           </CardContent>
       </Card>
