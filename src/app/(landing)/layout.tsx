@@ -8,10 +8,10 @@ const LandingHeader = () => {
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <Logo href="/" />
         <div className="flex items-center gap-2">
-          <Button variant="ghost" asChild>
+          <Button variant="ghost" size="sm" asChild>
             <Link href="/login">Sign In</Link>
           </Button>
-          <Button asChild>
+          <Button asChild size="sm">
             <Link href="/signup">Get Started</Link>
           </Button>
         </div>
