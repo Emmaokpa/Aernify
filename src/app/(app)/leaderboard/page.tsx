@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from '@/components/page-header';
@@ -153,7 +154,7 @@ export default function LeaderboardPage() {
             user: {
                 id: user.uid,
                 name: user.displayName || 'Anonymous',
-                avatarUrl: user.photoURL || `https://api.dicebear.com/8.x/bottts/svg?seed=${user.uid}`
+                avatarUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`
             }
         }));
     }, [users]);
@@ -175,7 +176,7 @@ export default function LeaderboardPage() {
       user: {
         id: currentUserAuth.uid,
         name: currentUserProfile.displayName || 'Anonymous',
-        avatarUrl: currentUserProfile.photoURL || `https://api.dicebear.com/8.x/bottts/svg?seed=${currentUserAuth.uid}`
+        avatarUrl: currentUserProfile.photoURL || `https://i.pravatar.cc/150?u=${currentUserAuth.uid}`
       }
     };
   }, [currentUserProfile, currentUserAuth]);
@@ -192,8 +193,8 @@ export default function LeaderboardPage() {
           <CardContent className='p-6 text-center'>
             <div className='max-w-md mx-auto'>
                 <Award className='w-12 h-12 mx-auto text-primary mb-2' />
-                <h3 className='text-lg font-bold text-primary-foreground'>Weekly Top Player Reward</h3>
-                <p className='text-muted-foreground'>The top player at the end of the week wins a <span className='font-bold text-primary-foreground'>$50 Gift Card!</span> Only the #1 ranked player is eligible.</p>
+                <h3 className='text-lg font-bold text-primary-foreground'>Weekly Champion's Prize</h3>
+                <p className='text-muted-foreground'>The #1 player at the end of the week wins a <span className='font-bold text-primary-foreground'>$50 Gift Card</span>. Do you have what it takes?</p>
             </div>
           </CardContent>
       </Card>
