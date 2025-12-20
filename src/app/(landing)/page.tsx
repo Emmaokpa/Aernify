@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardFooter,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -19,6 +19,7 @@ import {
   Gift,
   ListChecks,
   Banknote,
+  Star,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -69,12 +70,14 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="py-20 text-center sm:py-32">
-        <div className="container mx-auto px-4">
+      <section className="relative overflow-hidden py-24 text-center sm:py-32">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background/50 backdrop-blur-sm"></div>
+         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 to-transparent"></div>
+        <div className="container relative z-10 mx-auto px-4">
           <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
             Turn Your Time into Rewards
           </h1>
-          <p className="mx-auto mt-4 max-w-[700px] text-lg text-muted-foreground md:text-xl">
+          <p className="mx-auto mt-6 max-w-[700px] text-lg text-muted-foreground md:text-xl">
             Play games, complete offers, and earn real rewards. Get gift cards and cash sent directly to you. It's that simple.
           </p>
           <div className="mt-8">
@@ -88,14 +91,14 @@ export default function LandingPage() {
       </section>
 
       {/* How it Works Section */}
-      <section className="w-full bg-muted py-16 sm:py-24">
+      <section className="w-full bg-background py-16 sm:py-24">
         <div className="container mx-auto px-4 text-center">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">How It Works</h2>
             <p className="mx-auto mt-4 max-w-[600px] text-muted-foreground md:text-lg">
                 Earning rewards with Aernify is as easy as 1-2-3.
             </p>
             <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
-                 <Card className="text-center">
+                 <Card className="text-center transition-all hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1">
                     <CardHeader>
                         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                             <span className="text-3xl font-bold">1</span>
@@ -106,7 +109,7 @@ export default function LandingPage() {
                         <p className="text-muted-foreground">Play games, complete offers, watch videos, and invite friends to accumulate coins in your wallet.</p>
                     </CardContent>
                 </Card>
-                <Card className="text-center">
+                <Card className="text-center transition-all hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1">
                     <CardHeader>
                         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                             <span className="text-3xl font-bold">2</span>
@@ -117,7 +120,7 @@ export default function LandingPage() {
                          <p className="text-muted-foreground">Browse our selection of gift cards and other rewards. Choose what you want and redeem with your coins.</p>
                     </CardContent>
                 </Card>
-                <Card className="text-center">
+                <Card className="text-center transition-all hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1">
                     <CardHeader>
                         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                              <span className="text-3xl font-bold">3</span>
@@ -133,7 +136,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="w-full py-16 sm:py-24">
+      <section className="w-full bg-muted py-16 sm:py-24">
         <div className="container mx-auto px-4">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
@@ -145,9 +148,11 @@ export default function LandingPage() {
           </div>
           <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((feature) => (
-              <Card key={feature.title} className="p-6">
-                <div className="text-primary">{feature.icon}</div>
-                <h3 className="mt-4 text-xl font-semibold">{feature.title}</h3>
+              <Card key={feature.title} className="p-6 text-center bg-card">
+                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    {feature.icon}
+                </div>
+                <h3 className="mt-6 text-xl font-semibold">{feature.title}</h3>
                 <p className="mt-2 text-muted-foreground">
                   {feature.description}
                 </p>
@@ -158,7 +163,7 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="w-full bg-muted py-16 sm:py-24">
+      <section className="w-full bg-background py-16 sm:py-24">
         <div className="container mx-auto px-4">
            <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
