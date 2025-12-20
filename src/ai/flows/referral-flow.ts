@@ -62,28 +62,20 @@ const applyReferralCodeFlow = ai.defineFlow(
     }
     
     const referrerUserRef = doc(firestore, 'users', referrerUid);
-    const newUserRef = doc(firestore, 'users', newUserUid);
 
     const batch = writeBatch(firestore);
 
     const referralBonus = 100;
-    const newUserBonus = 50;
 
     // Award 100 coins to the referrer
     batch.update(referrerUserRef, {
       coins: increment(referralBonus),
       weeklyCoins: increment(referralBonus),
     });
-    
-    // Award 50 bonus coins to the new user for using a code
-    batch.update(newUserRef, {
-        coins: increment(newUserBonus),
-        weeklyCoins: increment(newUserBonus),
-    });
 
     try {
       await batch.commit();
-      return { success: true, message: 'Referral successful! Both users have been rewarded.', bonusAwarded: true };
+      return { success: true, message: 'Referral successful! The referrer has been rewarded.', bonusAwarded: false };
     } catch (error) {
       console.error("Error committing referral batch:", error);
       return { success: false, message: 'An error occurred while applying the referral.', bonusAwarded: false };

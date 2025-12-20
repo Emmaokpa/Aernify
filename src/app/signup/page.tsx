@@ -40,16 +40,11 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
     return;
   }
   
-  let startingCoins = 10; // Standard starting coins
-  let weeklyCoins = 0;
-
   // If a referral code was used, apply it.
   if (referralCode) {
       const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
-      if (referralResult.success && referralResult.bonusAwarded) {
-           console.log(`Referral success! Referrer and new user have been awarded coins.`);
-           // The flow increments the coins, so we just need to set the initial weekly coins correctly.
-           weeklyCoins = 50; 
+      if (referralResult.success) {
+           console.log(`Referral success! Referrer has been awarded coins.`);
       } else {
           console.warn("Referral code application failed:", referralResult.message);
       }
@@ -60,8 +55,8 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
     displayName: displayName || user.displayName || 'New User',
     email: user.email || '',
     photoURL: user.photoURL,
-    coins: startingCoins, // Base coins, bonus will be added by the flow
-    weeklyCoins: weeklyCoins, // Set based on referral success
+    coins: 10, // Base starting coins for a new user. Daily login bonus is separate.
+    weeklyCoins: 0,
     referralCode: generateReferralCode(),
     isVip: false,
     currentStreak: 0,
@@ -74,7 +69,6 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
   }
 
   try {
-    // The referral flow will increment the coins, so we set the base profile here.
     await setDoc(userRef, finalProfile);
   } catch (e: any) {
     console.error('Error creating user profile:', e);
