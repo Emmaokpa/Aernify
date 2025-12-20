@@ -154,7 +154,7 @@ export default function LeaderboardPage() {
             user: {
                 id: user.uid,
                 name: user.displayName || 'Anonymous',
-                avatarUrl: user.photoURL || `https://i.pravatar.cc/150?u=${user.uid}`
+                avatarUrl: user.photoURL || ''
             }
         }));
     }, [users]);
@@ -176,7 +176,7 @@ export default function LeaderboardPage() {
       user: {
         id: currentUserAuth.uid,
         name: currentUserProfile.displayName || 'Anonymous',
-        avatarUrl: currentUserProfile.photoURL || `https://i.pravatar.cc/150?u=${currentUserAuth.uid}`
+        avatarUrl: currentUserProfile.photoURL || ''
       }
     };
   }, [currentUserProfile, currentUserAuth]);
