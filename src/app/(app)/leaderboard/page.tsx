@@ -37,9 +37,11 @@ const getTrophyCardClass = (rank: number) => {
 function TopPlayerCard({
   entry,
   isLoading,
+  isAdmin,
 }: {
   entry?: LeaderboardEntry;
   isLoading: boolean;
+  isAdmin: boolean;
 }) {
   if (isLoading || !entry) {
     return (
@@ -87,6 +89,7 @@ function TopPlayerCard({
           <AvatarFallback>{user.name?.charAt(0)?.toUpperCase() ?? '?'}</AvatarFallback>
         </Avatar>
         <p className="text-xl font-bold">{user.name}</p>
+        {isAdmin && <p className="text-xs text-muted-foreground truncate">{user.email}</p>}
         <p className="text-2xl font-bold text-primary mt-2 flex items-center justify-center gap-2">
           <Coins className="w-6 h-6" /> {score.toLocaleString()}
         </p>
@@ -100,9 +103,11 @@ function TopPlayerCard({
 function RankedUser({
   entry,
   isCurrentUser,
+  isAdmin,
 }: {
   entry: LeaderboardEntry;
   isCurrentUser: boolean;
+  isAdmin: boolean;
 }) {
   const { rank, score, user } = entry;
 
@@ -120,7 +125,10 @@ function RankedUser({
         <AvatarImage src={user.avatarUrl} alt={user.name} />
         <AvatarFallback>{user.name?.charAt(0)?.toUpperCase() ?? '?'}</AvatarFallback>
       </Avatar>
-      <p className="font-semibold flex-grow">{user.name}</p>
+      <div className='flex-grow'>
+        <p className="font-semibold">{user.name}</p>
+        {isAdmin && <p className="text-xs text-muted-foreground truncate">{user.email}</p>}
+      </div>
       <div className="font-bold text-primary flex items-center gap-1.5">
         <Coins className="w-4 h-4" /> {score.toLocaleString()}
       </div>
@@ -131,7 +139,7 @@ function RankedUser({
 // --- Main Leaderboard Page Component ---
 export default function LeaderboardPage() {
     const firestore = useFirestore();
-    const { user: currentUserAuth, profile: currentUserProfile, isUserLoading } = useUser();
+    const { user: currentUserAuth, profile: currentUserProfile, isUserLoading, isAdmin } = useUser();
 
     const leaderboardQuery = useMemo(() => {
         if (!firestore) return null;
@@ -154,7 +162,8 @@ export default function LeaderboardPage() {
             user: {
                 id: user.uid,
                 name: user.displayName || 'Anonymous',
-                avatarUrl: user.photoURL || ''
+                avatarUrl: user.photoURL || '',
+                email: user.email || '',
             }
         }));
     }, [users]);
@@ -176,7 +185,8 @@ export default function LeaderboardPage() {
       user: {
         id: currentUserAuth.uid,
         name: currentUserProfile.displayName || 'Anonymous',
-        avatarUrl: currentUserProfile.photoURL || ''
+        avatarUrl: currentUserProfile.photoURL || '',
+        email: currentUserProfile.email || '',
       }
     };
   }, [currentUserProfile, currentUserAuth]);
@@ -193,7 +203,7 @@ export default function LeaderboardPage() {
           <CardContent className='p-6 text-center'>
             <div className='max-w-md mx-auto'>
                 <Award className='w-12 h-12 mx-auto text-primary mb-2' />
-                <h3 className='text-lg font-bold text-foreground'>Weekly Champion's Prize</h3>
+                <h3 className='text-xl font-bold text-foreground'>Weekly Champion's Prize</h3>
                 <p className='text-muted-foreground'>The #1 player at the end of the week wins a <span className='font-bold text-primary'>$50 Gift Card</span>. Do you have what it takes?</p>
             </div>
           </CardContent>
@@ -202,9 +212,9 @@ export default function LeaderboardPage() {
 
       {/* --- Top 3 Display --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-8 mb-8 items-end">
-        <TopPlayerCard entry={topThree[1]} isLoading={isLoading} />
-        <TopPlayerCard entry={topThree[0]} isLoading={isLoading} />
-        <TopPlayerCard entry={topThree[2]} isLoading={isLoading} />
+        <TopPlayerCard entry={topThree[1]} isLoading={isLoading} isAdmin={isAdmin} />
+        <TopPlayerCard entry={topThree[0]} isLoading={isLoading} isAdmin={isAdmin} />
+        <TopPlayerCard entry={topThree[2]} isLoading={isLoading} isAdmin={isAdmin} />
       </div>
 
       <Card>
@@ -229,6 +239,7 @@ export default function LeaderboardPage() {
                   key={entry.user.id} 
                   entry={entry} 
                   isCurrentUser={entry.user.id === currentUserAuth?.uid}
+                  isAdmin={isAdmin}
                 />
               ))
             )}
@@ -249,7 +260,7 @@ export default function LeaderboardPage() {
                     <CardTitle className="text-base">Your Current Standing</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <RankedUser entry={currentUserEntryForDisplay} isCurrentUser={true} />
+                    <RankedUser entry={currentUserEntryForDisplay} isCurrentUser={true} isAdmin={isAdmin} />
                     <p className="text-xs text-muted-foreground text-center mt-3">You are not in the top 50. Keep playing to climb the ranks!</p>
                 </CardContent>
             </Card>

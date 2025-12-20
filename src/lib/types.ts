@@ -89,6 +89,7 @@ export type LeaderboardEntry = {
     id: string;
     name: string;
     avatarUrl: string;
+    email: string;
   };
   score: number;
 };
