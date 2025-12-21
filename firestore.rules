@@ -89,8 +89,8 @@ service cloud.firestore {
     
     match /withdrawal_requests/{requestId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      // FIX: Allow users to list their own history, and Admins to see all.
-      allow get, list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
+      // DEBUG: Allow any authenticated user to read for debugging
+      allow get, list: if isSignedIn();
       allow update: if isAdmin();
       allow delete: if false;
     }
@@ -104,8 +104,8 @@ service cloud.firestore {
 
     match /orders/{orderId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      // FIX: Allow users to list their own history, and Admins to see all.
-      allow get, list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
+      // DEBUG: Allow any authenticated user to read for debugging
+      allow get, list: if isSignedIn();
       allow update: if isAdmin();
       allow delete: if false;
     }

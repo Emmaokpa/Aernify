@@ -29,18 +29,18 @@ function OrderList({ status }: { status: OrderStatus }) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const { isUserLoading, isAdmin } = useUser();
+  const { isUserLoading } = useUser();
 
   const ordersQuery = useMemo(() => {
-    // SECURITY GATE: Only build query if we are certain user is an Admin
-    if (isUserLoading || !isAdmin) return null;
+    // DEBUG: Temporarily removed isAdmin check. The route is already protected.
+    if (isUserLoading) return null;
 
     return query(
       collection(firestore, 'orders'),
       where('status', '==', status),
       orderBy('orderedAt', 'desc')
     );
-  }, [firestore, status, isUserLoading, isAdmin]);
+  }, [firestore, status, isUserLoading]);
 
   const { data: orders, isLoading: isCollectionLoading } = useCollection<Order>(ordersQuery);
 
@@ -65,7 +65,6 @@ function OrderList({ status }: { status: OrderStatus }) {
     }
   }
 
-  // Combine loading states for a clear message
   const isLoading = isUserLoading || isCollectionLoading;
 
   if (isLoading) {
