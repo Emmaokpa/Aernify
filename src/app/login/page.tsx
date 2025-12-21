@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,12 +38,14 @@ async function createUserProfile(db: any, user: User) {
   }
   
   // This is a simplified profile creation for this edge case.
-  const newUserProfile: Omit<UserProfile, 'id' | 'isAdmin' | 'referralCode' | 'weeklyCoins'> = {
+  const newUserProfile: Omit<UserProfile, 'id' | 'isAdmin' | 'referralCode' | 'weeklyCoins' | 'coins'> = {
     uid: user.uid,
     displayName: user.displayName || 'New User',
     email: user.email || '',
     photoURL: user.photoURL,
-    coins: 10,
+    isVip: false,
+    currentStreak: 0,
+    lastLoginDate: '',
   };
 
   const finalProfile = {

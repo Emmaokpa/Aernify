@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +41,6 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
     return;
   }
   
-  let startingCoins = 10;
   // If a referral code was used, apply it.
   if (referralCode) {
       const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
@@ -51,12 +51,11 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
       }
   }
 
-  const newUserProfile: Omit<UserProfile, 'id' | 'isAdmin'> = {
+  const newUserProfile: Omit<UserProfile, 'id' | 'isAdmin' | 'coins'> = {
     uid: user.uid,
     displayName: displayName || user.displayName || 'New User',
     email: user.email || '',
     photoURL: user.photoURL,
-    coins: startingCoins, // Base starting coins for a new user. Daily login bonus is separate.
     weeklyCoins: 0,
     referralCode: generateReferralCode(),
     isVip: false,
