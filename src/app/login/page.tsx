@@ -84,15 +84,18 @@ export default function LoginPage() {
       await createUserProfile(firestore, userCredential.user);
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('Google sign-in error:', err);
-      if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        // User closed the popup, do nothing, just stop loading.
+        console.log('Google Sign-In cancelled by user.');
+      } else if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
         setError('An account already exists with this email address. Please sign in with your original method.');
       } else {
+        console.error('Google sign-in error:', err);
         setError('An error occurred during Google sign-in. Please try again.');
       }
-      setIsGoogleLoading(false); // Ensure loading is stopped on error
+    } finally {
+      setIsGoogleLoading(false);
     }
-    // No need for a `finally` block if it's handled in the catch
   }
 
 

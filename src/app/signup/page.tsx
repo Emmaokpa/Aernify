@@ -112,8 +112,10 @@ export default function SignUpPage() {
       });
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('Google sign-in error:', err);
-      if (err instanceof FirestorePermissionError) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        // User closed the popup, do nothing, just stop loading.
+        console.log('Google Sign-In cancelled by user.');
+      } else if (err instanceof FirestorePermissionError) {
           setError(`Database Error: Could not create user profile. Please check Firestore rules. ${err.message}`);
       } else if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
         setError('An account with this email already exists. Please sign in using your original method.');
@@ -121,6 +123,7 @@ export default function SignUpPage() {
         setError('A network error occurred. Please check your connection and try again.');
       }
       else {
+        console.error('Google sign-in error:', err);
         setError('An error occurred during Google sign-in. Please try again.');
       }
     } finally {
