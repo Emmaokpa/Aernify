@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -5,7 +6,7 @@ import AdminAuthWrapper from '../AdminAuthWrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, doc, updateDoc, query, where, orderBy } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import Image from 'next/image';
@@ -21,6 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuthContext } from '@/firebase/auth-provider';
 
 type OrderStatus = 'pending' | 'shipped' | 'delivered' | 'cancelled';
 
@@ -31,16 +33,20 @@ function OrderList({ status }: { status: OrderStatus }) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const { isUserLoading, isAdmin } = useAuthContext();
 
   const ordersQuery = useMemo(() => {
+    // Only construct the query if the user is a loaded admin
+    if (isUserLoading || !isAdmin) return null;
+
     return query(
       collection(firestore, 'orders'),
       where('status', '==', status),
       orderBy('orderedAt', 'desc')
     );
-  }, [firestore, status]);
+  }, [firestore, status, isUserLoading, isAdmin]);
 
-  const { data: orders, isLoading } = useCollection<Order>(ordersQuery);
+  const { data: orders, isLoading: isCollectionLoading } = useCollection<Order>(ordersQuery);
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     setProcessingId(orderId);
@@ -63,6 +69,8 @@ function OrderList({ status }: { status: OrderStatus }) {
     }
   };
 
+  const isLoading = isUserLoading || isCollectionLoading;
+
   if (isLoading) {
     return (
       <div className="grid sm:grid-cols-1 lg:grid-cols-2 gap-6">
@@ -72,6 +80,11 @@ function OrderList({ status }: { status: OrderStatus }) {
       </div>
     );
   }
+
+  if (!isAdmin) {
+      return null; // Don't render anything if the user is not an admin
+  }
+
 
   if (orders?.length === 0) {
     return (

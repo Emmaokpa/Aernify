@@ -196,10 +196,8 @@ service cloud.firestore {
       // A user can create their own order.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
 
-      // Any signed-in user can read/list orders.
-      // This is safe because the admin page is protected by client-side auth.
-      // A regular user cannot get to the page that lists all orders.
-      allow list, get: if isSignedIn();
+      // Only admins can read or list all orders.
+      allow list, get: if isAdmin();
       
       // Only admins can update the status of an order.
       allow update: if isAdmin();
