@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -41,7 +42,7 @@ export function useCollection<T = any>(
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-    // GATE 1: Wait if no query is provided yet
+    // GATE 1: Wait if no query is provided yet. This is the hard brake.
     if (!memoizedTargetRefOrQuery) {
       setIsLoading(false);
       setData(null);
@@ -64,17 +65,14 @@ export function useCollection<T = any>(
       },
       (err: FirestoreError) => {
         // GATE 2: Robust Path Extraction
-        // This handles both direct CollectionReferences and filtered Queries
         let path = "unknown path";
         try {
-          if (memoizedTargetRefOrQuery.type === 'collection') {
-            path = (memoizedTargetRefOrQuery as CollectionReference).path;
-          } else {
-            // Accessing internal path for Queries in Firebase v10/v11
-            const internalQuery = memoizedTargetRefOrQuery as any;
-            path = internalQuery._query?.path?.canonicalString() || 
-                   internalQuery.endpoint?.path || 
-                   "filtered-query";
+          // This handles both direct CollectionReferences and filtered Queries
+          const internalQuery = memoizedTargetRefOrQuery as any;
+          if (internalQuery.path) { // For CollectionReference
+            path = internalQuery.path;
+          } else if (internalQuery._query?.path) { // For Query
+            path = internalQuery._query.path.canonicalString();
           }
         } catch (e) {
           path = "error-extracting-path";
@@ -85,7 +83,6 @@ export function useCollection<T = any>(
           path,
         });
         
-        // Detailed Logging for Debugging
         if (err.code === 'permission-denied') {
           const auth = getAuth();
           console.group('🔥 Firestore Security Error');

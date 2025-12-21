@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth]);
 
-  // isUserLoading is only false when both Auth AND Profile are settled.
+  // CRITICAL FIX: isUserLoading is only false when both Auth AND Profile are settled.
   const isUserLoading = isAuthLoading || (!!user && (isProfileLoading || !profile));
 
   const value = { 
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     profile,
     isUserLoading, 
     isAuthenticated: !!user,
-    isAdmin: profile?.isAdmin === true, // Strict check
+    isAdmin: profile?.isAdmin === true, // Strict check for boolean true
     userError 
   };
 

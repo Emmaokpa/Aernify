@@ -48,7 +48,7 @@ function OrderList({ status }: { status: OrderStatus }) {
     return (
         <div className="text-center py-20 border rounded-lg">
             <Loader2 className="mx-auto h-12 w-12 text-muted-foreground animate-spin" />
-            <p className="mt-4 text-muted-foreground">Verifying admin permissions...</p>
+            <p className="mt-4 text-muted-foreground">Verifying admin permissions and loading orders...</p>
         </div>
     );
   }
