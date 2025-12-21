@@ -29,18 +29,18 @@ function OrderList({ status }: { status: OrderStatus }) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const { isUserLoading } = useUser();
+  const { isUserLoading, isAdmin } = useUser();
 
   const ordersQuery = useMemo(() => {
-    // DEBUG: Temporarily removed isAdmin check. The route is already protected.
-    if (isUserLoading) return null;
+    // This now respects the stricter isUserLoading from the updated AuthProvider
+    if (isUserLoading || !isAdmin) return null;
 
     return query(
       collection(firestore, 'orders'),
       where('status', '==', status),
       orderBy('orderedAt', 'desc')
     );
-  }, [firestore, status, isUserLoading]);
+  }, [firestore, status, isUserLoading, isAdmin]);
 
   const { data: orders, isLoading: isCollectionLoading } = useCollection<Order>(ordersQuery);
 
