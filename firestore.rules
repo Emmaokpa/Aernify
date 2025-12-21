@@ -42,6 +42,11 @@ service cloud.firestore {
                     || isCoinUpdate();
 
       allow delete: if isAdmin();
+      
+      // --- Rules for the orders subcollection ---
+      match /orders/{orderId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
     }
     
     // --- Rules for the daily_logins collection ---
@@ -89,8 +94,7 @@ service cloud.firestore {
     
     match /withdrawal_requests/{requestId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      // FIX: Added 'list' permission for users to query their own history
-      allow get, list: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
+      allow get, list: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update: if isAdmin();
       allow delete: if false;
     }
@@ -102,12 +106,9 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // --- Rules for collections that are NO LONGER USED ---
     match /orders/{orderId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      // Admin can list/get everything, users can only list/get their own.
-      allow list, get: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
-      allow update: if isAdmin();
-      allow delete: if false;
+      allow read, write: if false;
     }
     
     // Fallback rule

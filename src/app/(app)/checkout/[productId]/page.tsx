@@ -105,7 +105,8 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
     
     try {
       const batch = writeBatch(firestore);
-      const orderRef = doc(collection(firestore, 'orders'));
+      // Create a reference to the user's "orders" subcollection
+      const orderRef = doc(collection(firestore, 'users', user.uid, 'orders'));
       const productRef = doc(firestore, 'products', product.id);
       
       let finalVariant = selectedVariant;
@@ -118,7 +119,7 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
         batch.update(productRef, { variants: newVariants });
       }
       
-      // Create the order
+      // Create the order in the user's subcollection
       batch.set(orderRef, {
         userId: user.uid,
         userDisplayName: profile.displayName,

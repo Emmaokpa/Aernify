@@ -5,8 +5,8 @@ import AdminAuthWrapper from '../AdminAuthWrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection } from '@/firebase';
-import { collection, doc, updateDoc, query, where, orderBy } from 'firebase/firestore';
+import { useFirestore, useCollection, useUser } from '@/firebase';
+import { collection, doc, updateDoc, query, where, orderBy, collectionGroup } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import Image from 'next/image';
 import { Loader2, PackageCheck, Truck, CheckCircle, FileQuestion, Ban } from 'lucide-react';
@@ -14,7 +14,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useAuthContext } from '@/firebase/auth-provider';
 
 type OrderStatus = 'pending' | 'shipped' | 'delivered' | 'cancelled';
 const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
@@ -30,14 +29,15 @@ function OrderList({ status }: { status: OrderStatus }) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const { isUserLoading, isAdmin } = useAuthContext();
+  const { isUserLoading, isAdmin } = useUser();
 
   const ordersQuery = useMemo(() => {
     // The "Hard Brake": If user is loading or not an admin, the query is null.
     if (isUserLoading || !isAdmin) return null;
 
+    // Use a collectionGroup query to get all orders across all users
     return query(
-      collection(firestore, 'orders'),
+      collectionGroup(firestore, 'orders'),
       where('status', '==', status),
       orderBy('orderedAt', 'desc')
     );
@@ -45,10 +45,11 @@ function OrderList({ status }: { status: OrderStatus }) {
 
   const { data: orders, isLoading: isCollectionLoading } = useCollection<Order>(ordersQuery);
 
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+  const handleStatusChange = async (orderId: string, userId: string, newStatus: OrderStatus) => {
     setProcessingId(orderId);
     try {
-        const orderRef = doc(firestore, 'orders', orderId);
+        // The path to the order is now inside a user's subcollection
+        const orderRef = doc(firestore, 'users', userId, 'orders', orderId);
         await updateDoc(orderRef, { status: newStatus });
         toast({
             title: 'Order Updated',
@@ -138,7 +139,7 @@ function OrderList({ status }: { status: OrderStatus }) {
                 {(['pending', 'shipped', 'delivered', 'cancelled'] as OrderStatus[]).map(s => (
                     <DropdownMenuItem 
                         key={s}
-                        onClick={() => handleStatusChange(order.id, s)}
+                        onClick={() => handleStatusChange(order.id, order.userId, s)}
                         disabled={order.status === s}
                     >
                        {statusIcons[s]} {s.charAt(0).toUpperCase() + s.slice(1)}

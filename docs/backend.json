@@ -685,7 +685,15 @@
       "schema": {
         "$ref": "#/entities/UserProfile"
       },
-      "description": "Stores public and private user profile information."
+      "description": "Stores public and private user profile information.",
+      "subcollections": {
+        "/orders/{orderId}": {
+          "schema": {
+            "$ref": "#/entities/Order"
+          },
+          "description": "Stores a user's orders for physical products."
+        }
+      }
     },
     "/daily_logins/{loginId}": {
       "schema": {
@@ -746,12 +754,6 @@
         "$ref": "#/entities/UserChallengeProgress"
       },
       "description": "Stores a user's progress for a given day. The document ID is 'userId_YYYY-MM-DD'."
-    },
-    "/orders/{orderId}": {
-      "schema": {
-        "$ref": "#/entities/Order"
-      },
-      "description": "Stores user orders for physical products."
     },
     "/affiliate_products/{productId}": {
       "schema": {
