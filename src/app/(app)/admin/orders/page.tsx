@@ -6,7 +6,7 @@ import AdminAuthWrapper from '../AdminAuthWrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection, useUser } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { collection, doc, updateDoc, query, where, orderBy } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import Image from 'next/image';
@@ -37,14 +37,14 @@ function OrderList({ status }: { status: OrderStatus }) {
 
   const ordersQuery = useMemo(() => {
     // Only construct the query if the user is a loaded admin
-    if (!isAdmin) return null;
+    if (isUserLoading || !isAdmin) return null;
 
     return query(
       collection(firestore, 'orders'),
       where('status', '==', status),
       orderBy('orderedAt', 'desc')
     );
-  }, [firestore, status, isAdmin]);
+  }, [firestore, status, isAdmin, isUserLoading]);
 
   const { data: orders, isLoading: isCollectionLoading } = useCollection<Order>(ordersQuery);
 

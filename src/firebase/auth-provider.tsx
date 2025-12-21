@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const auth = useAuth();
   const firestore = useFirestore();
   const [user, setUser] = useState<User | null>(null);
-  const [isUserLoading, setIsUserLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [userError, setUserError] = useState<Error | null>(null);
 
   const userDocRef = useMemo(() => {
@@ -39,23 +39,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, 
       (firebaseUser) => {
         setUser(firebaseUser);
-        setIsUserLoading(false);
+        setIsAuthLoading(false);
       },
       (error) => {
         console.error("Authentication state error:", error);
         setUserError(error);
         setUser(null);
-        setIsUserLoading(false);
+        setIsAuthLoading(false);
       }
     );
 
     return () => unsubscribe();
   }, [auth]);
 
+  const isUserLoading = isAuthLoading || (!!user && isProfileLoading);
+
   const value = { 
     user, 
     profile,
-    isUserLoading: isUserLoading || (!!user && isProfileLoading), 
+    isUserLoading: isUserLoading, 
     isAuthenticated: !!user,
     isAdmin: profile?.isAdmin ?? false,
     userError 

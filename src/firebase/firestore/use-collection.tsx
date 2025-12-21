@@ -66,9 +66,8 @@ export function useCollection<T = any>(
   useEffect(() => {
     if (!memoizedTargetRefOrQuery) {
       // If the query is null (e.g., waiting for auth), we are still in a "loading" state.
-      setIsLoading(true); 
+      // We don't set loading to false here, allowing the caller's loading state to persist.
       setData(null);
-      setError(null);
       return;
     }
 
@@ -100,9 +99,10 @@ export function useCollection<T = any>(
         })
         
         if (error.code === 'permission-denied') {
+            const auth = getAuth();
             console.error(
                 `Firestore Permission Denied on path "${path}". ` +
-                `Auth state:`, getAuth().currentUser
+                `Auth state at time of error:`, auth.currentUser
             );
         }
 
