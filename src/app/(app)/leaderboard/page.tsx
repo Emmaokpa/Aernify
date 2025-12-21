@@ -85,7 +85,7 @@ function TopPlayerCard({
             rank === 3 && 'border-orange-600',
           )}
         >
-          <AvatarImage src={user.avatarUrl} alt={user.name} />
+          {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.name} />}
           <AvatarFallback>{user.name?.charAt(0)?.toUpperCase() ?? '?'}</AvatarFallback>
         </Avatar>
         <p className="text-xl font-bold">{user.name}</p>
@@ -122,7 +122,7 @@ function RankedUser({
         {rank ? `#${rank}` : '-'}
       </div>
       <Avatar className="w-10 h-10 mx-4">
-        <AvatarImage src={user.avatarUrl} alt={user.name} />
+        {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.name} />}
         <AvatarFallback>{user.name?.charAt(0)?.toUpperCase() ?? '?'}</AvatarFallback>
       </Avatar>
       <div className='flex-grow'>
