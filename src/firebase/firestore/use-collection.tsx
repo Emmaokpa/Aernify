@@ -66,7 +66,10 @@ export function useCollection<T = any>(
         let path = "unknown path";
         try {
           const internalQuery = memoizedTargetRefOrQuery as any;
-          if (internalQuery.path) { // For CollectionReference
+           if (internalQuery.type === 'collection-group') {
+            path = `collectionGroup(${internalQuery.path})`;
+          }
+          else if (internalQuery.path) { // For CollectionReference
             path = internalQuery.path;
           } else if (internalQuery._query?.path) { // For Query
             path = internalQuery._query.path.canonicalString();
