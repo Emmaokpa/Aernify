@@ -5,7 +5,7 @@ import AdminAuthWrapper from '../AdminAuthWrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection, useUser } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { collection, doc, updateDoc, query, where, orderBy } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import Image from 'next/image';
@@ -14,6 +14,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useAuthContext } from '@/firebase/auth-provider';
 
 type OrderStatus = 'pending' | 'shipped' | 'delivered' | 'cancelled';
 const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
@@ -29,10 +30,10 @@ function OrderList({ status }: { status: OrderStatus }) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const { isUserLoading, isAdmin } = useUser();
+  const { isUserLoading, isAdmin } = useAuthContext();
 
   const ordersQuery = useMemo(() => {
-    // This now respects the stricter isUserLoading from the updated AuthProvider
+    // The "Hard Brake": If user is loading or not an admin, the query is null.
     if (isUserLoading || !isAdmin) return null;
 
     return query(
@@ -65,6 +66,7 @@ function OrderList({ status }: { status: OrderStatus }) {
     }
   }
 
+  // The final loading state depends on both auth and collection loading.
   const isLoading = isUserLoading || isCollectionLoading;
 
   if (isLoading) {
