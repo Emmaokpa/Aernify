@@ -1,4 +1,5 @@
 
+
 import firebaseConfig from '@/firebase/config.json';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
@@ -23,3 +24,5 @@ export * from './client-provider';
 export * from './auth-provider';
 export * from './firestore/use-collection';
 export * from './firestore/use-doc';
+export * from './firestore/use-safe-collection';
+

@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { GiftCard } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useSafeCollection } from '@/firebase';
 import { doc, updateDoc, increment, collection, writeBatch, serverTimestamp } from 'firebase/firestore';
 
 export default function RedeemPage() {
@@ -30,8 +30,9 @@ export default function RedeemPage() {
   const { user, profile, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  // const giftCardsCollection = useMemo(() => collection(firestore, 'giftCards'), [firestore]);
-  // const { data: giftCards, isLoading: isLoadingGiftCards } = useCollection<GiftCard>(giftCardsCollection);
+  // const { data: giftCards, isLoading: isLoadingGiftCards } = useSafeCollection<GiftCard>(
+  //     () => collection(firestore, 'giftCards')
+  // );
 
   /*
   const handleRedeem = async (card: GiftCard) => {

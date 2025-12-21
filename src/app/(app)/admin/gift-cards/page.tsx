@@ -18,7 +18,7 @@ import { Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
-  useCollection,
+  useSafeCollection,
 } from '@/firebase';
 import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import type { GiftCard } from '@/lib/types';
@@ -258,8 +258,10 @@ function AddGiftCardForm() {
 function GiftCardList() {
     const firestore = useFirestore();
     const { toast } = useToast();
-    const giftCardsCollection = useMemo(() => collection(firestore, 'giftCards'), [firestore]);
-    const { data: giftCards, isLoading } = useCollection<GiftCardWithId>(giftCardsCollection);
+    
+    const { data: giftCards, isLoading } = useSafeCollection<GiftCardWithId>(
+        () => collection(firestore, 'giftCards')
+    );
 
     const handleDelete = async (giftCardId: string) => {
         try {

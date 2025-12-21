@@ -18,7 +18,7 @@ import { Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
-  useCollection,
+  useSafeCollection,
 } from '@/firebase';
 import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import type { Offer } from '@/lib/types';
@@ -264,8 +264,10 @@ function AddOfferForm() {
 function OfferList() {
     const firestore = useFirestore();
     const { toast } = useToast();
-    const offersCollection = useMemo(() => collection(firestore, 'offers'), [firestore]);
-    const { data: offers, isLoading } = useCollection<OfferWithId>(offersCollection);
+    
+    const { data: offers, isLoading } = useSafeCollection<OfferWithId>(
+        () => collection(firestore, 'offers')
+    );
 
     const handleDelete = async (offerId: string) => {
         try {

@@ -6,7 +6,7 @@ import AdminAuthWrapper from '../AdminAuthWrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useSafeCollection } from '@/firebase';
 import { collection, doc, writeBatch, increment, query, where } from 'firebase/firestore';
 import type { RedemptionRequest } from '@/lib/types';
 import { Loader2, Check, X, FileQuestion, User, Coins, Gift } from 'lucide-react';
@@ -18,11 +18,9 @@ function RedemptionList() {
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const pendingRedemptionsQuery = useMemo(() => {
-    return query(collection(firestore, 'redemption_requests'), where('status', '==', 'pending'));
-  }, [firestore]);
-
-  const { data: requests, isLoading } = useCollection<RedemptionRequest>(pendingRedemptionsQuery);
+  const { data: requests, isLoading } = useSafeCollection<RedemptionRequest>(
+      () => query(collection(firestore, 'redemption_requests'), where('status', '==', 'pending'))
+  );
 
   const handleDecision = async (request: RedemptionRequest, decision: 'approve' | 'reject') => {
     setProcessingId(request.id);

@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useSafeCollection } from '@/firebase';
 import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import type { Game } from '@/lib/types';
 import Image from 'next/image';
@@ -271,11 +271,10 @@ function AddGameForm() {
 function GameList() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const gamesCollection = useMemo(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'games');
-  }, [firestore]);
-  const { data: games, isLoading } = useCollection<GameWithId>(gamesCollection);
+  
+  const { data: games, isLoading } = useSafeCollection<GameWithId>(
+      () => collection(firestore, 'games')
+  );
 
   const handleDelete = async (gameId: string) => {
     try {

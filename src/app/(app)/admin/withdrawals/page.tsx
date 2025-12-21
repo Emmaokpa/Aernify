@@ -6,7 +6,7 @@ import AdminAuthWrapper from '../AdminAuthWrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useSafeCollection } from '@/firebase';
 import { collection, doc, writeBatch, increment, query, where, orderBy } from 'firebase/firestore';
 import type { WithdrawalRequest } from '@/lib/types';
 import { Loader2, Check, X, FileQuestion, User, Coins, Banknote } from 'lucide-react';
@@ -29,15 +29,13 @@ function WithdrawalList({ status }: { status: RequestStatus }) {
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const requestsQuery = useMemo(() => {
-    return query(
-      collection(firestore, 'withdrawal_requests'),
-      where('status', '==', status),
-      orderBy('requestedAt', 'desc')
-    );
-  }, [firestore, status]);
-
-  const { data: requests, isLoading } = useCollection<WithdrawalRequest>(requestsQuery);
+  const { data: requests, isLoading } = useSafeCollection<WithdrawalRequest>(
+      () => query(
+        collection(firestore, 'withdrawal_requests'),
+        where('status', '==', status),
+        orderBy('requestedAt', 'desc')
+      )
+  );
 
   const handleStatusChange = async (requestId: string, coinsToWithdraw: number, userId: string, newStatus: RequestStatus) => {
     setProcessingId(requestId);

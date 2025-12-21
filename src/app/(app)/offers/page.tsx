@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from "@/components/page-header";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Coins, Loader2, CheckCircle, Clock, ExternalLink, DollarSign, Sparkles } from "lucide-react";
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useSafeCollection, useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import type { Offer, AffiliateProduct } from '@/lib/types';
 import type { OfferSubmission, AffiliateSaleSubmission } from '@/lib/types';
@@ -268,16 +269,15 @@ function OfferList() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const offersCollection = useMemo(() => collection(firestore, 'offers'), [firestore]);
-  const { data: offers, isLoading: isLoadingOffers } = useCollection<Offer>(offersCollection);
+  const { data: offers, isLoading: isLoadingOffers } = useSafeCollection<Offer>(
+    () => collection(firestore, 'offers')
+  );
 
-  const submissionsQuery = useMemo(() => {
-    if (!user) return null;
-    return query(collection(firestore, 'offer_submissions'), where('userId', '==', user.uid));
-  }, [firestore, user]);
-  const { data: submissions, isLoading: isLoadingSubmissions } = useCollection<OfferSubmission>(submissionsQuery);
+  const { data: submissions, isLoading: isLoadingSubmissions } = useSafeCollection<OfferSubmission>(
+    (uid) => uid ? query(collection(firestore, 'offer_submissions'), where('userId', '==', uid)) : null
+  );
 
-  const isLoading = isLoadingOffers || (user && isLoadingSubmissions);
+  const isLoading = isLoadingOffers || isLoadingSubmissions;
   
   const augmentedOffers = useMemo(() => {
     if (!offers) return [];
@@ -360,16 +360,15 @@ function AffiliateProductList() {
   const firestore = useFirestore();
   const { user, profile } = useUser();
 
-  const productsCollection = useMemo(() => collection(firestore, 'affiliate_products'), [firestore]);
-  const { data: products, isLoading: isLoadingProducts } = useCollection<AffiliateProduct>(productsCollection);
+  const { data: products, isLoading: isLoadingProducts } = useSafeCollection<AffiliateProduct>(
+      () => collection(firestore, 'affiliate_products')
+  );
 
-  const submissionsQuery = useMemo(() => {
-    if (!user) return null;
-    return query(collection(firestore, 'affiliate_sale_submissions'), where('userId', '==', user.uid));
-  }, [firestore, user]);
-  const { data: submissions, isLoading: isLoadingSubmissions } = useCollection<AffiliateSaleSubmission>(submissionsQuery);
+  const { data: submissions, isLoading: isLoadingSubmissions } = useSafeCollection<AffiliateSaleSubmission>(
+    (uid) => uid ? query(collection(firestore, 'affiliate_sale_submissions'), where('userId', '==', uid)) : null
+  );
 
-  const isLoading = isLoadingProducts || (user && isLoadingSubmissions);
+  const isLoading = isLoadingProducts || isLoadingSubmissions;
   
   const augmentedProducts = useMemo(() => {
     if (!products) return [];

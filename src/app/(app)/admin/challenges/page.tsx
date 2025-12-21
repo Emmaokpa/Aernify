@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { Loader2, Trash2, Pencil, Sparkles, Trophy, CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useSafeCollection } from '@/firebase';
 import { collection, addDoc, deleteDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import type { DailyChallenge } from '@/lib/types';
 import {
@@ -361,8 +361,10 @@ function AddChallengeForm() {
 function ChallengeList() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const challengesCollection = useMemo(() => collection(firestore, 'challenges'), [firestore]);
-  const { data: challenges, isLoading } = useCollection<ChallengeWithId>(challengesCollection);
+  
+  const { data: challenges, isLoading } = useSafeCollection<ChallengeWithId>(
+      () => collection(firestore, 'challenges')
+  );
 
   const handleDelete = async (challengeId: string) => {
     try {

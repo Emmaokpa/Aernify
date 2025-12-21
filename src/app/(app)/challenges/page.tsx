@@ -15,7 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { Coins, CheckCircle, Trophy, Sparkles, Gamepad2, Video, ListChecks, Star, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
+import { useUser, useFirestore, useSafeCollection, useDoc } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
 import type { DailyChallenge, UserChallengeProgress } from '@/lib/types';
 import { claimChallengeReward } from '@/lib/challenges';
@@ -128,24 +128,19 @@ export default function ChallengesPage() {
   const { toast } = useToast();
   const [claimingId, setClaimingId] = useState<string | null>(null);
 
-  const challengesQuery = useMemo(() => {
-    if (!firestore) return null;
-    const today = getTodayString();
-    return query(collection(firestore, 'challenges'), where('date', '==', today));
-  }, [firestore]);
+  const { data: challenges, isLoading: isLoadingChallenges } = useSafeCollection<DailyChallenge>(
+    () => {
+        const today = getTodayString();
+        return query(collection(firestore, 'challenges'), where('date', '==', today));
+    }
+  );
   
-  const { data: challenges, isLoading: isLoadingChallenges } = useCollection<DailyChallenge>(challengesQuery);
-
-  const progressDocId = useMemo(() => {
+  const progressDocRef = useMemo(() => {
     if (!user) return null;
     const today = getTodayString();
-    return `${user.uid}_${today}`;
-  }, [user]);
-
-  const progressDocRef = useMemo(() => {
-    if (!progressDocId) return null;
+    const progressDocId = `${user.uid}_${today}`;
     return doc(firestore, 'user_challenge_progress', progressDocId);
-  }, [progressDocId]);
+  }, [user, firestore]);
 
   const { data: progressData, isLoading: isLoadingProgress } = useDoc<UserChallengeProgress>(progressDocRef);
   

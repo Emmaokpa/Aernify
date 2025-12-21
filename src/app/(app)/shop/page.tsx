@@ -3,7 +3,7 @@
 'use client';
 import { useMemo } from 'react';
 import PageHeader from '@/components/page-header';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useSafeCollection, useFirestore, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,17 +29,10 @@ function ProductSkeleton() {
 
 export default function ShopPage() {
   const firestore = useFirestore();
-  const { profile, isUserLoading } = useUser();
-
-  const productsCollection = useMemo(
-    () => collection(firestore, 'products'),
-    [firestore]
+  
+  const { data: products, isLoading } = useSafeCollection<Product>(
+    () => collection(firestore, 'products')
   );
-  const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(
-    productsCollection
-  );
-
-  const isLoading = isLoadingProducts || isUserLoading;
 
   const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
 

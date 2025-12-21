@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -16,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm, SubmitHandler, useFieldArray, Controller } from 'react-hook-form';
 import { Loader2, Trash2, Pencil, PlusCircle, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useSafeCollection } from '@/firebase';
 import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import type { Product, ProductVariant } from '@/lib/types';
 import Image from 'next/image';
@@ -337,12 +338,9 @@ function AddProductForm() {
 function ProductList() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const productsCollection = useMemo(
-    () => collection(firestore, 'products'),
-    [firestore]
-  );
-  const { data: products, isLoading } = useCollection<ProductWithId>(
-    productsCollection
+  
+  const { data: products, isLoading } = useSafeCollection<ProductWithId>(
+    () => collection(firestore, 'products')
   );
 
   const handleDelete = async (productId: string) => {

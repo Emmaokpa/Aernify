@@ -6,7 +6,7 @@ import AdminAuthWrapper from '../AdminAuthWrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useSafeCollection } from '@/firebase';
 import { useAuthContext } from '@/firebase/auth-provider';
 import { collection, doc, updateDoc, query, where, orderBy, collectionGroup } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
@@ -31,21 +31,18 @@ function OrderList({ status }: { status: OrderStatus }) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const { isUserLoading, isAdmin } = useAuthContext();
-
-  const ordersQuery = useMemo(() => {
-    // The "Hard Brake": If user is loading or not an admin, the query is null.
-    if (isUserLoading || !isAdmin) return null;
-
-    // Use a collectionGroup query to get all orders across all users
-    return query(
-      collectionGroup(firestore, 'orders'),
-      where('status', '==', status),
-      orderBy('orderedAt', 'desc')
-    );
-  }, [firestore, status, isUserLoading, isAdmin]);
-
-  const { data: orders, isLoading: isCollectionLoading } = useCollection<Order>(ordersQuery);
+  
+  const { data: orders, isLoading } = useSafeCollection<Order>(
+    (uid) => {
+      // The admin needs to query all orders, so we use a collectionGroup query.
+      // The security rules will enforce that only admins can perform this query.
+      return query(
+        collectionGroup(firestore, 'orders'),
+        where('status', '==', status),
+        orderBy('orderedAt', 'desc')
+      );
+    }
+  );
 
   const handleStatusChange = async (orderId: string, userId: string, newStatus: OrderStatus) => {
     setProcessingId(orderId);
@@ -68,9 +65,6 @@ function OrderList({ status }: { status: OrderStatus }) {
         setProcessingId(null);
     }
   }
-
-  // The final loading state depends on both auth and collection loading.
-  const isLoading = isUserLoading || isCollectionLoading;
 
   if (isLoading) {
     return (

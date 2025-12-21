@@ -6,7 +6,7 @@ import AdminAuthWrapper from '../AdminAuthWrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useSafeCollection } from '@/firebase';
 import { collection, doc, writeBatch, increment, query, where } from 'firebase/firestore';
 import type { OfferSubmission } from '@/lib/types';
 import Image from 'next/image';
@@ -19,11 +19,9 @@ function SubmissionList() {
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const pendingSubmissionsQuery = useMemo(() => {
-    return query(collection(firestore, 'offer_submissions'), where('status', '==', 'pending'));
-  }, [firestore]);
-
-  const { data: submissions, isLoading } = useCollection<OfferSubmission>(pendingSubmissionsQuery);
+  const { data: submissions, isLoading } = useSafeCollection<OfferSubmission>(
+      () => query(collection(firestore, 'offer_submissions'), where('status', '==', 'pending'))
+  );
 
   const handleDecision = async (submission: OfferSubmission, decision: 'approve' | 'reject') => {
     setProcessingId(submission.id);

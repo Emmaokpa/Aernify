@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from '@/components/page-header';
@@ -7,19 +8,15 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Game } from '@/lib/types';
 import { useMemo } from 'react';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useSafeCollection, useFirestore, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
 export default function PlayPage() {
     const firestore = useFirestore();
-    const { user } = useUser();
     
-    const gamesCollection = useMemo(() => {
-        if (!firestore || !user) return null; // Wait for user
-        return collection(firestore, 'games');
-    }, [firestore, user]);
-
-    const { data: games, isLoading } = useCollection<Game>(gamesCollection);
+    const { data: games, isLoading } = useSafeCollection<Game>(
+        () => collection(firestore, 'games')
+    );
 
   return (
     <>

@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { LeaderboardEntry, UserProfile } from '@/lib/types';
 import { useMemo } from 'react';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useSafeCollection } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 
 
@@ -141,16 +141,13 @@ export default function LeaderboardPage() {
     const firestore = useFirestore();
     const { user: currentUserAuth, profile: currentUserProfile, isUserLoading, isAdmin } = useUser();
 
-    const leaderboardQuery = useMemo(() => {
-        if (!firestore) return null;
-        return query(
+    const { data: users, isLoading: isCollectionLoading } = useSafeCollection<UserProfile>(
+        () => query(
             collection(firestore, 'users'), 
             orderBy('weeklyCoins', 'desc'), 
             limit(50)
-        );
-    }, [firestore]);
-
-    const { data: users, isLoading: isCollectionLoading } = useCollection<UserProfile>(leaderboardQuery);
+        )
+    );
 
     const isLoading = isUserLoading || isCollectionLoading;
 

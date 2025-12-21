@@ -19,7 +19,7 @@ import { Loader2, Trash2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   useFirestore,
-  useCollection,
+  useSafeCollection,
 } from '@/firebase';
 import { collection, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import type { AffiliateProduct } from '@/lib/types';
@@ -276,8 +276,10 @@ function AddAffiliateProductForm() {
 function AffiliateProductList() {
     const firestore = useFirestore();
     const { toast } = useToast();
-    const productsCollection = useMemo(() => collection(firestore, 'affiliate_products'), [firestore]);
-    const { data: products, isLoading } = useCollection<ProductWithId>(productsCollection);
+    
+    const { data: products, isLoading } = useSafeCollection<ProductWithId>(
+        () => collection(firestore, 'affiliate_products')
+    );
 
     const handleDelete = async (productId: string) => {
         try {
