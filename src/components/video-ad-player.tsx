@@ -4,6 +4,9 @@ import React, { useEffect, useRef } from 'react';
 import videojs from 'video.js';
 import type { Player } from 'video.js';
 import 'video.js/dist/video-js.css';
+
+// Import the ads and IMA plugins. The order is important!
+import 'videojs-contrib-ads';
 import 'videojs-ima';
 
 
@@ -57,6 +60,9 @@ const VideoAdPlayer: React.FC<VideoAdPlayerProps> = ({ adTagUrl, onAdEnded, onAd
             height: 360,
             // Pass IMA options directly into the player constructor
             plugins: {
+                // videojs-contrib-ads options
+                ads: {},
+                // videojs-ima options
                 ima: imaOptions
             }
         });
