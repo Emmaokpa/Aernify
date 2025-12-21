@@ -51,61 +51,52 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
     
-    // SAFETY DELAY: Wait a moment for auth state to settle before querying.
-    const timeoutId = setTimeout(() => {
-      const unsubscribe = onSnapshot(
-        memoizedTargetRefOrQuery,
-        (snapshot: QuerySnapshot<DocumentData>) => {
-          const results: ResultItemType[] = [];
-          for (const doc of snapshot.docs) {
-            results.push({ ...(doc.data() as T), id: doc.id });
-          }
-          setData(results);
-          setError(null);
-          setIsLoading(false);
-        },
-        (err: FirestoreError) => {
-          let path = "unknown path";
-          try {
-            const internalQuery = memoizedTargetRefOrQuery as any;
-            if (internalQuery.path) { // For CollectionReference
-              path = internalQuery.path;
-            } else if (internalQuery._query?.path) { // For Query
-              path = internalQuery._query.path.canonicalString();
-            }
-          } catch (e) {
-            path = "error-extracting-path";
-          }
-
-          const contextualError = new FirestorePermissionError({
-            operation: 'list',
-            path,
-          });
-          
-          if (err.code === 'permission-denied') {
-            const auth = getAuth();
-            console.group('🔥 Firestore Security Error');
-            console.error(`Path: ${path}`);
-            console.error(`User UID: ${auth.currentUser?.uid || 'Not Logged In'}`);
-            console.error(`Firebase Error Code: ${err.code}`);
-            console.groupEnd();
-          }
-
-          setError(contextualError);
-          setData(null);
-          setIsLoading(false);
-
-          errorEmitter.emit('permission-error', contextualError);
+    const unsubscribe = onSnapshot(
+      memoizedTargetRefOrQuery,
+      (snapshot: QuerySnapshot<DocumentData>) => {
+        const results: ResultItemType[] = [];
+        for (const doc of snapshot.docs) {
+          results.push({ ...(doc.data() as T), id: doc.id });
         }
-      );
-      // Ensure we can clean up the onSnapshot listener
-      return () => unsubscribe();
-    }, 100); // 100ms delay is plenty of time for auth state to propagate
+        setData(results);
+        setError(null);
+        setIsLoading(false);
+      },
+      (err: FirestoreError) => {
+        let path = "unknown path";
+        try {
+          const internalQuery = memoizedTargetRefOrQuery as any;
+          if (internalQuery.path) { // For CollectionReference
+            path = internalQuery.path;
+          } else if (internalQuery._query?.path) { // For Query
+            path = internalQuery._query.path.canonicalString();
+          }
+        } catch (e) {
+          path = "error-extracting-path";
+        }
 
-    // Cleanup function for the useEffect
-    return () => {
-      clearTimeout(timeoutId);
-    };
+        const contextualError = new FirestorePermissionError({
+          operation: 'list',
+          path,
+        });
+        
+        if (err.code === 'permission-denied') {
+          const auth = getAuth();
+          console.group('🔥 Firestore Security Error');
+          console.error(`Path: ${path}`);
+          console.error(`User UID: ${auth.currentUser?.uid || 'Not Logged In'}`);
+          console.error(`Firebase Error Code: ${err.code}`);
+          console.groupEnd();
+        }
+
+        setError(contextualError);
+        setData(null);
+        setIsLoading(false);
+
+        errorEmitter.emit('permission-error', contextualError);
+      }
+    );
+    return () => unsubscribe();
 
   }, [memoizedTargetRefOrQuery]);
   
