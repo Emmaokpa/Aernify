@@ -7,7 +7,6 @@ import { useAuth, useFirestore, useDoc } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 
-
 interface AuthContextState {
   user: User | null;
   profile: UserProfile | null;
@@ -34,8 +33,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { data: profile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
   useEffect(() => {
-    // This listener now ONLY handles setting the authenticated user state.
-    // Profile creation is handled explicitly on the sign-up/sign-in pages.
     const unsubscribe = onAuthStateChanged(auth, 
       (firebaseUser) => {
         setUser(firebaseUser);
@@ -52,16 +49,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth]);
 
-  // isUserLoading is true if auth state is loading, OR if we have a user but are still fetching their profile.
+  // FIX: isLoading is only false when both Auth AND Profile are settled
   const isUserLoading = isAuthLoading || (!!user && isProfileLoading);
 
   const value = { 
     user, 
     profile,
-    isUserLoading: isUserLoading, 
+    isUserLoading, 
     isAuthenticated: !!user,
-    // Explicitly return false for isAdmin if the profile isn't loaded yet.
-    isAdmin: profile?.isAdmin ?? false,
+    isAdmin: !!profile?.isAdmin,
     userError 
   };
 
