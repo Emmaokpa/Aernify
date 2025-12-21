@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -25,20 +26,31 @@ function OrderList({ status }: { status: OrderStatus }) {
   const { isUserLoading, isAdmin, profile } = useUser();
 
   const ordersQuery = useMemo(() => {
-    // SECURITY GATE: Only build query if we are certain user is an Admin
-    if (isUserLoading || !isAdmin || !profile) return null;
+    // CRITICAL FIX: Only build the query if the user is NOT loading AND is a confirmed admin.
+    // If not, this returns null, and useCollection will not execute.
+    if (isUserLoading || !isAdmin) {
+      return null;
+    }
 
     return query(
       collection(firestore, 'orders'),
       where('status', '==', status),
       orderBy('orderedAt', 'desc')
     );
-  }, [firestore, status, isUserLoading, isAdmin, profile]);
+  }, [firestore, status, isUserLoading, isAdmin]);
 
   const { data: orders, isLoading: isCollectionLoading } = useCollection<Order>(ordersQuery);
+  
+  // Combine both loading states for a clearer UI
+  const isLoading = isUserLoading || isCollectionLoading;
 
-  if (isUserLoading || isCollectionLoading) {
-    return <div className="grid gap-6"><Skeleton className="h-48 w-full" /></div>;
+  if (isLoading) {
+    return (
+        <div className="text-center py-20 border rounded-lg">
+            <Loader2 className="mx-auto h-12 w-12 text-muted-foreground animate-spin" />
+            <p className="mt-4 text-muted-foreground">Verifying admin permissions...</p>
+        </div>
+    );
   }
 
   if (!orders || orders.length === 0) {
