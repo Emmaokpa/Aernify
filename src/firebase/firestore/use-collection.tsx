@@ -64,17 +64,16 @@ export function useCollection<T = any>(
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-    // If no query is provided, do nothing and return early.
+    // GATE 1: Immediate exit if no query provided
     if (!memoizedTargetRefOrQuery) {
       setIsLoading(false);
-      setData(null); // Ensure data is cleared if query becomes null
+      setData(null);
       return;
     }
 
     setIsLoading(true);
     setError(null);
 
-    // Directly use memoizedTargetRefOrQuery as it's assumed to be the final query
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
@@ -87,7 +86,7 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
+        // GATE 2: Calculate path ONLY if query exists and an error occurs
         const path: string =
           memoizedTargetRefOrQuery.type === 'collection'
             ? (memoizedTargetRefOrQuery as CollectionReference).path
