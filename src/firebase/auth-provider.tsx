@@ -49,15 +49,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth]);
 
-  // FIX: isLoading is only false when both Auth AND Profile are settled
-  const isUserLoading = isAuthLoading || (!!user && isProfileLoading);
+  // isUserLoading is only false when both Auth AND Profile are settled.
+  const isUserLoading = isAuthLoading || (!!user && (isProfileLoading || !profile));
 
   const value = { 
     user, 
     profile,
     isUserLoading, 
     isAuthenticated: !!user,
-    isAdmin: !!profile?.isAdmin,
+    isAdmin: profile?.isAdmin === true, // Strict check
     userError 
   };
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,6 @@ import {
   QuerySnapshot,
   CollectionReference,
 } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -38,28 +38,40 @@ export function useCollection<T = any>(
 
     setIsLoading(true);
     setError(null);
+    
+    // Add a 10ms delay to allow React state to settle (The "Safety Delay")
+    const timeoutId = setTimeout(() => {
+        const unsubscribe = onSnapshot(
+          memoizedTargetRefOrQuery,
+          (snapshot: QuerySnapshot<DocumentData>) => {
+            const results = snapshot.docs.map(doc => ({ ...(doc.data() as T), id: doc.id }));
+            setData(results);
+            setIsLoading(false);
+          },
+          (err: FirestoreError) => {
+            if (err.code === 'permission-denied') {
+               console.warn("Blocked premature firestore request to protected path");
+               setIsLoading(false);
+               return; 
+            }
+            const path = (memoizedTargetRefOrQuery as any).path || "unknown path";
+            const contextualError = new FirestorePermissionError({
+              operation: 'list',
+              path,
+            });
 
-    const unsubscribe = onSnapshot(
-      memoizedTargetRefOrQuery,
-      (snapshot: QuerySnapshot<DocumentData>) => {
-        const results = snapshot.docs.map(doc => ({ ...(doc.data() as T), id: doc.id }));
-        setData(results);
-        setIsLoading(false);
-      },
-      (err: FirestoreError) => {
-        const path = (memoizedTargetRefOrQuery as any).path || "orders";
-        const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path,
-        });
+            setError(contextualError);
+            setIsLoading(false);
+            errorEmitter.emit('permission-error', contextualError);
+          }
+        );
+        return () => unsubscribe();
+    }, 10);
 
-        setError(contextualError);
-        setIsLoading(false);
-        errorEmitter.emit('permission-error', contextualError);
-      }
-    );
+    return () => {
+        clearTimeout(timeoutId);
+    };
 
-    return () => unsubscribe();
   }, [memoizedTargetRefOrQuery]);
   
   return { data, isLoading, error };
