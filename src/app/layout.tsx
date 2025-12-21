@@ -1,3 +1,4 @@
+
 'use client';
 
 import './globals.css';
@@ -18,8 +19,18 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
-         <meta name="clckd" content="c83bb048577e7dcec8c2e03c5abaa2dc" />
          <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
+         <script async src="https://cdn.asacdn.com/aclib.js"></script>
+         <script
+            type="text/javascript"
+            dangerouslySetInnerHTML={{
+              __html: `
+                aclib.runAutoTag({
+                    zoneId: 'fike34hhxa',
+                });
+              `,
+            }}
+          />
       </head>
       <body className={cn('font-body antialiased', inter.variable)}>
         <FirebaseClientProvider>
