@@ -40,6 +40,7 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
     return;
   }
   
+  let startingCoins = 10;
   // If a referral code was used, apply it.
   if (referralCode) {
       const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
@@ -55,7 +56,7 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
     displayName: displayName || user.displayName || 'New User',
     email: user.email || '',
     photoURL: user.photoURL,
-    coins: 10, // Base starting coins for a new user. Daily login bonus is separate.
+    coins: startingCoins, // Base starting coins for a new user. Daily login bonus is separate.
     weeklyCoins: 0,
     referralCode: generateReferralCode(),
     isVip: false,
@@ -109,8 +110,11 @@ export default function SignUpPage() {
     } catch (err: any) {
       console.error('Google sign-in error:', err);
       if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
-        setError('An account already exists with this email address. Please sign in with your original method.');
-      } else {
+        setError('An account with this email already exists. Please sign in using your original method.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('A network error occurred. Please check your connection and try again.');
+      }
+      else {
         setError('An error occurred during Google sign-in. Please try again.');
       }
     } finally {
