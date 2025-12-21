@@ -1,10 +1,9 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // Helper functions
+    // --- Helper functions ---
     function isSignedIn() {
       return request.auth != null;
     }
@@ -14,17 +13,17 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Check for the custom claim 'isAdmin' on the auth token
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      // Improved: Check existence first to prevent rule crashes
+      let userDoc = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userDoc) && get(userDoc).data.isAdmin == true;
     }
     
     function isCoinUpdate() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coins', 'weeklyCoins']);
     }
 
-    // Rules for the users collection
+    // --- Rules for the users collection ---
     match /users/{userId} {
-      // A user can create their own profile.
       allow create: if isSignedIn() 
                     && isOwner(userId) 
                     && request.resource.data.isAdmin == false
@@ -34,179 +33,84 @@ service cloud.firestore {
                     && request.resource.data.isVip == false
                     && !exists(/databases/$(database)/documents/users/$(userId));
       
-      // Any signed-in user can read public user data and list users for the leaderboard.
       allow get, list: if isSignedIn();
       
-      // An owner can update their own profile, but not sensitive fields.
-      // Admins can update any field on any user.
-      // Server can update coin balances.
       allow update: if (isOwner(userId) &&
                        request.resource.data.isAdmin == resource.data.isAdmin &&
                        request.resource.data.referralCode == resource.data.referralCode)
                     || isAdmin()
                     || isCoinUpdate();
 
-      // Only admins can delete user documents
       allow delete: if isAdmin();
     }
     
-    // Rules for the daily_logins collection
+    // --- Rules for the daily_logins collection ---
     match /daily_logins/{loginId} {
-        // A user can create a login record for themselves for the current day.
-        // The document ID must be in the format 'userId_YYYY-MM-DD'.
-        // The document should only contain the 'claimedAt' field.
         allow create: if isSignedIn() 
                       && request.resource.data.size() == 1 
                       && "claimedAt" in request.resource.data
                       && loginId.split('_')[0] == request.auth.uid;
 
-        // Nobody can update or delete login records.
         allow update, delete: if false;
-
-        // Only the owner can read their login records.
-        allow get: if isSignedIn() && isOwner(loginId.split('_')[0]);
+        allow get, list: if isSignedIn() && isOwner(loginId.split('_')[0]);
     }
 
-    // Rules for the games collection
-    match /games/{gameId} {
-        // Any signed-in user can read game data.
-        allow read: if isSignedIn();
-        // Only admins can write (create, update, delete) game data.
-        allow write: if isAdmin();
-    }
+    // --- Global Read Collections (Games, Offers, Products, etc.) ---
+    match /games/{gameId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /offers/{offerId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /affiliate_products/{productId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /products/{productId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /giftCards/{giftCardId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /challenges/{challengeId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
 
-    // Rules for the offers collection
-    match /offers/{offerId} {
-        // Any signed-in user can read offer data.
-        allow read: if isSignedIn();
-        // Only admins can write (create, update, delete) offer data.
-        allow write: if isAdmin();
-    }
+    // --- Submissions and Requests (User Owned) ---
     
-    // Rules for the affiliate_products collection
-    match /affiliate_products/{productId} {
-        // Any signed-in user can read affiliate product data.
-        allow read: if isSignedIn();
-        // Only admins can write (create, update, delete) affiliate product data.
-        allow write: if isAdmin();
-    }
-
-    // Rules for the products collection
-    match /products/{productId} {
-        // Any signed-in user can read product data.
-        allow read: if isSignedIn();
-        // Only admins can write (create, update, delete) product data.
-        allow write: if isAdmin();
-    }
-
-     // Rules for the giftCards collection
-    match /giftCards/{giftCardId} {
-        // Any signed-in user can read gift card data.
-        allow read: if isSignedIn();
-        // Only admins can write (create, update, delete) gift card data.
-        allow write: if isAdmin();
-    }
-
-    // Rules for the offer_submissions collection
     match /offer_submissions/{submissionId} {
-        // A user can create their own submission.
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        
-        // Admins can read all submissions. Users can read their own.
-        allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-
-        // Only admins can update the status of a submission. A user cannot change their own submission.
+        // User can read/list their own, Admin can read everything
+        allow read: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
         allow update: if isAdmin();
-        
-        // Nobody can delete submissions for now.
         allow delete: if false;
     }
     
-    // Rules for the affiliate_sale_submissions collection
     match /affiliate_sale_submissions/{submissionId} {
-        // A user can create their own submission.
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        
-        // Admins can read all submissions. Users can read their own.
-        allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-
-        // Only admins can update the status of a submission. A user cannot change their own submission.
+        allow read: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
         allow update: if isAdmin();
-        
-        // Nobody can delete submissions for now.
         allow delete: if false;
     }
 
-    // Rules for the redemption_requests collection
     match /redemption_requests/{requestId} {
-      // A user can create their own request.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-
-      // Admins can read all requests. Users can read their own.
-      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-
-      // Only admins can update the status of a request.
+      allow read: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
       allow update: if isAdmin();
-      
-      // Nobody can delete requests.
       allow delete: if false;
     }
     
-    // Rules for the withdrawal_requests collection
     match /withdrawal_requests/{requestId} {
-      // A user can create their own withdrawal request.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      // Admins can read all requests. Users can read their own.
-      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      // Only Admins can list all withdrawal requests.
-      allow list: if isAdmin();
-      // Only admins can update the status of a request.
+      // FIX: Added 'list' permission for users to query their own history
+      allow get, list: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
       allow update: if isAdmin();
-      // Nobody can delete requests for now.
       allow delete: if false;
     }
 
-    // Rules for the challenges collection
-    match /challenges/{challengeId} {
-      // Any signed-in user can read challenge definitions.
-      allow read: if isSignedIn();
-      // Only admins can write (create, update, delete) challenges.
-      allow write: if isAdmin();
-    }
-
-    // Rules for the user_challenge_progress collection
     match /user_challenge_progress/{progressId} {
-      // progressId is in format "userId_YYYY-MM-DD"
-      function getUserId() {
-        return progressId.split('_')[0];
-      }
-      
-      // Users can read their own progress.
-      allow get: if isSignedIn() && isOwner(getUserId());
-      
-      // Users can create their own progress document for today.
+      function getUserId() { return progressId.split('_')[0]; }
+      allow get, list: if isSignedIn() && isOwner(getUserId());
       allow create, update: if isSignedIn() && isOwner(getUserId());
-      
-      // Nobody can delete progress.
       allow delete: if false;
     }
 
-    // Rules for the orders collection
     match /orders/{orderId} {
-      // A user can create their own order.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-
-      // Only admins can read or list all orders.
-      allow list, get: if isAdmin();
-      
-      // Only admins can update the status of an order.
+      // FIX: Changed from Admin-only to Admin OR Owner
+      allow list, get: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
       allow update: if isAdmin();
-      
-      // Nobody can delete orders for now.
       allow delete: if false;
     }
     
-    // Fallback rule to deny all other access
+    // Fallback rule
     match /{document=**} {
       allow read, write: if false;
     }
