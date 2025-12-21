@@ -5,9 +5,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode, useMe
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { useAuth, useFirestore, useDoc } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { doc } from 'firebase/firestore';
 
 
 interface AuthContextState {
@@ -20,11 +18,6 @@ interface AuthContextState {
 }
 
 const AuthContext = createContext<AuthContextState | undefined>(undefined);
-
-// Function to generate a random referral code
-const generateReferralCode = () => {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const auth = useAuth();
@@ -41,59 +34,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { data: profile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
   useEffect(() => {
+    // This listener now ONLY handles setting the authenticated user state.
+    // Profile creation is handled explicitly on the sign-up/sign-in pages.
     const unsubscribe = onAuthStateChanged(auth, 
-      async (firebaseUser) => {
-        if (firebaseUser) {
-          // User is signed in. Check if their profile exists in Firestore.
-          const userRef = doc(firestore, 'users', firebaseUser.uid);
-          
-          try {
-            const docSnap = await getDoc(userRef);
-
-            if (!docSnap.exists()) {
-              // User exists in Auth, but not in Firestore. Create the profile.
-              console.log(`User ${firebaseUser.uid} not found in Firestore. Creating profile...`);
-              
-              const newUserProfile: Omit<UserProfile, 'id'> = {
-                uid: firebaseUser.uid,
-                displayName: firebaseUser.displayName || 'New User',
-                email: firebaseUser.email || '',
-                photoURL: firebaseUser.photoURL,
-                coins: 10, // Award starting coins here
-                weeklyCoins: 0,
-                referralCode: generateReferralCode(),
-                isAdmin: false,
-                isVip: false,
-                currentStreak: 0,
-                lastLoginDate: '',
-              };
-              
-              // We create a version of the profile that is compliant with the creation rule (no coins)
-              const { coins, ...initialProfile } = newUserProfile;
-              
-              // This should succeed based on the security rule for create
-              await setDoc(userRef, initialProfile);
-              
-              // After creation, we can immediately update it to add the coins
-              // This is a separate operation that should be allowed by the update rule
-              await setDoc(userRef, { coins: coins }, { merge: true });
-
-            }
-          } catch (e: any) {
-            console.error("Error during user profile check/creation:", e);
-             const permissionError = new FirestorePermissionError({
-                path: userRef.path,
-                operation: 'write',
-                requestResourceData: { note: 'Profile creation/check failed' }
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            setUserError(permissionError);
-          }
-        }
+      (firebaseUser) => {
         setUser(firebaseUser);
         setIsUserLoading(false);
       },
       (error) => {
+        console.error("Authentication state error:", error);
         setUserError(error);
         setUser(null);
         setIsUserLoading(false);
@@ -101,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     return () => unsubscribe();
-  }, [auth, firestore]);
+  }, [auth]);
 
   const value = { 
     user, 

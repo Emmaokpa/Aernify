@@ -18,63 +18,10 @@ import Logo from '@/components/icons/logo';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider, signInWithPopup, AuthErrorCodes } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
 import { applyReferralCode } from '@/ai/flows/referral-flow';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-import type { UserProfile } from '@/lib/types';
+import { ensureUserProfile } from '@/lib/auth-utils';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
-
-
-// Function to generate a random referral code
-const generateReferralCode = () => {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-};
-
-async function createUserProfile(db: any, user: User, referralCode: string | null, displayName?: string) {
-  const userRef = doc(db, 'users', user.uid);
-  
-  // If a referral code was used, apply it.
-  if (referralCode) {
-      const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
-      if (referralResult.success) {
-           console.log(`Referral success! Referrer has been awarded coins.`);
-      } else {
-          console.warn("Referral code application failed:", referralResult.message);
-      }
-  }
-
-  // This profile structure is compliant with the security rule (no `coins` field).
-  // The `AuthProvider` will handle adding the initial coins on the next load.
-  const newUserProfile: Omit<UserProfile, 'id' | 'coins'> = {
-    uid: user.uid,
-    displayName: displayName || user.displayName || 'New User',
-    email: user.email || '',
-    photoURL: user.photoURL,
-    weeklyCoins: 0,
-    referralCode: generateReferralCode(),
-    isAdmin: false,
-    isVip: false,
-    currentStreak: 0,
-    lastLoginDate: '',
-  };
-
-  try {
-    await setDoc(userRef, newUserProfile);
-  } catch (e: any) {
-    console.error('Error creating user profile:', e);
-    const permissionError = new FirestorePermissionError({
-        path: userRef.path,
-        operation: 'create',
-        requestResourceData: newUserProfile
-    });
-    // Emit the error so a listener can catch it, but also throw it
-    // so we can catch it in the sign-up handler.
-    errorEmitter.emit('permission-error', permissionError);
-    throw permissionError;
-  }
-}
 
 export default function SignUpPage() {
   const { toast } = useToast();
@@ -92,13 +39,12 @@ export default function SignUpPage() {
     setError(null);
     const provider = new GoogleAuthProvider();
     try {
-      // The onAuthStateChanged listener in AuthProvider will handle profile
-      // creation and redirection. This component just needs to initiate the login.
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      // Explicitly ensure the user profile exists before redirecting.
+      await ensureUserProfile(firestore, result.user);
       router.push('/dashboard');
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
-        // User closed the popup, do nothing, just stop loading.
         console.log('Google Sign-In cancelled by user.');
       } else if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
         setError('An account with this email already exists. Please sign in using your original method.');
@@ -107,7 +53,7 @@ export default function SignUpPage() {
       }
       else {
         console.error('Google sign-in error:', err);
-        setError('An error occurred during Google sign-in. Please try again.');
+        setError(err.message || 'An error occurred during Google sign-in. Please try again.');
       }
     } finally {
         setIsGoogleLoading(false);
@@ -137,14 +83,19 @@ export default function SignUpPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      if (user) {
-        await updateProfile(user, {
-          displayName: username,
-        });
+      await updateProfile(user, { displayName: username });
 
-        // Create the user profile document in Firestore
-        await createUserProfile(firestore, user, referralCode, username);
+      // Apply referral code if provided.
+      if (referralCode) {
+        const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
+        if (!referralResult.success) {
+          console.warn("Referral code application failed:", referralResult.message);
+          toast({ variant: 'destructive', title: 'Invalid Referral Code', description: referralResult.message });
+        }
       }
+
+      // Create the user profile document in Firestore using the new centralized function.
+      await ensureUserProfile(firestore, user);
 
       toast({
         title: 'Account Created!',
@@ -154,10 +105,7 @@ export default function SignUpPage() {
       router.push('/dashboard');
 
     } catch (err: any) {
-      if (err instanceof FirestorePermissionError) {
-        setError(`Database Error: Could not create user profile. ${err.message}`);
-      }
-      else if (err.code === 'auth/email-already-in-use') {
+      if (err.code === 'auth/email-already-in-use') {
         setError('This email is already in use. Please try another.');
       } else if (err.code === 'auth/weak-password') {
         setError('Password should be at least 6 characters.');
@@ -165,7 +113,7 @@ export default function SignUpPage() {
         setError('A network error occurred. Please check your internet connection and try again.');
       }
       else {
-        setError('An unexpected error occurred. Please try again.');
+        setError(err.message || 'An unexpected error occurred. Please try again.');
         console.error(err);
       }
     } finally {
