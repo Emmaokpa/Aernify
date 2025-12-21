@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,6 +10,7 @@ import {
   QuerySnapshot,
   CollectionReference,
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -58,13 +60,14 @@ export function useCollection<T = any>(
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as true
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
     if (!memoizedTargetRefOrQuery) {
+      // If the query is null (e.g., waiting for auth), we are still in a "loading" state.
+      setIsLoading(true); 
       setData(null);
-      setIsLoading(false);
       setError(null);
       return;
     }
@@ -95,6 +98,13 @@ export function useCollection<T = any>(
           operation: 'list',
           path,
         })
+        
+        if (error.code === 'permission-denied') {
+            console.error(
+                `Firestore Permission Denied on path "${path}". ` +
+                `Auth state:`, getAuth().currentUser
+            );
+        }
 
         setError(contextualError)
         setData(null)

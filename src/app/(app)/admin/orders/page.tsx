@@ -37,14 +37,14 @@ function OrderList({ status }: { status: OrderStatus }) {
 
   const ordersQuery = useMemo(() => {
     // Only construct the query if the user is a loaded admin
-    if (isUserLoading || !isAdmin) return null;
+    if (!isAdmin) return null;
 
     return query(
       collection(firestore, 'orders'),
       where('status', '==', status),
       orderBy('orderedAt', 'desc')
     );
-  }, [firestore, status, isUserLoading, isAdmin]);
+  }, [firestore, status, isAdmin]);
 
   const { data: orders, isLoading: isCollectionLoading } = useCollection<Order>(ordersQuery);
 
@@ -80,11 +80,6 @@ function OrderList({ status }: { status: OrderStatus }) {
       </div>
     );
   }
-
-  if (!isAdmin) {
-      return null; // Don't render anything if the user is not an admin
-  }
-
 
   if (orders?.length === 0) {
     return (
