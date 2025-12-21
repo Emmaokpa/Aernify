@@ -49,14 +49,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [auth]);
 
   // The "Double-Lock": isUserLoading is only false when both Auth AND Profile are settled.
-  const isUserLoading = isAuthLoading || (!!user && (isProfileLoading || !profile));
+  const isUserLoading = isAuthLoading || (!!user && isProfileLoading);
 
   const value = { 
     user, 
     profile,
     isUserLoading, 
-    isAuthenticated: !!user,
-    isAdmin: profile?.isAdmin === true, // Strict check for boolean true
+    isAuthenticated: !!user && !!profile, // Ensure profile is also loaded
+    isAdmin: profile?.isAdmin === true,
     userError 
   };
 
