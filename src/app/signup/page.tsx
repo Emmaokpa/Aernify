@@ -18,7 +18,7 @@ import Logo from '@/components/icons/logo';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider, signInWithPopup, AuthErrorCodes } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { applyReferralCode } from '@/ai/flows/referral-flow';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -34,12 +34,6 @@ const generateReferralCode = () => {
 
 async function createUserProfile(db: any, user: User, referralCode: string | null, displayName?: string) {
   const userRef = doc(db, 'users', user.uid);
-  const docSnap = await getDoc(userRef);
-
-  // Only create profile if it doesn't exist
-  if (docSnap.exists()) {
-    return;
-  }
   
   // If a referral code was used, apply it.
   if (referralCode) {
@@ -51,31 +45,29 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
       }
   }
 
-  const newUserProfile: Omit<UserProfile, 'id' | 'isAdmin' | 'coins'> = {
+  // This profile structure is compliant with the security rule (no `coins` field).
+  // The `AuthProvider` will handle adding the initial coins on the next load.
+  const newUserProfile: Omit<UserProfile, 'id' | 'coins'> = {
     uid: user.uid,
     displayName: displayName || user.displayName || 'New User',
     email: user.email || '',
     photoURL: user.photoURL,
     weeklyCoins: 0,
     referralCode: generateReferralCode(),
+    isAdmin: false,
     isVip: false,
     currentStreak: 0,
     lastLoginDate: '',
   };
 
-  const finalProfile = {
-      ...newUserProfile,
-      isAdmin: false,
-  }
-
   try {
-    await setDoc(userRef, finalProfile);
+    await setDoc(userRef, newUserProfile);
   } catch (e: any) {
     console.error('Error creating user profile:', e);
     const permissionError = new FirestorePermissionError({
         path: userRef.path,
         operation: 'create',
-        requestResourceData: finalProfile
+        requestResourceData: newUserProfile
     });
     // Emit the error so a listener can catch it, but also throw it
     // so we can catch it in the sign-up handler.
@@ -100,22 +92,14 @@ export default function SignUpPage() {
     setError(null);
     const provider = new GoogleAuthProvider();
     try {
-      const userCredential = await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener in AuthProvider will handle profile creation for existing users.
-      // But for brand new users, we must create the profile immediately.
-      await createUserProfile(firestore, userCredential.user, null);
-
-      toast({
-          title: 'Account Created!',
-          description: "You've successfully signed up with Google.",
-      });
+      // The onAuthStateChanged listener in AuthProvider will handle profile
+      // creation and redirection. This component just needs to initiate the login.
+      await signInWithPopup(auth, provider);
       router.push('/dashboard');
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         // User closed the popup, do nothing, just stop loading.
         console.log('Google Sign-In cancelled by user.');
-      } else if (err instanceof FirestorePermissionError) {
-          setError(`Database Error: Could not create user profile. Please check Firestore rules. ${err.message}`);
       } else if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
         setError('An account with this email already exists. Please sign in using your original method.');
       } else if (err.code === 'auth/network-request-failed') {
