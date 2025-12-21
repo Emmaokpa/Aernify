@@ -63,20 +63,8 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (err: FirestoreError) => {
-        let path = "unknown path";
-        try {
-          const internalQuery = memoizedTargetRefOrQuery as any;
-           if (internalQuery.type === 'collection-group') {
-            path = `collectionGroup(${internalQuery.path})`;
-          }
-          else if (internalQuery.path) { // For CollectionReference
-            path = internalQuery.path;
-          } else if (internalQuery._query?.path) { // For Query
-            path = internalQuery._query.path.canonicalString();
-          }
-        } catch (e) {
-          path = "error-extracting-path";
-        }
+        // Fallback path in case internal properties are not available
+        const path = (memoizedTargetRefOrQuery as any)?.path || 'unknown path';
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',
@@ -86,9 +74,9 @@ export function useCollection<T = any>(
         if (err.code === 'permission-denied') {
           const auth = getAuth();
           console.group('🔥 Firestore Security Error');
-          console.error(`Path: ${path}`);
-          console.error(`User UID: ${auth.currentUser?.uid || 'Not Logged In'}`);
+          console.error(`A Firestore query was denied. This is often a race condition on initial load or a security rule mismatch.`);
           console.error(`Firebase Error Code: ${err.code}`);
+          console.error(`User UID: ${auth.currentUser?.uid || 'Not Logged In'}`);
           console.groupEnd();
         }
 
