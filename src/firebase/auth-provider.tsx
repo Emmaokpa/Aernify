@@ -52,6 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth]);
 
+  // isUserLoading is true if auth state is loading, OR if we have a user but are still fetching their profile.
   const isUserLoading = isAuthLoading || (!!user && isProfileLoading);
 
   const value = { 
@@ -59,6 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     profile,
     isUserLoading: isUserLoading, 
     isAuthenticated: !!user,
+    // Explicitly return false for isAdmin if the profile isn't loaded yet.
     isAdmin: profile?.isAdmin ?? false,
     userError 
   };

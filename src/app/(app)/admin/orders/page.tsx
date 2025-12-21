@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -6,7 +5,7 @@ import AdminAuthWrapper from '../AdminAuthWrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, doc, updateDoc, query, where, orderBy } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import Image from 'next/image';
@@ -22,7 +21,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuthContext } from '@/firebase/auth-provider';
 
 type OrderStatus = 'pending' | 'shipped' | 'delivered' | 'cancelled';
 
@@ -33,10 +31,11 @@ function OrderList({ status }: { status: OrderStatus }) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const { isUserLoading, isAdmin } = useAuthContext();
+  const { isUserLoading, isAdmin } = useUser();
 
   const ordersQuery = useMemo(() => {
-    // Only construct the query if the user is a loaded admin
+    // CRITICAL: Return null if loading or not an admin.
+    // This prevents useCollection from triggering the denied request.
     if (isUserLoading || !isAdmin) return null;
 
     return query(
@@ -44,7 +43,7 @@ function OrderList({ status }: { status: OrderStatus }) {
       where('status', '==', status),
       orderBy('orderedAt', 'desc')
     );
-  }, [firestore, status, isAdmin, isUserLoading]);
+  }, [firestore, status, isUserLoading, isAdmin]);
 
   const { data: orders, isLoading: isCollectionLoading } = useCollection<Order>(ordersQuery);
 
