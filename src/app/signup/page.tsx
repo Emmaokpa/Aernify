@@ -73,11 +73,15 @@ async function createUserProfile(db: any, user: User, referralCode: string | nul
     await setDoc(userRef, finalProfile);
   } catch (e: any) {
     console.error('Error creating user profile:', e);
-    errorEmitter.emit('permission-error', new FirestorePermissionError({
+    const permissionError = new FirestorePermissionError({
         path: userRef.path,
         operation: 'create',
         requestResourceData: finalProfile
-    }));
+    });
+    // Emit the error so a listener can catch it, but also throw it
+    // so we can catch it in the sign-up handler.
+    errorEmitter.emit('permission-error', permissionError);
+    throw permissionError;
   }
 }
 
@@ -109,7 +113,9 @@ export default function SignUpPage() {
       router.push('/dashboard');
     } catch (err: any) {
       console.error('Google sign-in error:', err);
-      if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
+      if (err instanceof FirestorePermissionError) {
+          setError(`Database Error: Could not create user profile. Please check Firestore rules. ${err.message}`);
+      } else if (err.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
         setError('An account with this email already exists. Please sign in using your original method.');
       } else if (err.code === 'auth/network-request-failed') {
         setError('A network error occurred. Please check your connection and try again.');
@@ -162,7 +168,10 @@ export default function SignUpPage() {
       router.push('/dashboard');
 
     } catch (err: any) {
-      if (err.code === 'auth/email-already-in-use') {
+      if (err instanceof FirestorePermissionError) {
+        setError(`Database Error: Could not create user profile. ${err.message}`);
+      }
+      else if (err.code === 'auth/email-already-in-use') {
         setError('This email is already in use. Please try another.');
       } else if (err.code === 'auth/weak-password') {
         setError('Password should be at least 6 characters.');
