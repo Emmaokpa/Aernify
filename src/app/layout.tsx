@@ -2,6 +2,7 @@
 'use client';
 
 import './globals.css';
+import 'video.js/dist/video-js.css';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';

@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trophy, Users, Copy, Info, PlayCircle } from 'lucide-react';
+import { Trophy, Users, Copy, Info, PlayCircle, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -19,6 +19,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { incrementChallengeProgress } from '@/lib/challenges';
 import { doc, updateDoc, increment } from 'firebase/firestore';
+import VideoAdPlayer from '@/components/video-ad-player';
 
 
 export default function EarnPage() {
@@ -28,29 +29,14 @@ export default function EarnPage() {
   const [adsWatched, setAdsWatched] = useState(0);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
   const dailyAdLimit = 20;
-  const [countdown, setCountdown] = useState(15);
   
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isAdModalOpen && countdown > 0) {
-      timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-    } else if (isAdModalOpen && countdown === 0) {
-      handleVideoEnd();
-    }
-    return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdModalOpen, countdown]);
-
   const handleWatchAd = () => {
     if (adsWatched < dailyAdLimit) {
-      setCountdown(15);
       setIsAdModalOpen(true);
     }
   };
 
-  const handleVideoEnd = async () => {
+  const handleAdEnded = async () => {
     setIsAdModalOpen(false);
     setAdsWatched(adsWatched + 1);
     
@@ -80,6 +66,16 @@ export default function EarnPage() {
         });
     }
   };
+
+  const handleAdError = (error: any) => {
+    setIsAdModalOpen(false);
+    console.error("Ad Player Error:", error);
+    toast({
+        variant: "destructive",
+        title: "Ad Error",
+        description: "The video ad could not be loaded. Please try again later.",
+    });
+  }
 
   const handleCopyCode = () => {
     if (!profile?.referralCode) return;
@@ -168,26 +164,15 @@ export default function EarnPage() {
               Please watch the entire video to receive your reward.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="aspect-video w-full bg-black rounded-md overflow-hidden relative">
-            {/* Placeholder for a 15-second video ad */}
-            <video
-              width="100%"
-              height="100%"
-              autoPlay
-              muted // Autoplay often requires the video to be muted
-              playsInline
-              src="https://storage.googleapis.com/web-dev-assets/video-and-source-tags/chrome.mp4"
-            >
-              Your browser does not support the video tag.
-            </video>
-            <div className="absolute top-2 right-2 bg-black/50 text-white text-xs font-bold rounded-full h-8 w-8 flex items-center justify-center">
-              {countdown}
-            </div>
+          <div className="w-full bg-black rounded-md overflow-hidden relative flex items-center justify-center min-h-[300px]">
+            <VideoAdPlayer
+              adTagUrl="https://youradexchange.com/video/select.php?r=10738130"
+              onAdEnded={handleAdEnded}
+              onAdError={handleAdError}
+            />
           </div>
         </AlertDialogContent>
       </AlertDialog>
     </>
   );
 }
-
-    
