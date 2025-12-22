@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
 import type { Player } from 'video.js';
 import 'video.js/dist/video-js.css';
@@ -35,88 +35,82 @@ export default function VideoAdPlayer({
   onAdError,
 }: VideoAdPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<Player | null>(null);
+  const [player, setPlayer] = useState<Player | null>(null);
 
+  // Phase 1: Create the player instance.
   useEffect(() => {
-    if (!containerRef.current || playerRef.current) return;
+    if (player || !containerRef.current) return;
 
     const videoEl = document.createElement('video');
     videoEl.className = 'video-js vjs-default-skin';
     containerRef.current.appendChild(videoEl);
 
-    const setupPlayer = async () => {
+    const playerInstance = videojs(videoEl, {
+      autoplay: false,
+      controls: false,
+      muted: false,
+      width: 640,
+      height: 360,
+    });
+
+    setPlayer(playerInstance);
+
+    return () => {
+      if (playerInstance && !playerInstance.isDisposed()) {
+        playerInstance.dispose();
+      }
+      setPlayer(null);
+    };
+  }, [player]);
+
+  // Phase 2: Initialize ads on the player once it's ready.
+  useEffect(() => {
+    if (!player) return;
+
+    const setupAds = async () => {
       try {
-        // 1. Load Google IMA SDK
         await loadScript(IMA_SDK_SRC);
+        await import('videojs-contrib-ads');
+        await import('videojs-ima');
 
-        // 2. Dynamically import and register plugins
-        const VjsContribAds = (await import('videojs-contrib-ads')).default;
-        const VjsIma = (await import('videojs-ima')).default;
+        // Check if player is still valid after async operations
+        if (player.isDisposed()) return;
         
-        videojs.registerPlugin('ads', VjsContribAds);
-        videojs.registerPlugin('ima', VjsIma);
-
-        // 3. Create Video.js player
-        const player = videojs(videoEl, {
-          autoplay: false,
-          controls: false,
-          muted: false,
-          width: 640,
-          height: 360,
-        });
-
-        playerRef.current = player;
-
-        // 4. Initialize ads framework
+        // Initialize the base ads plugin
         (player as any).ads();
-
-        // 5. Defer IMA initialization to the next event loop tick
-        setTimeout(() => {
-          if (player.isDisposed()) return;
-          
-          // 6. Initialize IMA
-          (player as any).ima({
+        
+        // Initialize the IMA plugin
+        (player as any).ima({
             adTagUrl,
             debug: true,
-          });
+        });
 
-          // 7. Require user interaction to start ads
-          const startAds = () => {
-            player.off('click', startAds);
-            // This call is crucial for iOS and other platforms
+        // Add user interaction listener
+        const startAds = () => {
+          player.off('click', startAds);
+          try {
             (player as any).ima.initializeAdDisplayContainer();
             (player as any).ima.requestAds();
-          };
-
-          player.on('click', startAds);
-
-          // 8. Reward only after all ads complete
-          player.on('ads-all-ads-completed', () => {
-            onAdEnded();
-          });
-
-          player.on('adserror', (e: any) => {
-            console.error("Ad Error Event:", e);
+            player.play();
+          } catch (e) {
             onAdError(e);
-          });
+          }
+        };
 
-        }, 0);
+        player.on('click', startAds);
+
+        // Add event listeners for ad lifecycle
+        player.on('ads-all-ads-completed', onAdEnded);
+        player.on('adserror', onAdError);
 
       } catch (err) {
-        console.error("Error setting up player:", err);
         onAdError(err);
       }
     };
 
-    setupPlayer();
+    setupAds();
 
-    return () => {
-      if (playerRef.current && !playerRef.current.isDisposed()) {
-        playerRef.current.dispose();
-        playerRef.current = null;
-      }
-    };
-  }, [adTagUrl, onAdEnded, onAdError]);
+  }, [player, adTagUrl, onAdEnded, onAdError]);
 
   return (
     <div data-vjs-player>
