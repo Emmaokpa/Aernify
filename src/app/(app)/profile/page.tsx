@@ -7,8 +7,6 @@ import {
   User,
   ShieldCheck,
   CreditCard,
-  Languages,
-  Bell,
   FileText,
   HelpCircle,
   LogOut,
@@ -17,8 +15,6 @@ import {
   ShieldOff,
   Crown,
   Loader2,
-  Pencil,
-  Construction,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -194,8 +190,6 @@ export default function ProfilePage() {
 
   const menuItems = [
     { icon: <CreditCard />, text: 'Payment history', href: '/profile/history' },
-    { icon: <Languages />, text: 'Language', comingSoon: true },
-    { icon: <Bell />, text: 'Notifications', comingSoon: true },
     { icon: <FileText />, text: 'Terms and conditions', href: '/terms' },
     { icon: <HelpCircle />, text: 'Support', href: '/support' },
   ];
