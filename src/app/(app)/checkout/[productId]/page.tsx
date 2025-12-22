@@ -326,21 +326,21 @@ export default function CheckoutPage() {
   
    useEffect(() => {
     if (profile) {
-      // Use reset to update form values. Only update if the form fields are empty
-      // to avoid overwriting user input.
+      // Use reset to update the entire form's default values at once.
+      // This is more stable than setValue for multiple fields.
       form.reset({
-        email: form.getValues('email') || profile.email || '',
-        fullName: form.getValues('fullName') || profile.displayName || '',
-        phoneNumber: form.getValues('phoneNumber') || '',
-        addressLine1: form.getValues('addressLine1') || '',
-        addressLine2: form.getValues('addressLine2') || '',
-        city: form.getValues('city') || '',
-        state: form.getValues('state') || '',
-        postalCode: form.getValues('postalCode') || '',
-        country: form.getValues('country') || 'Nigeria',
+        email: profile.email || '',
+        fullName: profile.displayName || '',
+        phoneNumber: '',
+        addressLine1: '',
+        addressLine2: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: 'Nigeria',
       });
     }
-  }, [profile, form]);
+  }, [profile, form.reset]);
 
 
   const isLoading = isUserLoading || isProductLoading;
