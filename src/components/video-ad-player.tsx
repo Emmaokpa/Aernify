@@ -33,18 +33,17 @@ export default function VideoAdPlayer({
           const firstAd = res.ads[0];
           const creative = firstAd.creatives.find(c => c.type === 'linear');
           if (creative && creative.mediaFiles.length > 0) {
-            // Find a playable media file (e.g., mp4, webm)
+            // Find a playable media file (e.g., mp4, webm, ogg)
             const playableFile = creative.mediaFiles.find(
-              (mf: any) => mf.type === 'video/mp4' || mf.type === 'video/webm'
+              (mf: any) => mf.type === 'video/mp4' || mf.type === 'video/webm' || mf.type === 'video/ogg'
             );
             if (playableFile) {
               setAdCreative(playableFile);
               setStatus('ready');
             } else {
-              // Handle case where no compatible file is found gracefully
-              setErrorMessage('The ad server responded, but did not provide a compatible video format (MP4 or WebM).');
+              setErrorMessage('The ad server responded, but did not provide a compatible video format (MP4, WebM, or OGV).');
               setStatus('error');
-              onAdError(new Error('No compatible MP4 or WebM media file found in the ad response.'));
+              onAdError(new Error('No compatible video format found in the ad response.'));
             }
           } else {
             setErrorMessage('No video creative found in the ad response.');
@@ -52,10 +51,8 @@ export default function VideoAdPlayer({
             onAdError(new Error('No video creative found in the ad response.'));
           }
         } else {
-          // This is the key change: handle the "no ads" case gracefully.
           setErrorMessage('No ads available right now. Please try again later.');
           setStatus('error');
-          // We call onAdError so the parent component knows to close the modal, but we've set a more specific message.
           onAdError(new Error('No ads found in VAST response.'));
         }
       })
