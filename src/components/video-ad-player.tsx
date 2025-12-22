@@ -2,17 +2,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import videojs from 'video.js';
-import type { Player } from 'video.js';
-import 'video.js/dist/video-js.css';
-import 'videojs-contrib-ads';
-import 'videojs-ima';
-import { AlertTriangle, Loader2, PlayCircle } from 'lucide-react';
-import { Button } from './ui/button';
-
-interface PlayerWithIMA extends Player {
-  ima: any;
-}
+import { AlertTriangle, Loader2 } from 'lucide-react';
 
 interface VideoAdPlayerProps {
   adTagUrl: string;
@@ -20,157 +10,115 @@ interface VideoAdPlayerProps {
   onAdError: (error: any) => void;
 }
 
+type PlayerStatus = 'loading' | 'playing' | 'error' | 'ended';
+
 export default function VideoAdPlayer({
   adTagUrl,
   onAdEnded,
   onAdError,
 }: VideoAdPlayerProps) {
-  const videoRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<PlayerWithIMA | null>(null);
-  const [playerState, setPlayerState] = useState<'idle' | 'loading' | 'error' | 'playing'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [status, setStatus] = useState<PlayerStatus>('loading');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
 
   useEffect(() => {
-    // This effect only runs once to create the video element and the player
-    if (!videoRef.current || playerRef.current) {
-      return;
-    }
+    let isMounted = true;
 
-    const videoElement = document.createElement('video');
-    videoElement.classList.add('video-js', 'vjs-big-play-centered');
-    videoRef.current.appendChild(videoElement);
+    const fetchAndParseVast = async () => {
+      try {
+        const response = await fetch(adTagUrl);
+        if (!response.ok) {
+          throw new Error(`VAST request failed with status: ${response.status}`);
+        }
+        const vastString = await response.text();
 
-    const playerOptions = {
-      controls: false,
-      autoplay: false,
-      preload: 'auto',
-      muted: false,
-      fluid: true,
-      width: 640,
-      height: 360,
-    };
-    
-    const player = videojs(videoElement, playerOptions) as PlayerWithIMA;
-    playerRef.current = player;
-    
-    // Cleanup on unmount
-    return () => {
-      if (playerRef.current && !playerRef.current.isDisposed()) {
-        playerRef.current.dispose();
-        playerRef.current = null;
-      }
-    };
-  }, []);
+        if (!isMounted) return;
 
-  const initializeIma = () => {
-    const player = playerRef.current;
-    if (!player || player.ima) { // Don't re-initialize
-      return;
-    }
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(vastString, 'text/xml');
 
-    setPlayerState('loading');
-    
-    const imaOptions = {
-      id: 'ima-plugin',
-      adTagUrl: adTagUrl,
-      debug: false,
-      disableAdControls: true,
-      autoplay: true,
-    };
-
-    player.ima(imaOptions);
-
-    // General ad error listener
-    const handleGenericAdError = (event: any) => {
-        setPlayerState('error');
-        const adError = event.getError ? event.getError() : event;
-        let friendlyMessage = 'An ad error occurred. Please try again later.';
+        const mediaFiles = xmlDoc.getElementsByTagName('MediaFile');
+        let compatibleUrl: string | null = null;
         
-        if (adError && adError.getErrorCode) {
-            switch (adError.getErrorCode()) {
-            case 1009: // No ads in VAST response
-                friendlyMessage = "No ads are available right now. Please try again later.";
-                break;
-            case 303: // No supported media file
-            case 403: // No compatible video format
-                friendlyMessage = "The ad server did not provide a compatible video format.";
-                break;
-            case 402: // Timeout
-                friendlyMessage = "The ad took too long to load. Check your connection.";
-                break;
-            default:
-                console.error(`Unhandled Ad Error Code: ${adError.getErrorCode()}`, adError.getMessage());
-                break;
-            }
-        } else {
-            console.error("Unknown Ad Error Structure:", adError);
+        // Find a compatible video format
+        for (let i = 0; i < mediaFiles.length; i++) {
+          const file = mediaFiles[i];
+          const type = file.getAttribute('type');
+          if (type === 'video/mp4' || type === 'video/webm' || type === 'video/ogg') {
+            compatibleUrl = file.textContent?.trim() || null;
+            break;
+          }
         }
         
-        setErrorMessage(friendlyMessage);
-        onAdError(adError || new Error(friendlyMessage));
+        if (compatibleUrl) {
+          setVideoSrc(compatibleUrl);
+          setStatus('playing');
+        } else {
+          throw new Error('No compatible video format (MP4, WebM, OGV) found in the ad response.');
+        }
+
+      } catch (error: any) {
+        if (isMounted) {
+          setErrorMessage(error.message);
+          setStatus('error');
+          onAdError(error);
+        }
+      }
     };
-    
-    player.on('adserror', handleGenericAdError);
-    player.on('aderror', handleGenericAdError);
 
-    // Ad lifecycle events
-    player.on('ads-ad-started', () => {
-      setPlayerState('playing');
-    });
+    fetchAndParseVast();
 
-    player.on('ended', () => {
-      onAdEnded();
-    });
-    
-    // This is crucial: request ads *after* setting up listeners
-    player.ima.requestAds();
-  };
+    return () => {
+      isMounted = false;
+    };
+  }, [adTagUrl, onAdError]);
 
-  const handlePlayClick = () => {
-    const player = playerRef.current;
-    if (!player) return;
-
-    // Initialize IMA on first play click
-    if (!player.ima) {
-      initializeIma();
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (status === 'playing' && videoSrc && videoElement) {
+      videoElement.play().catch(err => {
+         console.error("Autoplay failed:", err);
+         // If autoplay fails, we can show a play button, but for ads this is less ideal.
+         // For now, we will rely on browser policies allowing autoplay in a modal.
+      });
     }
-    
-    // The browser requires a play call directly within the user-initiated event handler
-    player.play().catch((error) => {
-        // This catch block handles cases where the browser *still* rejects autoplay
-        console.error("Player.play() was rejected:", error);
-        setPlayerState('error');
-        setErrorMessage("Could not start ad playback. Please check your browser settings or try again.");
-        onAdError(error);
-    });
-  };
+  }, [status, videoSrc]);
+
+
+  const handleVideoEnded = () => {
+      if (status !== 'ended') {
+          setStatus('ended');
+          onAdEnded();
+      }
+  }
 
   return (
-    <div className="w-full aspect-video bg-black rounded-md overflow-hidden relative" data-vjs-player>
-      <div ref={videoRef} className="w-full h-full" />
-      
-      {playerState === 'idle' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white p-4 z-20 cursor-pointer" onClick={handlePlayClick}>
-           <Button variant="ghost" className="h-24 w-24 rounded-full bg-black/50" size="icon">
-              <PlayCircle className="h-16 w-16 text-white" />
-           </Button>
-           <p className="mt-4 font-semibold text-lg">Play Ad to Earn Reward</p>
-        </div>
+    <div className="w-full aspect-video bg-black rounded-md overflow-hidden relative flex items-center justify-center">
+      {status === 'loading' && (
+        <>
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="absolute bottom-4 text-white text-sm">Loading Ad...</p>
+        </>
       )}
-      
-      {playerState === 'loading' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-4 z-20">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-          <p className="text-center font-semibold">Loading Ad...</p>
+
+      {status === 'error' && (
+        <div className="text-center p-4 text-white">
+          <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-4" />
+          <p className="font-semibold">Ad Playback Error</p>
+          <p className="mt-2 text-sm text-muted-foreground">{errorMessage}</p>
         </div>
       )}
 
-      {playerState === 'error' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-4 z-20">
-          <AlertTriangle className="h-10 w-10 text-destructive mb-4" />
-          <p className="text-center font-semibold">Ad Playback Error</p>
-          <p className="mt-2 text-center text-sm text-muted-foreground">{errorMessage}</p>
-        </div>
+      {videoSrc && (
+        <video
+          ref={videoRef}
+          src={videoSrc}
+          onEnded={handleVideoEnded}
+          className={`w-full h-full object-contain ${status === 'playing' ? 'block' : 'hidden'}`}
+          controls
+          playsInline
+        />
       )}
     </div>
   );
