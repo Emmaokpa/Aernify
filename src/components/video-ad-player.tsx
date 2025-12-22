@@ -43,9 +43,15 @@ export default function VideoAdPlayer({
         if (errorNode) {
             const errorCode = errorNode.getAttribute('errorCode');
             let message = `Ad server returned an error (Code: ${errorCode || 'unknown'}).`;
-            // Common VAST error codes
-            if (errorCode === '301' || errorCode === '303') message = 'No ads are available at the moment.';
-            throw new Error(message);
+            // Common VAST error codes for "no ad available"
+            if (errorCode === '301' || errorCode === '303' || !errorCode) {
+                 message = 'No ads are available at the moment. Please try again later.';
+            }
+            // Instead of throwing, set the error state
+            setErrorMessage(message);
+            setStatus('error');
+            onAdError(new Error(message));
+            return; // Stop further processing
         }
 
         const mediaFiles = xmlDoc.getElementsByTagName('MediaFile');
@@ -122,11 +128,11 @@ export default function VideoAdPlayer({
 
       {videoSrc && status === 'playing' && (
         <video
-          key={videoSrc} // This is the fix! It forces a full re-mount of the video element when the src changes.
+          key={videoSrc} // Force re-mount of video element when src changes
           ref={videoRef}
           src={videoSrc}
           onEnded={handleVideoEnded}
-          onError={() => { // Add basic video error handling
+          onError={() => {
              setStatus('error');
              setErrorMessage('The video file could not be played.');
              onAdError(new Error('Video element failed to play the source.'));
