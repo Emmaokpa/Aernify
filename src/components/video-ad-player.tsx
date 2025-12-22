@@ -48,8 +48,9 @@ export default function VideoAdPlayer({
           }
         } else {
           // This is the key change: handle the "no ads" case gracefully.
-          setErrorMessage('No ads were found in the response. This may be a temporary issue or a configuration problem.');
+          setErrorMessage('No ads available right now. Please try again later.');
           setStatus('error');
+          // We call onAdError so the parent component knows to close the modal, but we've set a more specific message.
           onAdError(new Error('No ads found in VAST response.'));
         }
       })
