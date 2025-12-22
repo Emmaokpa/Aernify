@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -40,17 +41,20 @@ export default function VideoAdPlayer({
               setAdCreative(playableFile);
               setStatus('ready');
             } else {
-              throw new Error('No compatible MP4 media file found in VAST response.');
+              throw new Error('No compatible MP4 media file found in the ad response.');
             }
           } else {
-            throw new Error('No linear creative found in VAST response.');
+            throw new Error('No video creative found in the ad response.');
           }
         } else {
-          throw new Error('No ads found in VAST response.');
+          // This is the key change: handle the "no ads" case gracefully.
+          setErrorMessage('No ads were found in the response. This may be a temporary issue or a configuration problem.');
+          setStatus('error');
+          onAdError(new Error('No ads found in VAST response.'));
         }
       })
       .catch(err => {
-        setErrorMessage(err.message || 'Failed to fetch or parse VAST tag.');
+        setErrorMessage(err.message || 'Failed to fetch or parse the ad tag.');
         setStatus('error');
         onAdError(err);
       });
