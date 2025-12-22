@@ -2,6 +2,7 @@
 'use client';
 
 import './globals.css';
+import 'video.js/dist/video-js.css';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
@@ -19,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
+         <Script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js" strategy="beforeInteractive" />
          <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
          {/* Hilltop Ads verification tag */}
          <meta name="20f7dcb8433877e0f2113193c523d84396745d77" content="20f7dcb8433877e0f2113193c523d84396745d77" />
