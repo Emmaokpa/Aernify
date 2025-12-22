@@ -26,7 +26,7 @@ export default function VideoAdPlayer({
 
   useEffect(() => {
     const vastClient = new VASTClient();
-    
+
     vastClient.get(adTagUrl, { wrapperChain: [] })
       .then(res => {
         if (res && res.ads && res.ads.length > 0) {
@@ -35,7 +35,7 @@ export default function VideoAdPlayer({
           if (creative && creative.mediaFiles.length > 0) {
             // Find a playable media file (e.g., mp4)
             const playableFile = creative.mediaFiles.find(
-              (mf) => mf.type === 'video/mp4'
+              (mf: any) => mf.type === 'video/mp4'
             );
             if (playableFile) {
               setAdCreative(playableFile);
