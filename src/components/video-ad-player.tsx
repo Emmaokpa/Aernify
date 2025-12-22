@@ -95,8 +95,8 @@ export default function VideoAdPlayer({
     // Wait for the IMA plugin to be ready before requesting ads
     player.on('ima_ready', () => {
       // Manually trigger ad request after initialization
+      // Let the IMA plugin handle the play() call.
       player.ima.requestAds();
-      player.play();
     });
 
 
