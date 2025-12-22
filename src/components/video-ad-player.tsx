@@ -7,8 +7,7 @@ import type { Player } from 'video.js';
 import 'video.js/dist/video-js.css';
 import 'videojs-contrib-ads'; // Import contrib-ads before IMA
 import 'videojs-ima';
-import { Loader2, AlertTriangle, PlayCircle } from 'lucide-react';
-import { Button } from './ui/button';
+import { AlertTriangle } from 'lucide-react';
 
 // Extend the Player interface from video.js to include the 'ima' property
 interface PlayerWithIMA extends Player {
@@ -92,6 +91,14 @@ export default function VideoAdPlayer({
         setErrorMessage(friendlyMessage);
         onAdError(adError || new Error(friendlyMessage));
     };
+    
+    // Wait for the IMA plugin to be ready before requesting ads
+    player.on('ima_ready', () => {
+      // Manually trigger ad request after initialization
+      player.ima.requestAds();
+      player.play();
+    });
+
 
     player.on('ads-ad-started', () => {
         // Mute the ad if it is not already muted
@@ -104,10 +111,6 @@ export default function VideoAdPlayer({
 
     player.on('ended', handleAdEnd);
     player.on('adserror', handleAdError);
-
-    // Manually trigger ad request after initialization
-    player.ima.requestAds();
-    player.play();
 
 
     // Cleanup on component unmount
