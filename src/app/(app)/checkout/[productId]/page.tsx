@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import Link from 'next/link';
 
 declare global {
   interface Window {
@@ -96,6 +97,12 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product?.variants?.[0] ?? null
   );
+  
+  useEffect(() => {
+    if (product?.variants && product.variants.length > 0) {
+      setSelectedVariant(product.variants[0]);
+    }
+  }, [product?.variants]);
   
   const placeOrderInFirestore = async (shippingValues: ShippingFormData, transactionRef: string) => {
      if (product.variants && product.variants.length > 0 && !selectedVariant) {
@@ -292,7 +299,6 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
 
 export default function CheckoutPage() {
   const params = useParams();
-  const router = useRouter();
   const firestore = useFirestore();
   const { user, profile, isUserLoading } = useUser();
   const productId = params.productId as string;
@@ -346,8 +352,8 @@ export default function CheckoutPage() {
   if (!product || !user || !profile) {
      return (
       <div className="max-w-6xl mx-auto text-center">
-         <Button variant="outline" onClick={() => router.back()} className="mb-6">
-            <ChevronLeft className="mr-2 h-4 w-4" /> Back to Shop
+        <Button variant="outline" asChild className="mb-6">
+            <Link href="/shop"><ChevronLeft className="mr-2 h-4 w-4" /> Back to Shop</Link>
         </Button>
         <Card className="mt-8">
             <CardHeader>
@@ -369,10 +375,14 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <Button variant="outline" onClick={() => router.back()} className="mb-6">
-        <ChevronLeft className="mr-2 h-4 w-4" /> Back to Shop
+      <Button variant="outline" asChild className="mb-6">
+        <Link href="/shop">
+            <ChevronLeft className="mr-2 h-4 w-4" /> Back to Shop
+        </Link>
       </Button>
       <CheckoutForm product={{...product, id: productId}} user={user} profile={profile} form={form} />
     </div>
   );
 }
+
+    
