@@ -31,9 +31,14 @@ export default function EarnPage() {
   const dailyAdLimit = 20;
   
   const handleWatchAd = () => {
-    if (adsWatched < dailyAdLimit) {
-      setIsAdModalOpen(true);
-    }
+    // Temporarily disabled
+    toast({
+        title: "Coming Soon!",
+        description: "Video ads are being configured. Please check back later.",
+    });
+    // if (adsWatched < dailyAdLimit) {
+    //   setIsAdModalOpen(true);
+    // }
   };
 
   const handleAdEnded = async () => {
@@ -107,17 +112,15 @@ export default function EarnPage() {
             <Button
               className="w-full"
               onClick={handleWatchAd}
-              disabled={adsWatched >= dailyAdLimit}
+              disabled // Temporarily disable the button
             >
               <PlayCircle className="w-5 h-5 mr-2" />
-              Watch Video Ad ({adsWatched}/{dailyAdLimit})
+              Watch Video Ad (Coming Soon)
             </Button>
             <div className="flex items-center justify-center text-sm text-muted-foreground">
               <Info className="w-4 h-4 mr-2" />
               <span>
-                {adsWatched >= dailyAdLimit
-                  ? 'You have reached your daily limit.'
-                  : 'You can watch more ads.'}
+                This feature is currently being updated.
               </span>
             </div>
           </CardContent>
@@ -156,6 +159,7 @@ export default function EarnPage() {
         </Card>
       </div>
 
+      {/* 
       <AlertDialog open={isAdModalOpen} onOpenChange={setIsAdModalOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -173,6 +177,7 @@ export default function EarnPage() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+      */}
     </>
   );
 }
