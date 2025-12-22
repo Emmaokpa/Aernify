@@ -1,9 +1,15 @@
+
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
 import type { Player } from 'video.js';
 import 'video.js/dist/video-js.css';
+
+// We need to ensure these are imported for their side-effects
+// but will register them manually to avoid bundler issues.
+import 'videojs-contrib-ads';
+import 'videojs-ima';
 
 const IMA_SDK_SRC = 'https://imasdk.googleapis.com/js/sdkloader/ima3.js';
 
@@ -35,57 +41,47 @@ export default function VideoAdPlayer({
   onAdError,
 }: VideoAdPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [player, setPlayer] = useState<Player | null>(null);
+  const playerRef = useRef<Player | null>(null);
 
-  // Phase 1: Create the player instance.
   useEffect(() => {
-    if (player || !containerRef.current) return;
+    // This effect runs only once when the component mounts.
+    // It handles the entire setup and cleanup lifecycle.
+    if (!containerRef.current || playerRef.current) {
+        return;
+    }
 
     const videoEl = document.createElement('video');
     videoEl.className = 'video-js vjs-default-skin';
     containerRef.current.appendChild(videoEl);
 
-    const playerInstance = videojs(videoEl, {
-      autoplay: false,
-      controls: false,
-      muted: false,
-      width: 640,
-      height: 360,
-    });
-
-    setPlayer(playerInstance);
-
-    return () => {
-      if (playerInstance && !playerInstance.isDisposed()) {
-        playerInstance.dispose();
-      }
-      setPlayer(null);
-    };
-  }, [player]);
-
-  // Phase 2: Initialize ads on the player once it's ready.
-  useEffect(() => {
-    if (!player) return;
-
-    const setupAds = async () => {
+    const setupPlayer = async () => {
       try {
+        // Phase 1: Load the external Google IMA SDK script.
         await loadScript(IMA_SDK_SRC);
-        await import('videojs-contrib-ads');
-        await import('videojs-ima');
 
-        // Check if player is still valid after async operations
-        if (player.isDisposed()) return;
-        
-        // Initialize the base ads plugin
+        // Phase 2: Create the Video.js player instance.
+        const player = videojs(videoEl, {
+          autoplay: false,
+          controls: false,
+          muted: false,
+          width: 640,
+          height: 360,
+        });
+
+        playerRef.current = player;
+
+        // Phase 3: Initialize the advertising framework on the player instance.
+        // This is the call that creates the `.ads()` method.
         (player as any).ads();
-        
-        // Initialize the IMA plugin
+
+        // Phase 4: Initialize the IMA plugin. This requires `.ads()` to exist.
         (player as any).ima({
             adTagUrl,
             debug: true,
         });
 
-        // Add user interaction listener
+        // Phase 5: Set up a listener for a user click to start the ad,
+        // which is required by modern browser autoplay policies.
         const startAds = () => {
           player.off('click', startAds);
           try {
@@ -99,7 +95,7 @@ export default function VideoAdPlayer({
 
         player.on('click', startAds);
 
-        // Add event listeners for ad lifecycle
+        // Phase 6: Set up event listeners for ad lifecycle events.
         player.on('ads-all-ads-completed', onAdEnded);
         player.on('adserror', onAdError);
 
@@ -108,9 +104,17 @@ export default function VideoAdPlayer({
       }
     };
 
-    setupAds();
+    setupPlayer();
 
-  }, [player, adTagUrl, onAdEnded, onAdError]);
+    // The single cleanup function for this effect.
+    return () => {
+      if (playerRef.current && !playerRef.current.isDisposed()) {
+        playerRef.current.dispose();
+        playerRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only once.
 
   return (
     <div data-vjs-player>
