@@ -26,6 +26,7 @@ export default function VideoAdPlayer({
     let isMounted = true;
 
     const fetchAndParseVast = async () => {
+      setStatus('loading');
       try {
         const response = await fetch(adTagUrl);
         if (!response.ok) {
@@ -37,11 +38,19 @@ export default function VideoAdPlayer({
 
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(vastString, 'text/xml');
+        
+        const errorNode = xmlDoc.querySelector('Error');
+        if (errorNode) {
+            const errorCode = errorNode.getAttribute('errorCode');
+            let message = `Ad server returned an error (Code: ${errorCode || 'unknown'}).`;
+            // Common VAST error codes
+            if (errorCode === '301' || errorCode === '303') message = 'No ads are available at the moment.';
+            throw new Error(message);
+        }
 
         const mediaFiles = xmlDoc.getElementsByTagName('MediaFile');
         let compatibleUrl: string | null = null;
         
-        // Find a compatible video format
         for (let i = 0; i < mediaFiles.length; i++) {
           const file = mediaFiles[i];
           const type = file.getAttribute('type');
@@ -79,11 +88,12 @@ export default function VideoAdPlayer({
     if (status === 'playing' && videoSrc && videoElement) {
       videoElement.play().catch(err => {
          console.error("Autoplay failed:", err);
-         // If autoplay fails, we can show a play button, but for ads this is less ideal.
-         // For now, we will rely on browser policies allowing autoplay in a modal.
+         setErrorMessage("Could not automatically play ad. Please ensure your browser allows autoplay.");
+         setStatus('error');
+         onAdError(err);
       });
     }
-  }, [status, videoSrc]);
+  }, [status, videoSrc, onAdError]);
 
 
   const handleVideoEnded = () => {
@@ -110,12 +120,18 @@ export default function VideoAdPlayer({
         </div>
       )}
 
-      {videoSrc && (
+      {videoSrc && status === 'playing' && (
         <video
+          key={videoSrc} // This is the fix! It forces a full re-mount of the video element when the src changes.
           ref={videoRef}
           src={videoSrc}
           onEnded={handleVideoEnded}
-          className={`w-full h-full object-contain ${status === 'playing' ? 'block' : 'hidden'}`}
+          onError={() => { // Add basic video error handling
+             setStatus('error');
+             setErrorMessage('The video file could not be played.');
+             onAdError(new Error('Video element failed to play the source.'));
+          }}
+          className={'w-full h-full object-contain'}
           controls
           playsInline
         />
