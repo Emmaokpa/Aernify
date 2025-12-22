@@ -38,7 +38,8 @@ export default function ManageVipPage() {
   const [targetUid, setTargetUid] = useState('');
 
   const handleVipUpdate = async (isVip: boolean) => {
-    if (!targetUid) {
+    const trimmedUid = targetUid.trim();
+    if (!trimmedUid) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -49,7 +50,7 @@ export default function ManageVipPage() {
 
     setIsLoading(true);
     try {
-      const userToUpdateRef = doc(firestore, 'users', targetUid);
+      const userToUpdateRef = doc(firestore, 'users', trimmedUid);
       const docSnap = await getDoc(userToUpdateRef);
 
       if (!docSnap.exists()) {
@@ -60,7 +61,7 @@ export default function ManageVipPage() {
 
       toast({
         title: 'Success!',
-        description: `User ${targetUid} has been ${isVip ? 'granted' : 'revoked'} VIP status.`,
+        description: `User ${trimmedUid} has been ${isVip ? 'granted' : 'revoked'} VIP status.`,
       });
     } catch (error: any) {
       console.error('Failed to update VIP status:', error);
@@ -130,7 +131,7 @@ export default function ManageVipPage() {
                         <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure you want to grant VIP?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will give user {targetUid || '...'} full VIP benefits.
+                            This will give user {targetUid.trim() || '...'} full VIP benefits.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -154,7 +155,7 @@ export default function ManageVipPage() {
                         <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure you want to revoke VIP?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will remove all VIP benefits from user {targetUid || '...'}.
+                            This will remove all VIP benefits from user {targetUid.trim() || '...'}.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
