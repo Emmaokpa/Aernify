@@ -73,7 +73,7 @@ export default function EarnPage() {
     toast({
         variant: "destructive",
         title: "Ad Error",
-        description: "The video ad could not be loaded. Please try again later.",
+        description: "The video ad could not be loaded. This might be due to ad availability or a configuration issue.",
     });
   }
 
@@ -166,7 +166,8 @@ export default function EarnPage() {
           </AlertDialogHeader>
           <div className="w-full bg-black rounded-md overflow-hidden relative flex items-center justify-center min-h-[300px]">
             <VideoAdPlayer
-              adTagUrl="https://youradexchange.com/video/select.php?r=10738130"
+              // IMPORTANT: Replace this placeholder with your actual VAST ad tag URL from Adcash.
+              adTagUrl="https://example.com/your-adcash-vast-tag.xml"
               onAdEnded={handleAdEnded}
               onAdError={handleAdError}
             />
