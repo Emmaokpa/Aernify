@@ -41,10 +41,15 @@ export default function VideoAdPlayer({
               setAdCreative(playableFile);
               setStatus('ready');
             } else {
-              throw new Error('No compatible MP4 media file found in the ad response.');
+              // Handle case where no compatible file is found gracefully
+              setErrorMessage('The ad server responded, but did not provide a compatible video format (MP4).');
+              setStatus('error');
+              onAdError(new Error('No compatible MP4 media file found in the ad response.'));
             }
           } else {
-            throw new Error('No video creative found in the ad response.');
+            setErrorMessage('No video creative found in the ad response.');
+            setStatus('error');
+            onAdError(new Error('No video creative found in the ad response.'));
           }
         } else {
           // This is the key change: handle the "no ads" case gracefully.
