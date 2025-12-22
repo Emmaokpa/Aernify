@@ -33,18 +33,18 @@ export default function VideoAdPlayer({
           const firstAd = res.ads[0];
           const creative = firstAd.creatives.find(c => c.type === 'linear');
           if (creative && creative.mediaFiles.length > 0) {
-            // Find a playable media file (e.g., mp4)
+            // Find a playable media file (e.g., mp4, webm)
             const playableFile = creative.mediaFiles.find(
-              (mf: any) => mf.type === 'video/mp4'
+              (mf: any) => mf.type === 'video/mp4' || mf.type === 'video/webm'
             );
             if (playableFile) {
               setAdCreative(playableFile);
               setStatus('ready');
             } else {
               // Handle case where no compatible file is found gracefully
-              setErrorMessage('The ad server responded, but did not provide a compatible video format (MP4).');
+              setErrorMessage('The ad server responded, but did not provide a compatible video format (MP4 or WebM).');
               setStatus('error');
-              onAdError(new Error('No compatible MP4 media file found in the ad response.'));
+              onAdError(new Error('No compatible MP4 or WebM media file found in the ad response.'));
             }
           } else {
             setErrorMessage('No video creative found in the ad response.');
