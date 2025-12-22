@@ -4,13 +4,13 @@ import { useState } from 'react';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, ShieldOff, Crown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { isFuture, formatDistanceToNow } from 'date-fns';
+import { isFuture, formatDistanceToNow, add } from 'date-fns';
+import { doc, updateDoc, Timestamp, getDoc } from 'firebase/firestore';
 
-// Make sure you have this in your .env.local file
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '';
 const VIP_PRICE_KOBO = 5000 * 100; // 5000 NGN in kobo
 
@@ -22,6 +22,7 @@ declare global {
 
 export default function VipPage() {
   const { user, profile, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
@@ -40,8 +41,7 @@ export default function VipPage() {
       email: user.email,
       amount: VIP_PRICE_KOBO,
       currency: 'NGN',
-      // Generate a unique reference for each transaction
-      ref: `AERNIFY-VIP-${user.uid}-${Date.now()}`, 
+      ref: `AERNIFY-VIP-${user.uid}-${Date.now()}`,
       metadata: {
         user_id: user.uid,
         payment_type: 'vip_subscription',
@@ -49,15 +49,44 @@ export default function VipPage() {
       onClose: () => {
         setIsProcessingPayment(false);
       },
-      callback: (response: any) => {
-        // The webhook will handle the success logic, but we can give the user
-        // some immediate feedback. The isVip status will update automatically
-        // when the webhook completes.
+      callback: async (response: any) => {
+        // INSTANT UPDATE LOGIC
+        // The webhook is still the source of truth, but this provides instant UI feedback.
         setIsProcessingPayment(false);
-        toast({
-          title: 'Payment Successful!',
-          description: 'Your payment is being verified. Your VIP status will update shortly.',
-        });
+        if (response.status === 'success' && user) {
+          try {
+            const userRef = doc(firestore, 'users', user.uid);
+            const userSnap = await getDoc(userRef);
+            const userProfile = userSnap.data();
+
+            const now = new Date();
+            let startDate = now;
+
+            // If user is already a VIP, extend their subscription
+            if (userProfile?.vipExpiresAt && userProfile.vipExpiresAt.toDate() > now) {
+                startDate = userProfile.vipExpiresAt.toDate();
+            }
+
+            const newExpirationDate = add(startDate, { days: 30 });
+
+            // Optimistically update the user document on the client
+            await updateDoc(userRef, {
+              vipExpiresAt: Timestamp.fromDate(newExpirationDate)
+            });
+
+            toast({
+              title: 'Welcome to VIP!',
+              description: 'Your VIP status is now active.',
+            });
+          } catch (error) {
+              console.error("Client-side VIP update failed:", error);
+              // Inform user that verification will happen in the background
+              toast({
+                  title: 'Payment Successful!',
+                  description: 'Your VIP status will be updated shortly after verification.',
+              });
+          }
+        }
       },
     });
 
