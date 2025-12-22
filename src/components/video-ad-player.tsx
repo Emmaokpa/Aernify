@@ -47,27 +47,27 @@ const VideoAdPlayer: React.FC<VideoAdPlayerProps> = ({ adTagUrl, onAdEnded, onAd
     videoRef.current.appendChild(videoElement);
 
     const initializePlayer = () => {
-        const imaOptions = {
-            id: videoElement.id,
-            adTagUrl: adTagUrl,
-        };
-
+        // Step 1: Initialize the player with basic settings and the ads plugin
         const player = videojs(videoElement, {
             autoplay: true,
             controls: false,
             muted: false,
             width: 640,
             height: 360,
-            // Pass IMA options directly into the player constructor
             plugins: {
-                // videojs-contrib-ads options
-                ads: {},
-                // videojs-ima options
-                ima: imaOptions
+                // Initialize the base ads plugin
+                ads: {}
             }
         });
         playerRef.current = player;
         
+        // Step 2: Initialize the IMA plugin imperatively after the player is created
+        const imaOptions = {
+            id: videoElement.id,
+            adTagUrl: adTagUrl,
+        };
+        (player as any).ima(imaOptions);
+
         // Set up event listeners
         player.on('ads-ad-started', () => {
             console.log('Ad has started playing.');
