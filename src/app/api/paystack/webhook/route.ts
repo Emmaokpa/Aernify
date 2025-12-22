@@ -33,12 +33,12 @@ export async function POST(request: NextRequest) {
   if (event.event === 'charge.success') {
     const { amount, reference, metadata } = event.data;
     
-    // Check if it is a VIP subscription payment
+    // Check if it is a VIP subscription payment by looking for our custom metadata
     if (metadata && metadata.payment_type === 'vip_subscription' && metadata.user_id) {
         const userId = metadata.user_id;
         const VIP_FEE_NAIRA = 5000;
         
-        // Verify the amount
+        // Verify the amount is correct for a VIP subscription
         if (amount / 100 < VIP_FEE_NAIRA) {
             console.log(`VIP payment received for user ${userId} with incorrect amount: ${amount / 100}. Ignoring.`);
             return NextResponse.json({ status: 'success', message: 'Payment received but incorrect amount for VIP.' });
@@ -50,8 +50,13 @@ export async function POST(request: NextRequest) {
             
             // Calculate new expiration date
             const userSnap = await getDoc(userRef);
-            const userProfile = userSnap.data();
 
+            if (!userSnap.exists()) {
+              console.error(`Webhook Error: User with ID ${userId} not found in Firestore.`);
+              return NextResponse.json({ status: 'error', message: 'User not found.' }, { status: 404 });
+            }
+
+            const userProfile = userSnap.data();
             const now = new Date();
             let startDate = now;
 
@@ -64,7 +69,6 @@ export async function POST(request: NextRequest) {
 
             // Update user's VIP status
             await updateDoc(userRef, { 
-              isVip: true, // Keep for compatibility/simple checks
               vipExpiresAt: Timestamp.fromDate(newExpirationDate)
             });
             
