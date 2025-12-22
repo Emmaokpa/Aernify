@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         const VIP_FEE_NAIRA = 5000;
         
         // Verify the amount
-        if (amount / 100 !== VIP_FEE_NAIRA) {
+        if (amount / 100 < VIP_FEE_NAIRA) {
             console.log(`VIP payment received for user ${userId} with incorrect amount: ${amount / 100}. Ignoring.`);
             return NextResponse.json({ status: 'success', message: 'Payment received but incorrect amount for VIP.' });
         }
