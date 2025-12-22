@@ -38,11 +38,12 @@ export default function GamePage() {
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
-    if (!game || !user || rewardClaimed || !isGameStarted) {
+    if (!isGameStarted || rewardClaimed || !game || !user) {
       return;
     }
 
     const claimReward = async () => {
+      // Re-check to be absolutely sure, as state might be stale in closures.
       if (!game || !user) return;
       try {
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -51,7 +52,6 @@ export default function GamePage() {
           weeklyCoins: increment(game.reward),
         });
         
-        // Correctly increment challenge progress here, after time has elapsed.
         await incrementChallengeProgress(firestore, user.uid, 'playGame');
         
         setRewardClaimed(true);
@@ -77,7 +77,6 @@ export default function GamePage() {
       }
     };
     
-    // Countdown timer
     const gameTimer = setInterval(() => {
         setCountdown(prev => {
             if (prev <= 1) {
@@ -92,7 +91,7 @@ export default function GamePage() {
     }, 1000);
     
     return () => clearInterval(gameTimer);
-  }, [game, user, firestore, rewardClaimed, toast, isGameStarted]);
+  }, [isGameStarted, rewardClaimed, game, user, firestore, toast]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
