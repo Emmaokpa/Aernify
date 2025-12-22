@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
@@ -99,6 +100,6 @@ export const useFirebaseApp = (): FirebaseApp => {
  * Hook for accessing the authenticated user's state and profile.
  */
 export const useUser = () => {
-  const { user, profile, isUserLoading, userError, isAdmin } = useAuthContext();
-  return { user, profile, isUserLoading, userError, isAdmin };
+  const { user, profile, isUserLoading, userError, isAdmin, isVip } = useAuthContext();
+  return { user, profile, isUserLoading, userError, isAdmin, isVip };
 };

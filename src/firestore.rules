@@ -1,0 +1,130 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // --- Helper functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      // Improved: Check existence first to prevent rule crashes
+      let userDoc = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userDoc) && get(userDoc).data.isAdmin == true;
+    }
+    
+    function isCoinUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coins', 'weeklyCoins']);
+    }
+
+    function isUpdatingProfile() {
+      // Allows user to update their own displayName, photoURL
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL']);
+    }
+
+    // --- Rules for the users collection ---
+    match /users/{userId} {
+      allow create: if isSignedIn() 
+                    && isOwner(userId) 
+                    && request.resource.data.isAdmin == false
+                    && request.resource.data.weeklyCoins == 0
+                    && request.resource.data.currentStreak == 0
+                    && request.resource.data.lastLoginDate == ""
+                    && request.resource.data.isVip == false
+                    && !('vipExpiresAt' in request.resource.data)
+                    && !exists(/databases/$(database)/documents/users/$(userId));
+      
+      allow get, list: if isSignedIn();
+      
+      allow update: if (isOwner(userId) &&
+                       isUpdatingProfile() &&
+                       request.resource.data.isAdmin == resource.data.isAdmin &&
+                       request.resource.data.isVip == resource.data.isVip && 
+                       request.resource.data.vipExpiresAt == resource.data.vipExpiresAt &&
+                       request.resource.data.referralCode == resource.data.referralCode)
+                    || (isAdmin() && 
+                        // Admin can update anything EXCEPT referral code and uid
+                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['referralCode', 'uid']));
+
+      allow delete: if isAdmin();
+      
+      // --- Rules for the orders subcollection ---
+      match /orders/{orderId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+    }
+    
+    // --- Rules for the daily_logins collection ---
+    match /daily_logins/{loginId} {
+        allow create: if isSignedIn() 
+                      && request.resource.data.size() == 1 
+                      && "claimedAt" in request.resource.data
+                      && loginId.split('_')[0] == request.auth.uid;
+
+        allow update, delete: if false;
+        allow get, list: if isSignedIn() && isOwner(loginId.split('_')[0]);
+    }
+
+    // --- Global Read Collections (Games, Offers, Products, etc.) ---
+    match /games/{gameId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /offers/{offerId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /affiliate_products/{productId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /products/{productId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /giftCards/{giftCardId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /challenges/{challengeId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+
+    // --- Submissions and Requests (User Owned) ---
+    
+    match /offer_submissions/{submissionId} {
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        // User can read/list their own, Admin can read everything
+        allow read: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
+        allow update: if isAdmin();
+        allow delete: if false;
+    }
+    
+    match /affiliate_sale_submissions/{submissionId} {
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow read: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
+        allow update: if isAdmin();
+        allow delete: if false;
+    }
+
+    match /redemption_requests/{requestId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+    
+    match /withdrawal_requests/{requestId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow get, list: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /user_challenge_progress/{progressId} {
+      function getUserId() { return progressId.split('_')[0]; }
+      allow get, list: if isSignedIn() && isOwner(getUserId());
+      allow create, update: if isSignedIn() && isOwner(getUserId());
+      allow delete: if false;
+    }
+
+    // --- Rules for collections that are NO LONGER USED ---
+    match /orders/{orderId} {
+      allow read, write: if false;
+    }
+    
+    // Fallback rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

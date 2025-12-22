@@ -23,6 +23,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/page-header';
 import { useUser, useAuth } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDistanceToNow, isFuture } from 'date-fns';
 
 const ProfileMenuItem = ({ icon, text, href }: { icon: React.ReactNode, text: string, href?: string }) => {
   const content = (
@@ -77,6 +78,8 @@ export default function ProfilePage() {
     )
   }
 
+  const isVipActive = profile?.vipExpiresAt && isFuture(profile.vipExpiresAt.toDate());
+
   return (
     <div className="w-full max-w-md mx-auto">
       <PageHeader title="Profile" />
@@ -94,14 +97,19 @@ export default function ProfilePage() {
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-4">
              <h3 className="text-xl font-bold text-primary">
-              {profile?.isVip ? 'You are a VIP!' : 'VIP Subscription'}
+              {isVipActive ? 'You are a VIP!' : 'VIP Subscription'}
             </h3>
-            {!profile?.isVip && <p className="font-semibold text-foreground">₦5,000/month</p>}
+            {!isVipActive && <p className="font-semibold text-foreground">₦5,000/month</p>}
           </div>
-           {profile?.isVip ? (
-             <div className="text-center text-green-400 font-semibold flex items-center justify-center gap-2">
-                <Crown className="w-5 h-5" />
-                <span>Your 2x earning rate is active!</span>
+           {isVipActive ? (
+             <div className="text-center text-green-400 font-semibold flex flex-col items-center justify-center gap-2">
+                <div className="flex items-center gap-2">
+                    <Crown className="w-5 h-5" />
+                    <span>Your 2x earning rate is active!</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                    Expires in {formatDistanceToNow(profile.vipExpiresAt.toDate(), { addSuffix: false })}
+                </p>
              </div>
            ) : (
             <>

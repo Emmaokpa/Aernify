@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import PageHeader from '@/components/page-header';
@@ -7,6 +8,7 @@ import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, ShieldOff, Crown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { isFuture, formatDistanceToNow } from 'date-fns';
 
 // Make sure you have this in your .env.local file
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '';
@@ -63,6 +65,8 @@ export default function VipPage() {
     handler.openIframe();
   };
 
+  const isVipActive = profile?.vipExpiresAt && isFuture(profile.vipExpiresAt.toDate());
+
   return (
     <>
       <PageHeader
@@ -109,7 +113,7 @@ export default function VipPage() {
           <CardHeader>
             <CardTitle>Activate Your VIP Status</CardTitle>
             <CardDescription>
-              {profile?.isVip ? 'You are already a VIP member!' : 'Complete the payment to instantly activate your VIP benefits.'}
+              {isVipActive ? 'You are a VIP member!' : 'Complete the payment to instantly activate your VIP benefits.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -120,14 +124,19 @@ export default function VipPage() {
 
             {isUserLoading && <Skeleton className="h-28 w-full" />}
             
-            {!isUserLoading && profile?.isVip && (
-              <div className="flex items-center justify-center gap-2 rounded-lg border bg-green-600/10 p-4 text-center text-green-400 font-semibold">
-                <Crown className="h-6 w-6" />
-                <span>Your VIP Membership is Active</span>
+            {!isUserLoading && isVipActive && (
+              <div className="flex flex-col items-center justify-center gap-2 rounded-lg border bg-green-600/10 p-4 text-center text-green-400 font-semibold">
+                 <div className='flex items-center gap-2'>
+                    <Crown className="h-6 w-6" />
+                    <span>Your VIP Membership is Active</span>
+                 </div>
+                 <p className="text-xs text-muted-foreground mt-1">
+                    Expires in {formatDistanceToNow(profile.vipExpiresAt.toDate(), { addSuffix: false })}
+                 </p>
               </div>
             )}
             
-            {!isUserLoading && !profile?.isVip && (
+            {!isUserLoading && !isVipActive && (
               <Button onClick={handleVipPayment} disabled={isProcessingPayment} className="w-full" size="lg">
                 {isProcessingPayment && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                 Upgrade to VIP Now

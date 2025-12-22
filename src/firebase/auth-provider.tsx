@@ -6,6 +6,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { useAuth, useFirestore, useDoc } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 import { doc } from 'firebase/firestore';
+import { isFuture } from 'date-fns';
 
 interface AuthContextState {
   user: User | null;
@@ -13,6 +14,7 @@ interface AuthContextState {
   isUserLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isVip: boolean;
   userError: Error | null;
 }
 
@@ -51,6 +53,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // The "Double-Lock": isUserLoading is only false when both Auth AND Profile are settled.
   const isUserLoading = isAuthLoading || (!!user && isProfileLoading);
+  
+  // Calculate VIP status dynamically
+  const isVip = useMemo(() => {
+    if (!profile?.vipExpiresAt) return false;
+    // Check if the expiration timestamp is in the future
+    return isFuture(profile.vipExpiresAt.toDate());
+  }, [profile]);
 
   const value = { 
     user, 
@@ -58,6 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isUserLoading, 
     isAuthenticated: !!user && !!profile, // Ensure profile is also loaded
     isAdmin: profile?.isAdmin === true,
+    isVip,
     userError 
   };
 

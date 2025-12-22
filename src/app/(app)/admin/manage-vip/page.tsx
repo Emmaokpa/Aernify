@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Crown, ShieldAlert } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, Timestamp } from 'firebase/firestore';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { add } from 'date-fns';
 
 export default function ManageVipPage() {
   const { toast } = useToast();
@@ -37,7 +38,7 @@ export default function ManageVipPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [targetUid, setTargetUid] = useState('');
 
-  const handleVipUpdate = async (isVip: boolean) => {
+  const handleVipUpdate = async (grant: boolean) => {
     const trimmedUid = targetUid.trim();
     if (!trimmedUid) {
       toast({
@@ -57,11 +58,19 @@ export default function ManageVipPage() {
         throw new Error('User with this UID does not exist.');
       }
 
-      await updateDoc(userToUpdateRef, { isVip });
+      let newExpiration: Timestamp | null = null;
+      if (grant) {
+        const now = new Date();
+        newExpiration = Timestamp.fromDate(add(now, { days: 30 }));
+      }
+      
+      await updateDoc(userToUpdateRef, {
+        vipExpiresAt: newExpiration
+      });
 
       toast({
         title: 'Success!',
-        description: `User ${trimmedUid} has been ${isVip ? 'granted' : 'revoked'} VIP status.`,
+        description: `User ${trimmedUid} has been ${grant ? 'granted VIP status for 30 days' : 'had their VIP status revoked'}.`,
       });
     } catch (error: any) {
       console.error('Failed to update VIP status:', error);
@@ -88,7 +97,7 @@ export default function ManageVipPage() {
           <CardHeader>
             <CardTitle>Update User VIP Status</CardTitle>
             <CardDescription>
-              Enter the User ID (UID) of the user you want to modify.
+              Enter the User ID (UID) of the user you want to modify. Granting VIP will provide access for 30 days.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -124,14 +133,14 @@ export default function ManageVipPage() {
                     <AlertDialogTrigger asChild>
                         <Button disabled={isLoading}>
                             <Crown className="mr-2 h-4 w-4" />
-                            Grant VIP
+                            Grant VIP (30 Days)
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure you want to grant VIP?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will give user {targetUid.trim() || '...'} full VIP benefits.
+                            This will give user {targetUid.trim() || '...'} full VIP benefits for 30 days.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -155,7 +164,7 @@ export default function ManageVipPage() {
                         <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure you want to revoke VIP?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will remove all VIP benefits from user {targetUid.trim() || '...'}.
+                            This will immediately remove all VIP benefits from user {targetUid.trim() || '...'}.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

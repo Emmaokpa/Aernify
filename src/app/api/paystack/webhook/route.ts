@@ -1,7 +1,9 @@
+
 import { NextResponse, NextRequest } from 'next/server';
 import * as crypto from 'crypto';
 import { initializeFirebase } from '@/firebase'; // Server-side initialization
-import { getFirestore, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, Timestamp, getDoc } from 'firebase/firestore';
+import { add } from 'date-fns';
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
@@ -45,11 +47,28 @@ export async function POST(request: NextRequest) {
         try {
             const { firestore } = initializeFirebase();
             const userRef = doc(firestore, 'users', userId);
+            
+            // Calculate new expiration date
+            const userSnap = await getDoc(userRef);
+            const userProfile = userSnap.data();
+
+            const now = new Date();
+            let startDate = now;
+
+            // If user is already a VIP, extend their subscription from the current expiration date
+            if (userProfile?.vipExpiresAt && userProfile.vipExpiresAt.toDate() > now) {
+                startDate = userProfile.vipExpiresAt.toDate();
+            }
+
+            const newExpirationDate = add(startDate, { days: 30 });
 
             // Update user's VIP status
-            await updateDoc(userRef, { isVip: true });
+            await updateDoc(userRef, { 
+              isVip: true, // Keep for compatibility/simple checks
+              vipExpiresAt: Timestamp.fromDate(newExpirationDate)
+            });
             
-            console.log(`VIP status activated for user ${userId} via direct payment.`);
+            console.log(`VIP status for user ${userId} extended/activated until ${newExpirationDate.toISOString()}.`);
             return NextResponse.json({ status: 'success', message: 'VIP status updated.' });
 
         } catch (error) {
