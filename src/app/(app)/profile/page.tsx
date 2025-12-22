@@ -18,6 +18,7 @@ import {
   Crown,
   Loader2,
   Pencil,
+  Construction,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import ImageUploadForm from '@/components/image-upload-form';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function EditProfileDialog() {
     const { user, profile } = useUser();
@@ -64,7 +66,9 @@ function EditProfileDialog() {
                 displayName,
                 photoURL,
             });
-            await updateAuthProfile(user, { displayName, photoURL });
+            if(auth.currentUser) {
+              await updateAuthProfile(auth.currentUser, { displayName, photoURL });
+            }
             toast({ title: 'Profile Updated', description: 'Your changes have been saved.' });
             setIsDialogOpen(false);
         } catch (error) {
@@ -117,26 +121,43 @@ function EditProfileDialog() {
     );
 }
 
-const ProfileMenuItem = ({ icon, text, href, onClick }: { icon: React.ReactNode, text: string, href?: string, onClick?: () => void }) => {
+const ProfileMenuItem = ({ icon, text, href, onClick, disabled = false, comingSoon = false }: { icon: React.ReactNode, text: string, href?: string, onClick?: () => void, disabled?: boolean, comingSoon?: boolean }) => {
   const content = (
     <div
-      className="flex items-center justify-between p-4 bg-card rounded-lg cursor-pointer hover:bg-muted"
+      className="flex items-center justify-between p-4 bg-card rounded-lg data-[disabled=true]:opacity-50 data-[disabled=true]:pointer-events-none"
       onClick={onClick}
+      data-disabled={disabled || comingSoon}
     >
       <div className="flex items-center gap-4">
         <div className="text-muted-foreground">{icon}</div>
         <span className="font-medium text-foreground">{text}</span>
+         {comingSoon && <span className="text-xs font-semibold bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">Soon</span>}
       </div>
       <ChevronRight className="text-muted-foreground" />
     </div>
   );
 
-  if (href) {
-    return <Link href={href}>{content}</Link>;
+  const wrapper = (children: React.ReactNode) => {
+    if (comingSoon) {
+       return (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger className='w-full'>{children}</TooltipTrigger>
+                    <TooltipContent><p>This feature is coming soon!</p></TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+       )
+    }
+    return children;
   }
 
-  return content;
+  if (href && !disabled && !comingSoon) {
+    return wrapper(<Link href={href} className="cursor-pointer">{content}</Link>);
+  }
+
+  return wrapper(<div className={disabled ? 'cursor-not-allowed' : 'cursor-pointer'}>{content}</div>);
 };
+
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -172,9 +193,9 @@ export default function ProfilePage() {
   };
 
   const menuItems = [
-    { icon: <CreditCard />, text: 'Payment history' },
-    { icon: <Languages />, text: 'Language' },
-    { icon: <Bell />, text: 'Notifications' },
+    { icon: <CreditCard />, text: 'Payment history', href: '/profile/history' },
+    { icon: <Languages />, text: 'Language', comingSoon: true },
+    { icon: <Bell />, text: 'Notifications', comingSoon: true },
     { icon: <FileText />, text: 'Terms and conditions', href: '/terms' },
     { icon: <HelpCircle />, text: 'Support', href: '/support' },
   ];
@@ -209,20 +230,20 @@ export default function ProfilePage() {
 
       <Card className="bg-primary/10 border border-primary/20 mb-8">
         <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-4">
+           <div className="flex justify-between items-center mb-4">
              <h3 className="text-xl font-bold text-primary">
-              {isVipActive ? 'You are a VIP!' : 'VIP Subscription'}
+              {isVipActive ? 'VIP Member' : 'VIP Subscription'}
             </h3>
             {!isVipActive && <p className="font-semibold text-foreground">₦5,000/month</p>}
           </div>
            {isVipActive ? (
              <div className="text-center text-primary font-semibold flex flex-col items-center justify-center gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-green-400">
                     <Crown className="w-5 h-5" />
                     <span>Your 2x earning rate is active!</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                    Expires in {formatDistanceToNow(profile.vipExpiresAt.toDate(), { addSuffix: false })}
+                    Expires in {formatDistanceToNow(profile.vipExpiresAt.toDate(), { addSuffix: true })}
                 </p>
              </div>
            ) : (
@@ -252,7 +273,7 @@ export default function ProfilePage() {
       <div className="space-y-2">
         <EditProfileDialog />
         <div onClick={handleChangePassword} className="relative">
-            <ProfileMenuItem icon={<ShieldCheck />} text="Change Password" />
+            <ProfileMenuItem icon={<ShieldCheck />} text="Change Password" disabled={isSendingEmail}/>
             {isSendingEmail && <div className="absolute inset-0 flex items-center justify-end pr-4"><Loader2 className="h-5 w-5 animate-spin"/></div>}
         </div>
         {menuItems.map((item, index) => (
