@@ -7,7 +7,7 @@ import { AlertTriangle, Loader2 } from 'lucide-react';
 interface VideoAdPlayerProps {
   adTagUrl: string;
   onAdEnded: () => void;
-  onAdError: (error: any) => void;
+  onAdError: (error: Error) => void;
 }
 
 type PlayerStatus = 'loading' | 'playing' | 'error' | 'ended';
@@ -42,16 +42,12 @@ export default function VideoAdPlayer({
         const errorNode = xmlDoc.querySelector('Error');
         if (errorNode) {
             const errorCode = errorNode.getAttribute('errorCode');
-            let message = `Ad server returned an error (Code: ${errorCode || 'unknown'}).`;
-            // Common VAST error codes for "no ad available"
-            if (errorCode === '301' || errorCode === '303' || !errorCode) {
-                 message = 'No ads are available at the moment. Please try again later.';
-            }
-            // Instead of throwing, set the error state
-            setErrorMessage(message);
+            let message = 'No ads are available at the moment.';
+            // Set the specific error message for "no ad" scenarios
             setStatus('error');
-            onAdError(new Error(message));
-            return; // Stop further processing
+            setErrorMessage(message);
+            onAdError(new Error(message)); // Pass the error up
+            return;
         }
 
         const mediaFiles = xmlDoc.getElementsByTagName('MediaFile');
@@ -128,7 +124,7 @@ export default function VideoAdPlayer({
 
       {videoSrc && status === 'playing' && (
         <video
-          key={videoSrc} // Force re-mount of video element when src changes
+          key={videoSrc} // Using key to force re-mount when src changes, preventing "source not found" error on re-render.
           ref={videoRef}
           src={videoSrc}
           onEnded={handleVideoEnded}

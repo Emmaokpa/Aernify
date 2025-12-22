@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trophy, Users, Copy, Info, PlayCircle, Loader2 } from 'lucide-react';
+import { Trophy, Users, Copy, Info, PlayCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { incrementChallengeProgress } from '@/lib/challenges';
-import { doc, updateDoc, increment } from 'firebase/firestore';
+import { doc, updateDoc, increment, getDoc } from 'firebase/firestore';
 import VideoAdPlayer from '@/components/video-ad-player';
 
 
@@ -29,6 +29,15 @@ export default function EarnPage() {
   const [adsWatched, setAdsWatched] = useState(0);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
   const dailyAdLimit = 20;
+
+  // This effect will run once when the user data is available
+  // to initialize the adsWatched state correctly for the day.
+  // This is a placeholder for now. In a real app, you'd store this daily count in Firestore.
+  useEffect(() => {
+    // For now, we'll just reset it to 0 on each page load.
+    // A future improvement would be to fetch this from a 'user_daily_stats' collection.
+    setAdsWatched(0);
+  }, [user]);
   
   const handleWatchAd = () => {
     if (adsWatched < dailyAdLimit) {
@@ -43,7 +52,7 @@ export default function EarnPage() {
 
   const handleAdEnded = async () => {
     setIsAdModalOpen(false);
-    setAdsWatched(adsWatched + 1);
+    setAdsWatched(prev => prev + 1);
     
     if (!user) return;
 
@@ -54,7 +63,6 @@ export default function EarnPage() {
           weeklyCoins: increment(10)
         });
 
-        // Increment challenge progress
         await incrementChallengeProgress(firestore, user.uid, 'watchAd');
 
         toast({
@@ -72,17 +80,24 @@ export default function EarnPage() {
     }
   };
 
-  const handleAdError = (error: any) => {
-    // The player now shows its own detailed error message.
-    // Here, we just need to close the modal.
+  const handleAdError = (error: Error) => {
     setIsAdModalOpen(false);
-    console.error("Ad Player Error:", error);
-    // Optional: could still show a generic toast if desired.
-    // toast({
-    //     variant: "destructive",
-    //     title: "Ad Error",
-    //     description: "The video ad could not be loaded. Please try again later.",
-    // });
+    console.error("Ad Player Error:", error.message);
+    
+    // Show a specific, friendly toast message when no ads are available
+    if (error.message.includes('No ads are available')) {
+      toast({
+        title: 'No Ads Available',
+        description: 'The ad server has no ads for you at the moment. Please try again later.',
+      });
+    } else {
+      // For other errors, show a generic message
+      toast({
+        variant: "destructive",
+        title: "Ad Error",
+        description: "There was an error playing the ad. Please try again.",
+      });
+    }
   }
 
   const handleCopyCode = () => {
@@ -93,6 +108,8 @@ export default function EarnPage() {
       description: "Referral code copied to clipboard.",
     });
   }
+
+  const adsRemaining = dailyAdLimit - adsWatched;
 
   return (
     <>
@@ -115,6 +132,7 @@ export default function EarnPage() {
             <Button
               className="w-full"
               onClick={handleWatchAd}
+              disabled={adsRemaining <= 0}
             >
               <PlayCircle className="w-5 h-5 mr-2" />
               Watch Video Ad
@@ -122,7 +140,9 @@ export default function EarnPage() {
             <div className="flex items-center justify-center text-sm text-muted-foreground">
               <Info className="w-4 h-4 mr-2" />
               <span>
-                You can watch up to {dailyAdLimit} ads per day.
+                {adsRemaining > 0
+                  ? `${adsWatched} / ${dailyAdLimit} ads watched today.`
+                  : "You have watched all ads for today."}
               </span>
             </div>
           </CardContent>
@@ -171,11 +191,13 @@ export default function EarnPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="w-full bg-black rounded-md overflow-hidden relative flex items-center justify-center min-h-[300px]">
-            <VideoAdPlayer
-              adTagUrl="https://creamymouth.com/d.mEFKzHdTG/N/vwZxGmUi/YelmW9Uu/ZMUdlGkEPjTWY/3/MRz/Ex5ANjTwU/tTNpj/cbzgMsTEkh1/N_gQ"
-              onAdEnded={handleAdEnded}
-              onAdError={handleAdError}
-            />
+            {isAdModalOpen && (
+                 <VideoAdPlayer
+                    adTagUrl="https://creamymouth.com/d.mEFKzHdTG/N/vwZxGmUi/YelmW9Uu/ZMUdlGkEPjTWY/3/MRz/Ex5ANjTwU/tTNpj/cbzgMsTEkh1/N_gQ"
+                    onAdEnded={handleAdEnded}
+                    onAdError={handleAdError}
+                />
+            )}
           </div>
         </AlertDialogContent>
       </AlertDialog>
