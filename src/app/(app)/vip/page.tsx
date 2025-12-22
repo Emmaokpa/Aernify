@@ -1,4 +1,3 @@
-
 'use client';
 import { useState } from 'react';
 import PageHeader from '@/components/page-header';
@@ -64,8 +63,6 @@ export default function VipPage() {
     handler.openIframe();
   };
 
-  const isLoading = isUserLoading;
-
   return (
     <>
       <PageHeader
@@ -121,16 +118,16 @@ export default function VipPage() {
               <p className="text-4xl font-bold">₦5,000</p>
             </div>
 
-            {isLoading && <Skeleton className="h-28 w-full" />}
+            {isUserLoading && <Skeleton className="h-28 w-full" />}
             
-            {!isLoading && profile?.isVip && (
+            {!isUserLoading && profile?.isVip && (
               <div className="flex items-center justify-center gap-2 rounded-lg border bg-green-600/10 p-4 text-center text-green-400 font-semibold">
                 <Crown className="h-6 w-6" />
                 <span>Your VIP Membership is Active</span>
               </div>
             )}
             
-            {!isLoading && !profile?.isVip && (
+            {!isUserLoading && !profile?.isVip && (
               <Button onClick={handleVipPayment} disabled={isProcessingPayment} className="w-full" size="lg">
                 {isProcessingPayment && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                 Upgrade to VIP Now
