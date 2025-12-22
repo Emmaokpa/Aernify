@@ -93,14 +93,10 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
+    product?.variants?.[0] ?? null
+  );
   
-  useEffect(() => {
-    if (product?.variants?.length) {
-      setSelectedVariant(product.variants[0]);
-    }
-  }, [product]);
-
   const placeOrderInFirestore = async (shippingValues: ShippingFormData, transactionRef: string) => {
      if (product.variants && product.variants.length > 0 && !selectedVariant) {
         toast({ variant: 'destructive', title: 'Error', description: 'Product variant not selected.' });
@@ -325,9 +321,7 @@ export default function CheckoutPage() {
   });
   
    useEffect(() => {
-    if (profile) {
-      // Use reset to update the entire form's default values at once.
-      // This is more stable than setValue for multiple fields.
+    if (profile && !form.formState.isDirty) {
       form.reset({
         email: profile.email || '',
         fullName: profile.displayName || '',
@@ -340,7 +334,7 @@ export default function CheckoutPage() {
         country: 'Nigeria',
       });
     }
-  }, [profile, form.reset]);
+  }, [profile, form]);
 
 
   const isLoading = isUserLoading || isProductLoading;

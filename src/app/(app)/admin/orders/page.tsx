@@ -16,6 +16,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import Link from 'next/link';
 
 type OrderStatus = 'pending' | 'shipped' | 'delivered' | 'cancelled';
 const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
@@ -100,9 +101,11 @@ function OrderList({ status }: { status: OrderStatus }) {
           </CardHeader>
           <CardContent className="space-y-4 flex-grow">
             <div className='flex gap-4'>
-                <div className='relative w-24 h-24 rounded-md overflow-hidden border'>
-                    <Image src={order.productImageUrl} alt={order.productName} fill className='object-cover'/>
-                </div>
+                <Link href={`/shop/${order.productId}`} className="block">
+                  <div className='relative w-24 h-24 rounded-md overflow-hidden border hover:opacity-80 transition-opacity'>
+                      <Image src={order.productImageUrl} alt={order.productName} fill className='object-cover'/>
+                  </div>
+                </Link>
                 <div className='text-sm'>
                     <h4 className='font-semibold'>Shipping Address</h4>
                     <p className='text-muted-foreground'>
