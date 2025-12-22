@@ -35,7 +35,8 @@ export function useSafeCollection<T = any>(
     }
     // Pass the user's UID (or null if not logged in) to the factory function.
     return queryFactory(user?.uid || null);
-  }, [isUserLoading, user, queryFactory]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isUserLoading, user]);
 
   // Use the original useCollection hook with the safely generated query.
   // If memoizedQuery is null, useCollection will also wait.
