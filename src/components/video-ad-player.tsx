@@ -114,17 +114,16 @@ export default function VideoAdPlayer({
   const handlePlayClick = () => {
     toast({ title: 'Play button clicked!' });
     if (playerRef.current) {
-      // First, try to play the video to get user gesture.
-      playerRef.current.play()
-        .then(() => {
-          // Now initialize IMA after a successful play call
-          initializeIma();
-        })
-        .catch(err => {
-          console.error("Play was prevented:", err);
-          // If play fails, we can still try to initialize IMA
-          initializeIma();
-        });
+      // Initialize IMA first
+      if (!imaInitialized) {
+        initializeIma();
+      }
+      
+      // Explicitly call play() after initialization to satisfy browser autoplay policies
+      playerRef.current.play().catch(err => {
+        console.error("Play was prevented:", err);
+        setErrorMessage("Playback was blocked by the browser. Please try again.");
+      });
     }
   };
 
