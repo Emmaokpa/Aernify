@@ -5,13 +5,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
 import type { Player } from 'video.js';
 import 'video.js/dist/video-js.css';
-import 'videojs-contrib-ads'; // Import contrib-ads before IMA
+import 'videojs-contrib-ads';
 import 'videojs-ima';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2, PlayCircle } from 'lucide-react';
 import { Button } from './ui/button';
-import { useToast } from '@/hooks/use-toast';
 
-// Extend the Player interface from video.js to include the 'ima' property
 interface PlayerWithIMA extends Player {
   ima: any;
 }
@@ -29,82 +27,32 @@ export default function VideoAdPlayer({
 }: VideoAdPlayerProps) {
   const videoRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<PlayerWithIMA | null>(null);
+  const [playerState, setPlayerState] = useState<'idle' | 'loading' | 'error' | 'playing'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const { toast } = useToast();
 
   useEffect(() => {
+    // This effect only runs once to create the video element and the player
     if (!videoRef.current || playerRef.current) {
       return;
     }
 
-    // 1. Create video element
     const videoElement = document.createElement('video');
     videoElement.classList.add('video-js', 'vjs-big-play-centered');
     videoRef.current.appendChild(videoElement);
 
-    // 2. Define player and IMA options
     const playerOptions = {
       controls: false,
+      autoplay: false,
       preload: 'auto',
       muted: false,
       fluid: true,
       width: 640,
       height: 360,
     };
-
-    const imaOptions = {
-      id: 'ima-plugin',
-      adTagUrl: adTagUrl,
-      debug: process.env.NODE_ENV === 'development',
-      disableAdControls: true,
-    };
     
-    // 3. Initialize player
     const player = videojs(videoElement, playerOptions) as PlayerWithIMA;
     playerRef.current = player;
-    setStatus('ready');
-
-    // 4. Initialize IMA plugin on the player
-    player.ima(imaOptions);
-
-    // 5. Setup event listeners
-    const handleAdEnd = () => {
-      onAdEnded();
-    };
-
-    const handleAdsError = (event: any) => {
-      setStatus('error');
-      const adError = event.getError ? event.getError() : event;
-      let friendlyMessage = 'An ad error occurred. Please try again later.';
-      
-      if (adError && adError.getErrorCode) {
-        switch (adError.getErrorCode()) {
-          case 1009: // VAST response contains no ads
-            friendlyMessage = "No ads are available at this moment. Please try again later.";
-            break;
-          case 303: // No supported media file
-            friendlyMessage = "The ad server did not provide a compatible video format.";
-            break;
-          case 402: // Timeout
-            friendlyMessage = "The ad took too long to load. Please check your connection.";
-            break;
-          default:
-            console.error(`Unhandled Ad Error Code: ${adError.getErrorCode()}`, adError.getMessage());
-            break;
-        }
-      } else {
-        console.error("Unknown Ad Error Structure:", adError);
-      }
-      
-      setErrorMessage(friendlyMessage);
-      onAdError(adError || new Error(friendlyMessage));
-    };
-
-    player.on('ended', handleAdEnd);
-    player.on('adserror', handleAdsError);
-    player.on('aderror', handleAdsError); // Catch more general ad errors
-
+    
     // Cleanup on unmount
     return () => {
       if (playerRef.current && !playerRef.current.isDisposed()) {
@@ -112,21 +60,112 @@ export default function VideoAdPlayer({
         playerRef.current = null;
       }
     };
-  }, [adTagUrl, onAdEnded, onAdError]);
+  }, []);
 
+  const initializeIma = () => {
+    const player = playerRef.current;
+    if (!player || player.ima) { // Don't re-initialize
+      return;
+    }
+
+    setPlayerState('loading');
+    
+    const imaOptions = {
+      id: 'ima-plugin',
+      adTagUrl: adTagUrl,
+      debug: false,
+      disableAdControls: true,
+      autoplay: true,
+    };
+
+    player.ima(imaOptions);
+
+    // General ad error listener
+    const handleGenericAdError = (event: any) => {
+        setPlayerState('error');
+        const adError = event.getError ? event.getError() : event;
+        let friendlyMessage = 'An ad error occurred. Please try again later.';
+        
+        if (adError && adError.getErrorCode) {
+            switch (adError.getErrorCode()) {
+            case 1009: // No ads in VAST response
+                friendlyMessage = "No ads are available right now. Please try again later.";
+                break;
+            case 303: // No supported media file
+            case 403: // No compatible video format
+                friendlyMessage = "The ad server did not provide a compatible video format.";
+                break;
+            case 402: // Timeout
+                friendlyMessage = "The ad took too long to load. Check your connection.";
+                break;
+            default:
+                console.error(`Unhandled Ad Error Code: ${adError.getErrorCode()}`, adError.getMessage());
+                break;
+            }
+        } else {
+            console.error("Unknown Ad Error Structure:", adError);
+        }
+        
+        setErrorMessage(friendlyMessage);
+        onAdError(adError || new Error(friendlyMessage));
+    };
+    
+    player.on('adserror', handleGenericAdError);
+    player.on('aderror', handleGenericAdError);
+
+    // Ad lifecycle events
+    player.on('ads-ad-started', () => {
+      setPlayerState('playing');
+    });
+
+    player.on('ended', () => {
+      onAdEnded();
+    });
+    
+    // This is crucial: request ads *after* setting up listeners
+    player.ima.requestAds();
+  };
+
+  const handlePlayClick = () => {
+    const player = playerRef.current;
+    if (!player) return;
+
+    // Initialize IMA on first play click
+    if (!player.ima) {
+      initializeIma();
+    }
+    
+    // The browser requires a play call directly within the user-initiated event handler
+    player.play().catch((error) => {
+        // This catch block handles cases where the browser *still* rejects autoplay
+        console.error("Player.play() was rejected:", error);
+        setPlayerState('error');
+        setErrorMessage("Could not start ad playback. Please check your browser settings or try again.");
+        onAdError(error);
+    });
+  };
 
   return (
     <div className="w-full aspect-video bg-black rounded-md overflow-hidden relative" data-vjs-player>
       <div ref={videoRef} className="w-full h-full" />
       
-      {status === 'loading' && (
+      {playerState === 'idle' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-white p-4 z-20 cursor-pointer" onClick={handlePlayClick}>
+           <Button variant="ghost" className="h-24 w-24 rounded-full bg-black/50" size="icon">
+              <PlayCircle className="h-16 w-16 text-white" />
+           </Button>
+           <p className="mt-4 font-semibold text-lg">Play Ad to Earn Reward</p>
+        </div>
+      )}
+      
+      {playerState === 'loading' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-4 z-20">
           <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
           <p className="text-center font-semibold">Loading Ad...</p>
         </div>
       )}
 
-      {status === 'error' && (
+      {playerState === 'error' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-4 z-20">
           <AlertTriangle className="h-10 w-10 text-destructive mb-4" />
           <p className="text-center font-semibold">Ad Playback Error</p>
@@ -136,4 +175,3 @@ export default function VideoAdPlayer({
     </div>
   );
 }
-
