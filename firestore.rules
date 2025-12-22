@@ -23,6 +23,11 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coins', 'weeklyCoins']);
     }
 
+    function isUpdatingProfile() {
+      // Allows user to update their own displayName, photoURL, and DVA info
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL', 'dvaBankName', 'dvaAccountNumber', 'wishlist']);
+    }
+
     // --- Rules for the users collection ---
     match /users/{userId} {
       allow create: if isSignedIn() 
@@ -37,10 +42,10 @@ service cloud.firestore {
       allow get, list: if isSignedIn();
       
       allow update: if (isOwner(userId) &&
+                       (isUpdatingProfile() || isCoinUpdate()) &&
                        request.resource.data.isAdmin == resource.data.isAdmin &&
                        request.resource.data.referralCode == resource.data.referralCode)
-                    || isAdmin()
-                    || isCoinUpdate();
+                    || isAdmin();
 
       allow delete: if isAdmin();
       
