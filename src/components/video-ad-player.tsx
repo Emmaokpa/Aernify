@@ -1,17 +1,11 @@
-
 'use client';
+
 import React, { useEffect, useRef } from 'react';
 import videojs from 'video.js';
 import type { Player } from 'video.js';
 import 'video.js/dist/video-js.css';
 
-// Import the ads and IMA plugins. The order is important!
-import 'videojs-contrib-ads';
-import 'videojs-ima';
-
-
-// The IMA SDK script must be loaded from Google's servers.
-const IMA_SDK_SRC = '//imasdk.googleapis.com/js/sdkloader/ima3.js';
+const IMA_SDK_SRC = 'https://imasdk.googleapis.com/js/sdkloader/ima3.js';
 
 interface VideoAdPlayerProps {
   adTagUrl: string;
@@ -19,77 +13,89 @@ interface VideoAdPlayerProps {
   onAdError: (error: any) => void;
 }
 
-const loadScript = (src: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        if (document.querySelector(`script[src="${src}"]`)) {
-            resolve();
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = () => resolve();
-        script.onerror = (error) => reject(new Error(`Failed to load script: ${src}`));
-        document.head.appendChild(script);
-    });
-};
-
-const VideoAdPlayer: React.FC<VideoAdPlayerProps> = ({ adTagUrl, onAdEnded, onAdError }) => {
-  const videoRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<Player | null>(null);
-
-  useEffect(() => {
-    if (playerRef.current || !videoRef.current) {
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) {
+      resolve();
       return;
     }
 
-    const videoElement = document.createElement("video");
-    videoElement.classList.add("video-js", "vjs-default-skin");
-    videoRef.current.appendChild(videoElement);
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
 
-    const initializePlayer = () => {
-        // Step 1: Initialize the player with basic settings and the ads plugin
-        const player = videojs(videoElement, {
-            autoplay: true,
-            controls: false,
-            muted: false,
-            width: 640,
-            height: 360,
-            plugins: {
-                // Initialize the base ads plugin
-                ads: {}
-            }
+export default function VideoAdPlayer({
+  adTagUrl,
+  onAdEnded,
+  onAdError,
+}: VideoAdPlayerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<Player | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || playerRef.current) return;
+
+    const videoEl = document.createElement('video');
+    videoEl.className = 'video-js vjs-default-skin';
+    containerRef.current.appendChild(videoEl);
+
+    const setupPlayer = async () => {
+      try {
+        // 1️⃣ Load Google IMA SDK first
+        await loadScript(IMA_SDK_SRC);
+
+        // 2️⃣ Dynamically import plugins (CRITICAL FIX)
+        await import('videojs-contrib-ads');
+        await import('videojs-ima');
+
+        // 3️⃣ Create Video.js player
+        const player = videojs(videoEl, {
+          autoplay: false,
+          controls: false,
+          muted: false,
+          width: 640,
+          height: 360,
         });
+
         playerRef.current = player;
-        
-        // Step 2: Initialize the IMA plugin imperatively after the player is created
-        const imaOptions = {
-            id: videoElement.id,
-            adTagUrl: adTagUrl,
+
+        // 4️⃣ Initialize ads framework FIRST
+        (player as any).ads();
+
+        // 5️⃣ Initialize IMA
+        (player as any).ima({
+          adTagUrl,
+          debug: true,
+        });
+
+        // 6️⃣ REQUIRED: user interaction
+        const startAds = () => {
+          player.off('click', startAds);
+          (player as any).ima.initializeAdDisplayContainer();
+          (player as any).ima.requestAds();
         };
-        (player as any).ima(imaOptions);
 
-        // Set up event listeners
-        player.on('ads-ad-started', () => {
-            console.log('Ad has started playing.');
-        });
+        player.on('click', startAds);
 
+        // 7️⃣ Reward only after full completion
         player.on('ads-all-ads-completed', () => {
-            console.log('All ads completed.');
-            onAdEnded();
+          onAdEnded();
         });
 
-        player.on('adserror', (event: any) => {
-            console.error('VAST Ad Error:', event);
-            onAdError(event);
+        player.on('adserror', (e: any) => {
+          onAdError(e);
         });
-    }
-    
-    loadScript(IMA_SDK_SRC)
-      .then(initializePlayer)
-      .catch(err => {
-        console.error('Failed to load IMA SDK', err);
+      } catch (err) {
         onAdError(err);
-      });
+      }
+    };
+
+    setupPlayer();
 
     return () => {
       if (playerRef.current && !playerRef.current.isDisposed()) {
@@ -97,14 +103,14 @@ const VideoAdPlayer: React.FC<VideoAdPlayerProps> = ({ adTagUrl, onAdEnded, onAd
         playerRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div data-vjs-player>
-      <div ref={videoRef} />
+      <div ref={containerRef} />
+      <p style={{ textAlign: 'center', marginTop: 8 }}>
+        Click the video to start the ad
+      </p>
     </div>
   );
-};
-
-export default VideoAdPlayer;
+}
