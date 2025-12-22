@@ -312,8 +312,8 @@ export default function CheckoutPage() {
     resolver: zodResolver(shippingSchema),
     mode: 'onChange', // Validate form fields as they change
     defaultValues: {
-      email: profile?.email || '',
-      fullName: profile?.displayName || '',
+      email: '',
+      fullName: '',
       phoneNumber: '',
       addressLine1: '',
       addressLine2: '',
@@ -326,16 +326,18 @@ export default function CheckoutPage() {
   
    useEffect(() => {
     if (profile) {
+      // Use reset to update form values. Only update if the form fields are empty
+      // to avoid overwriting user input.
       form.reset({
-        email: profile.email || '',
-        fullName: profile.displayName || '',
+        email: form.getValues('email') || profile.email || '',
+        fullName: form.getValues('fullName') || profile.displayName || '',
         phoneNumber: form.getValues('phoneNumber') || '',
         addressLine1: form.getValues('addressLine1') || '',
         addressLine2: form.getValues('addressLine2') || '',
         city: form.getValues('city') || '',
         state: form.getValues('state') || '',
         postalCode: form.getValues('postalCode') || '',
-        country: 'Nigeria',
+        country: form.getValues('country') || 'Nigeria',
       });
     }
   }, [profile, form]);
