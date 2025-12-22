@@ -40,10 +40,10 @@ export default function VideoAdPlayer({
     videoRef.current.appendChild(videoElement);
 
     const player = videojs(videoElement, {
-      autoplay: false,
+      autoplay: true, // Let IMA SDK handle autoplay
       controls: false,
       preload: 'auto',
-      muted: false,
+      muted: true, // Start muted to help with autoplay policies
       fluid: true,
       width: 640,
       height: 360,
@@ -66,12 +66,15 @@ export default function VideoAdPlayer({
         onAdEnded();
     };
 
-    const handleAdError = (event: any) => {
+    const handleAdsError = (event: any) => {
+        // The event object is an AdErrorEvent from the IMA SDK
         const adError = event.getError ? event.getError() : event;
+        console.error('Ad Error from IMA SDK:', adError);
+
         let friendlyMessage = 'An ad error occurred. Please try again later.';
 
+        // IMAError Codes: https://developers.google.com/interactive-media-ads/docs/sdks/html5/client-side/reference/js/google.ima.AdError.ErrorCode
         if (adError && adError.getErrorCode) {
-            // IMAError Codes: https://developers.google.com/interactive-media-ads/docs/sdks/html5/client-side/reference/js/google.ima.AdError.ErrorCode
             switch (adError.getErrorCode()) {
                 case 301: // VAST media timeout
                     friendlyMessage = "The ad took too long to load.";
@@ -84,6 +87,7 @@ export default function VideoAdPlayer({
                     friendlyMessage = "No ads are available at the moment. Please try again later.";
                     break;
                 default:
+                    // Provide a more detailed error for debugging if possible
                     friendlyMessage = `Ad Error: ${adError.getMessage()} (Code: ${adError.getErrorCode()})`;
                     break;
             }
@@ -92,30 +96,21 @@ export default function VideoAdPlayer({
         onAdError(adError || new Error(friendlyMessage));
     };
     
-    // Wait for the IMA plugin to be ready before requesting ads
+    // Request ads after IMA is ready.
     player.on('ima_ready', () => {
-      // Manually trigger ad request after initialization
-      // Let the IMA plugin handle the play() call.
       player.ima.requestAds();
     });
 
-
-    player.on('ads-ad-started', () => {
-        // Mute the ad if it is not already muted
-        if (!player.muted()) {
-            player.muted(true);
-        }
-        // This is a common workaround for autoplay policies. We can try to unmute here.
-        setTimeout(() => player.muted(false), 500);
-    });
-
     player.on('ended', handleAdEnd);
-    player.on('adserror', handleAdError);
+    // Listen to the generic 'adserror' which catches many IMA issues.
+    player.on('adserror', handleAdsError);
+    // This specific event can sometimes catch errors that 'adserror' misses.
+    player.on('aderror', handleAdsError);
 
 
     // Cleanup on component unmount
     return () => {
-      if (playerRef.current) {
+      if (playerRef.current && !playerRef.current.isDisposed()) {
         playerRef.current.dispose();
         playerRef.current = null;
       }

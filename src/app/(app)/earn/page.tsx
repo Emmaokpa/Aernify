@@ -73,13 +73,16 @@ export default function EarnPage() {
   };
 
   const handleAdError = (error: any) => {
+    // The player now shows its own detailed error message.
+    // Here, we just need to close the modal.
     setIsAdModalOpen(false);
     console.error("Ad Player Error:", error);
-    toast({
-        variant: "destructive",
-        title: "Ad Error",
-        description: "The video ad could not be loaded. This might be due to ad availability or a configuration issue.",
-    });
+    // Optional: could still show a generic toast if desired.
+    // toast({
+    //     variant: "destructive",
+    //     title: "Ad Error",
+    //     description: "The video ad could not be loaded. Please try again later.",
+    // });
   }
 
   const handleCopyCode = () => {
