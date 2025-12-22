@@ -7,7 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { getFirestore, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 import { createDedicatedAccount } from '@/lib/paystack';
 import type { UserProfile } from '@/lib/types';
