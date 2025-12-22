@@ -50,8 +50,6 @@ export default function VipPage() {
         setIsProcessingPayment(false);
       },
       callback: async (response: any) => {
-        // INSTANT UPDATE LOGIC
-        // The webhook is still the source of truth, but this provides instant UI feedback.
         setIsProcessingPayment(false);
         if (response.status === 'success' && user) {
           try {
@@ -62,14 +60,12 @@ export default function VipPage() {
             const now = new Date();
             let startDate = now;
 
-            // If user is already a VIP, extend their subscription
             if (userProfile?.vipExpiresAt && userProfile.vipExpiresAt.toDate() > now) {
                 startDate = userProfile.vipExpiresAt.toDate();
             }
 
             const newExpirationDate = add(startDate, { days: 30 });
 
-            // Optimistically update the user document on the client
             await updateDoc(userRef, {
               vipExpiresAt: Timestamp.fromDate(newExpirationDate)
             });
@@ -80,7 +76,6 @@ export default function VipPage() {
             });
           } catch (error) {
               console.error("Client-side VIP update failed:", error);
-              // Inform user that verification will happen in the background
               toast({
                   title: 'Payment Successful!',
                   description: 'Your VIP status will be updated shortly after verification.',
