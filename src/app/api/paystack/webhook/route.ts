@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import * as crypto from 'crypto';
 import { initializeFirebase } from '@/firebase'; // Server-side initialization
-import { getFirestore, collection, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc } from 'firebase/firestore';
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
@@ -29,48 +29,36 @@ export async function POST(request: NextRequest) {
   const event = JSON.parse(body);
 
   if (event.event === 'charge.success') {
-    const { customer, amount, reference } = event.data;
-    const email = customer.email;
-    const accountNumber = event.data.authorization?.receiver_bank_account_number;
-    const VIP_FEE_NAIRA = 5000;
+    const { amount, reference, metadata } = event.data;
     
-    // Check if it's a DVA payment
-    if (accountNumber) {
-        // Check if the amount is correct for a VIP subscription
+    // Check if it is a VIP subscription payment
+    if (metadata && metadata.payment_type === 'vip_subscription' && metadata.user_id) {
+        const userId = metadata.user_id;
+        const VIP_FEE_NAIRA = 5000;
+        
+        // Verify the amount
         if (amount / 100 !== VIP_FEE_NAIRA) {
-            console.log(`DVA payment received for ${accountNumber} with incorrect amount: ${amount/100}. Ignoring.`);
+            console.log(`VIP payment received for user ${userId} with incorrect amount: ${amount / 100}. Ignoring.`);
             return NextResponse.json({ status: 'success', message: 'Payment received but incorrect amount for VIP.' });
         }
 
         try {
             const { firestore } = initializeFirebase();
-            const usersRef = collection(firestore, 'users');
-            
-            // Find the user by their dedicated account number
-            const q = query(usersRef, where('dvaAccountNumber', '==', accountNumber));
-            const querySnapshot = await getDocs(q);
-
-            if (querySnapshot.empty) {
-                console.error(`Could not find user for DVA: ${accountNumber}. Payment reference: ${reference}`);
-                return NextResponse.json({ status: 'error', message: 'User not found for this account number.' }, { status: 404 });
-            }
-
-            const userDoc = querySnapshot.docs[0];
-            const batch = writeBatch(firestore);
+            const userRef = doc(firestore, 'users', userId);
 
             // Update user's VIP status
-            batch.update(doc(firestore, 'users', userDoc.id), { isVip: true });
-
-            await batch.commit();
-            console.log(`VIP status activated for user ${userDoc.id} via DVA payment.`);
+            await updateDoc(userRef, { isVip: true });
+            
+            console.log(`VIP status activated for user ${userId} via direct payment.`);
+            return NextResponse.json({ status: 'success', message: 'VIP status updated.' });
 
         } catch (error) {
-            console.error('Error processing VIP webhook:', error);
+            console.error(`Error processing VIP webhook for user ${userId}:`, error);
             return NextResponse.json({ status: 'error', message: 'Internal server error during processing.' }, { status: 500 });
         }
     }
   }
 
-  // 3. Acknowledge receipt of the event
+  // 3. Acknowledge receipt of other events without processing
   return NextResponse.json({ status: 'success' });
 }

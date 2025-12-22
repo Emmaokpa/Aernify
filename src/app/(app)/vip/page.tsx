@@ -1,52 +1,68 @@
+
 'use client';
 import { useState } from 'react';
 import PageHeader from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { generateDva } from '@/ai/flows/vip-flow';
-import { Loader2, Sparkles, ShieldOff, Crown, Landmark, Copy } from 'lucide-react';
+import { Loader2, Sparkles, ShieldOff, Crown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// Make sure you have this in your .env.local file
+const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '';
+const VIP_PRICE_KOBO = 5000 * 100; // 5000 NGN in kobo
+
+declare global {
+  interface Window {
+    PaystackPop: any;
+  }
+}
 
 export default function VipPage() {
   const { user, profile, isUserLoading } = useUser();
-  const firestore = useFirestore();
   const { toast } = useToast();
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  const handleGenerateDva = async () => {
-    if (!user || !profile) return;
-    setIsGenerating(true);
-    try {
-      const result = await generateDva({ userId: user.uid });
-      
-      if (result.success) {
-        toast({
-          title: 'Account Generated!',
-          description: 'Your unique payment account is ready. The page will now refresh.',
-        });
-        // The page will automatically update due to the real-time listener in useUser
-      } else {
-        throw new Error(result.message || 'Failed to generate account.');
-      }
-    } catch (error: any) {
+  const handleVipPayment = () => {
+    if (!user || !profile || !PAYSTACK_PUBLIC_KEY) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'Could not generate payment account.',
+        description: 'Unable to initialize payment. Please try again later.',
       });
-    } finally {
-      setIsGenerating(false);
+      return;
     }
-  };
 
-  const handleCopy = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: 'Copied!', description: `${field} copied to clipboard.` });
-  };
+    const handler = window.PaystackPop.setup({
+      key: PAYSTACK_PUBLIC_KEY,
+      email: user.email,
+      amount: VIP_PRICE_KOBO,
+      currency: 'NGN',
+      // Generate a unique reference for each transaction
+      ref: `AERNIFY-VIP-${user.uid}-${Date.now()}`, 
+      metadata: {
+        user_id: user.uid,
+        payment_type: 'vip_subscription',
+      },
+      onClose: () => {
+        setIsProcessingPayment(false);
+      },
+      callback: (response: any) => {
+        // The webhook will handle the success logic, but we can give the user
+        // some immediate feedback. The isVip status will update automatically
+        // when the webhook completes.
+        setIsProcessingPayment(false);
+        toast({
+          title: 'Payment Successful!',
+          description: 'Your payment is being verified. Your VIP status will update shortly.',
+        });
+      },
+    });
 
-  const hasDva = !!profile?.dvaAccountNumber;
+    setIsProcessingPayment(true);
+    handler.openIframe();
+  };
 
   const isLoading = isUserLoading;
 
@@ -96,9 +112,7 @@ export default function VipPage() {
           <CardHeader>
             <CardTitle>Activate Your VIP Status</CardTitle>
             <CardDescription>
-              {hasDva
-                ? 'Transfer the fee to your dedicated account to activate VIP.'
-                : 'Generate a dedicated account to pay your VIP subscription fee.'}
+              {profile?.isVip ? 'You are already a VIP member!' : 'Complete the payment to instantly activate your VIP benefits.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -109,40 +123,17 @@ export default function VipPage() {
 
             {isLoading && <Skeleton className="h-28 w-full" />}
             
-            {!isLoading && hasDva && profile && (
-              <div className="space-y-4 rounded-lg border bg-muted/50 p-4 text-center">
-                 <div className="flex items-center justify-center gap-2 font-semibold">
-                    <Landmark className="h-5 w-5 text-muted-foreground" />
-                    <h3>Your Payment Account</h3>
-                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Bank Name</p>
-                  <div className="flex items-center justify-center gap-2">
-                    <p className="text-lg font-mono font-semibold">{profile.dvaBankName}</p>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopy(profile.dvaBankName!, 'Bank Name')}>
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Account Number</p>
-                  <div className="flex items-center justify-center gap-2">
-                    <p className="text-lg font-mono font-semibold">{profile.dvaAccountNumber}</p>
-                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopy(profile.dvaAccountNumber!, 'Account Number')}>
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                 <p className="text-xs text-muted-foreground pt-2">
-                    Transfer exactly ₦5,000 to this account. Your VIP status will be activated automatically upon confirmation.
-                </p>
+            {!isLoading && profile?.isVip && (
+              <div className="flex items-center justify-center gap-2 rounded-lg border bg-green-600/10 p-4 text-center text-green-400 font-semibold">
+                <Crown className="h-6 w-6" />
+                <span>Your VIP Membership is Active</span>
               </div>
             )}
-
-            {!isLoading && !hasDva && (
-              <Button onClick={handleGenerateDva} disabled={isGenerating} className="w-full" size="lg">
-                {isGenerating && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                Generate Payment Account
+            
+            {!isLoading && !profile?.isVip && (
+              <Button onClick={handleVipPayment} disabled={isProcessingPayment} className="w-full" size="lg">
+                {isProcessingPayment && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                Upgrade to VIP Now
               </Button>
             )}
 
