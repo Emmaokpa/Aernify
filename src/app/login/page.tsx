@@ -15,14 +15,16 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/icons/logo';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, AuthErrorCodes, User } from 'firebase/auth';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
+import { ensureUserProfile } from '@/lib/auth-utils';
 
 export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,9 +35,10 @@ export default function LoginPage() {
     setError(null);
     const provider = new GoogleAuthProvider();
     try {
-      // The onAuthStateChanged listener in AuthProvider will handle profile
-      // creation and redirection. This component just needs to initiate the login.
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      // Explicitly ensure the user profile exists before redirecting.
+      // This handles both new sign-ups and existing user logins gracefully.
+      await ensureUserProfile(firestore, result.user);
       router.push('/dashboard');
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {

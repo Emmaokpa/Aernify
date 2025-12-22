@@ -10,7 +10,8 @@ const generateReferralCode = () => {
 
 /**
  * Ensures a user profile exists in Firestore after sign-in or sign-up.
- * Follows a two-step creation process to comply with security rules.
+ * If the user exists, it updates their display name and photo URL.
+ * If the user does not exist, it creates a new profile.
  * @param firestore - The Firestore instance.
  * @param user - The Firebase Auth user object.
  */
@@ -19,12 +20,26 @@ export const ensureUserProfile = async (firestore: Firestore, user: User) => {
   try {
     const docSnap = await getDoc(userRef);
 
-    if (!docSnap.exists()) {
+    if (docSnap.exists()) {
+      // User profile already exists, check for updates.
+      const currentProfile = docSnap.data();
+      const updates: Partial<UserProfile> = {};
+      if (user.displayName && user.displayName !== currentProfile.displayName) {
+        updates.displayName = user.displayName;
+      }
+      if (user.photoURL && user.photoURL !== currentProfile.photoURL) {
+        updates.photoURL = user.photoURL;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await updateDoc(userRef, updates);
+        console.log(`Successfully updated profile for user: ${user.uid}`);
+      }
+    } else {
       // Document does not exist, so create it.
       
       // Step 1: Create the document with fields allowed by the 'create' rule.
-      // Crucially, `coins` is omitted here.
-      const initialProfileData = {
+      const initialProfileData: Omit<UserProfile, 'coins'> = {
         uid: user.uid,
         displayName: user.displayName || 'New User',
         email: user.email || '',
@@ -40,7 +55,6 @@ export const ensureUserProfile = async (firestore: Firestore, user: User) => {
       await setDoc(userRef, initialProfileData);
 
       // Step 2: Immediately update the new document to add the starting coins.
-      // This is a separate 'update' operation, governed by different rules.
       await updateDoc(userRef, {
         coins: 10,
       });
