@@ -16,19 +16,112 @@ import {
   Sparkles,
   ShieldOff,
   Crown,
+  Loader2,
+  Pencil,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/page-header';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow, isFuture } from 'date-fns';
+import { useState } from 'react';
+import { sendPasswordResetEmail, updateProfile as updateAuthProfile } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import ImageUploadForm from '@/components/image-upload-form';
 
-const ProfileMenuItem = ({ icon, text, href }: { icon: React.ReactNode, text: string, href?: string }) => {
+function EditProfileDialog() {
+    const { user, profile } = useUser();
+    const firestore = useFirestore();
+    const auth = useAuth();
+    const { toast } = useToast();
+    
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [displayName, setDisplayName] = useState(profile?.displayName || '');
+    const [photoURL, setPhotoURL] = useState(profile?.photoURL || '');
+
+    const handleUpdateProfile = async () => {
+        if (!user) return;
+        setIsUpdating(true);
+        try {
+            const userDocRef = doc(firestore, 'users', user.uid);
+            await updateDoc(userDocRef, {
+                displayName,
+                photoURL,
+            });
+            await updateAuthProfile(user, { displayName, photoURL });
+            toast({ title: 'Profile Updated', description: 'Your changes have been saved.' });
+            setIsDialogOpen(false);
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to update profile.' });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    return (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+                <div className="flex items-center justify-between p-4 bg-card rounded-lg cursor-pointer hover:bg-muted">
+                    <div className="flex items-center gap-4">
+                        <div className="text-muted-foreground"><User /></div>
+                        <span className="font-medium text-foreground">Edit Profile</span>
+                    </div>
+                    <ChevronRight className="text-muted-foreground" />
+                </div>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Edit Your Profile</DialogTitle>
+                    <DialogDescription>Make changes to your public profile.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="displayName">Display Name</Label>
+                        <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Profile Picture</Label>
+                        <Avatar className="w-20 h-20 mb-2">
+                            <AvatarImage src={photoURL} />
+                            <AvatarFallback>{displayName?.charAt(0).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <ImageUploadForm onUploadSuccess={(url) => setPhotoURL(url)} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button onClick={handleUpdateProfile} disabled={isUpdating}>
+                        {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+const ProfileMenuItem = ({ icon, text, href, onClick }: { icon: React.ReactNode, text: string, href?: string, onClick?: () => void }) => {
   const content = (
     <div
       className="flex items-center justify-between p-4 bg-card rounded-lg cursor-pointer hover:bg-muted"
+      onClick={onClick}
     >
       <div className="flex items-center gap-4">
         <div className="text-muted-foreground">{icon}</div>
@@ -49,15 +142,36 @@ export default function ProfilePage() {
   const router = useRouter();
   const auth = useAuth();
   const { user, profile, isUserLoading } = useUser();
+  const { toast } = useToast();
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const handleLogout = async () => {
     await auth.signOut();
     router.push('/login');
   };
 
+  const handleChangePassword = async () => {
+    if (!user?.email) return;
+    setIsSendingEmail(true);
+    try {
+        await sendPasswordResetEmail(auth, user.email);
+        toast({
+            title: "Password Reset Email Sent",
+            description: `An email has been sent to ${user.email} with instructions to reset your password.`,
+        });
+    } catch (error) {
+        console.error("Error sending password reset email:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to send password reset email. Please try again later.",
+        });
+    } finally {
+        setIsSendingEmail(false);
+    }
+  };
+
   const menuItems = [
-    { icon: <User />, text: 'Edit Profile' },
-    { icon: <ShieldCheck />, text: 'Change Password' },
     { icon: <CreditCard />, text: 'Payment history' },
     { icon: <Languages />, text: 'Language' },
     { icon: <Bell />, text: 'Notifications' },
@@ -84,12 +198,12 @@ export default function ProfilePage() {
     <div className="w-full max-w-md mx-auto">
       <PageHeader title="Profile" />
       
-      <div className="flex flex-col items-center text-center mt-4 mb-8">
+      <div className="flex flex-col items-center text-center mt-4 mb-8 relative">
         <Avatar className="w-24 h-24 mb-4 border-4 border-primary">
-          <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
-          <AvatarFallback>{user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarImage src={profile?.photoURL || ''} alt={profile?.displayName || 'User'} />
+          <AvatarFallback>{profile?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
-        <h2 className="text-xl font-semibold">{user?.displayName || 'Welcome'}</h2>
+        <h2 className="text-xl font-semibold">{profile?.displayName || 'Welcome'}</h2>
         <p className="text-muted-foreground">{user?.email}</p>
       </div>
 
@@ -102,7 +216,7 @@ export default function ProfilePage() {
             {!isVipActive && <p className="font-semibold text-foreground">₦5,000/month</p>}
           </div>
            {isVipActive ? (
-             <div className="text-center text-green-400 font-semibold flex flex-col items-center justify-center gap-2">
+             <div className="text-center text-primary font-semibold flex flex-col items-center justify-center gap-2">
                 <div className="flex items-center gap-2">
                     <Crown className="w-5 h-5" />
                     <span>Your 2x earning rate is active!</span>
@@ -136,6 +250,11 @@ export default function ProfilePage() {
       </Card>
 
       <div className="space-y-2">
+        <EditProfileDialog />
+        <div onClick={handleChangePassword} className="relative">
+            <ProfileMenuItem icon={<ShieldCheck />} text="Change Password" />
+            {isSendingEmail && <div className="absolute inset-0 flex items-center justify-end pr-4"><Loader2 className="h-5 w-5 animate-spin"/></div>}
+        </div>
         {menuItems.map((item, index) => (
           <ProfileMenuItem key={index} {...item} />
         ))}

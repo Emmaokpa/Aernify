@@ -51,13 +51,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [auth]);
 
-  // The "Double-Lock": isUserLoading is only false when both Auth AND Profile are settled.
   const isUserLoading = isAuthLoading || (!!user && isProfileLoading);
   
-  // Calculate VIP status dynamically
   const isVip = useMemo(() => {
     if (!profile?.vipExpiresAt) return false;
-    // Check if the expiration timestamp is in the future
     return isFuture(profile.vipExpiresAt.toDate());
   }, [profile]);
 
@@ -65,7 +62,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user, 
     profile,
     isUserLoading, 
-    isAuthenticated: !!user && !!profile, // Ensure profile is also loaded
+    isAuthenticated: !!user && !!profile,
     isAdmin: profile?.isAdmin === true,
     isVip,
     userError 
