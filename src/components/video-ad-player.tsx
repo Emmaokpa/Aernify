@@ -3,9 +3,10 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
-import 'video.js/dist/video-js.css';
-import 'videojs-ima';
 import type { Player } from 'video.js';
+import 'video.js/dist/video-js.css';
+import 'videojs-contrib-ads'; // Import contrib-ads before IMA
+import 'videojs-ima';
 import { Loader2, AlertTriangle, PlayCircle } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -40,7 +41,7 @@ export default function VideoAdPlayer({
     videoRef.current.appendChild(videoElement);
 
     const player = videojs(videoElement, {
-      autoplay: true,
+      autoplay: false,
       controls: false,
       preload: 'auto',
       muted: false,
@@ -67,11 +68,11 @@ export default function VideoAdPlayer({
     };
 
     const handleAdError = (event: any) => {
-        const adError = event.getError();
+        const adError = event.getError ? event.getError() : event;
         let friendlyMessage = 'An ad error occurred. Please try again later.';
 
-        if (adError) {
-             // IMAError Codes: https://developers.google.com/interactive-media-ads/docs/sdks/html5/client-side/reference/js/google.ima.AdError.ErrorCode
+        if (adError && adError.getErrorCode) {
+            // IMAError Codes: https://developers.google.com/interactive-media-ads/docs/sdks/html5/client-side/reference/js/google.ima.AdError.ErrorCode
             switch (adError.getErrorCode()) {
                 case 301: // VAST media timeout
                     friendlyMessage = "The ad took too long to load.";
@@ -103,6 +104,10 @@ export default function VideoAdPlayer({
 
     player.on('ended', handleAdEnd);
     player.on('adserror', handleAdError);
+
+    // Manually trigger ad request after initialization
+    player.ima.requestAds();
+    player.play();
 
 
     // Cleanup on component unmount
