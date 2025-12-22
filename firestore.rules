@@ -44,8 +44,11 @@ service cloud.firestore {
       allow update: if (isOwner(userId) &&
                        (isUpdatingProfile() || isCoinUpdate()) &&
                        request.resource.data.isAdmin == resource.data.isAdmin &&
+                       request.resource.data.isVip == resource.data.isVip && // User cannot change their own VIP status
                        request.resource.data.referralCode == resource.data.referralCode)
-                    || isAdmin();
+                    || (isAdmin() && 
+                        // Admin can update anything EXCEPT referral code and uid
+                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['referralCode', 'uid']));
 
       allow delete: if isAdmin();
       

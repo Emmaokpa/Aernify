@@ -22,6 +22,7 @@ import {
   UserCog,
   Banknote,
   DollarSign,
+  Crown,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 
@@ -30,6 +31,11 @@ const adminFeatures: NavItem[] = [
     title: 'Grant Admin',
     href: '/admin/grant-admin',
     icon: <UserCog className="w-8 h-8" />,
+  },
+  {
+    title: 'Manage VIP Status',
+    href: '/admin/manage-vip',
+    icon: <Crown className="w-8 h-8" />,
   },
   {
     title: 'Manage Games',
