@@ -46,14 +46,17 @@ export default function VideoAdPlayer({
 
     const setupPlayer = async () => {
       try {
-        // 1️⃣ Load Google IMA SDK first
+        // 1. Load Google IMA SDK
         await loadScript(IMA_SDK_SRC);
 
-        // 2️⃣ Dynamically import plugins (CRITICAL FIX)
-        await import('videojs-contrib-ads');
-        await import('videojs-ima');
+        // 2. Dynamically import and register plugins on the core videojs object
+        const VjsContribAds = (await import('videojs-contrib-ads')).default;
+        const VjsIma = (await import('videojs-ima')).default;
+        
+        videojs.registerPlugin('ads', VjsContribAds);
+        videojs.registerPlugin('ima', VjsIma);
 
-        // 3️⃣ Create Video.js player
+        // 3. Create Video.js player
         const player = videojs(videoEl, {
           autoplay: false,
           controls: false,
@@ -64,33 +67,37 @@ export default function VideoAdPlayer({
 
         playerRef.current = player;
 
-        // 4️⃣ Initialize ads framework FIRST
+        // 4. Initialize ads framework FIRST
         (player as any).ads();
 
-        // 5️⃣ Initialize IMA
+        // 5. Initialize IMA
         (player as any).ima({
           adTagUrl,
           debug: true,
         });
 
-        // 6️⃣ REQUIRED: user interaction
+        // 6. Require user interaction to start ads
         const startAds = () => {
           player.off('click', startAds);
+          // This call is crucial for iOS and other platforms
           (player as any).ima.initializeAdDisplayContainer();
           (player as any).ima.requestAds();
         };
 
         player.on('click', startAds);
 
-        // 7️⃣ Reward only after full completion
+        // 7. Reward only after all ads complete
         player.on('ads-all-ads-completed', () => {
           onAdEnded();
         });
 
         player.on('adserror', (e: any) => {
+          console.error("Ad Error Event:", e);
           onAdError(e);
         });
+
       } catch (err) {
+        console.error("Error setting up player:", err);
         onAdError(err);
       }
     };
@@ -103,7 +110,7 @@ export default function VideoAdPlayer({
         playerRef.current = null;
       }
     };
-  }, []);
+  }, [adTagUrl, onAdEnded, onAdError]);
 
   return (
     <div data-vjs-player>
