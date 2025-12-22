@@ -62,13 +62,16 @@ function CheckoutSkeleton() {
     )
 }
 
-function PaystackButton({ config, onTransactionComplete, onTransactionClose, disabled }: any) {
+function PaystackButton({ config, onTransactionComplete, onTransactionClose, disabled, isFormValid }: { config: any, onTransactionComplete: (transaction: any) => void, onTransactionClose: () => void, disabled?: boolean, isFormValid: boolean }) {
   
   const handlePayment = () => {
+    // Only proceed if form is valid
+    if (!isFormValid) return;
+
     const handler = window.PaystackPop.setup({
       ...config,
-      onSuccess: (transaction: any) => {
-        onTransactionComplete(transaction);
+      callback: (response: any) => {
+        onTransactionComplete(response);
       },
       onClose: () => {
         onTransactionClose();
@@ -78,7 +81,7 @@ function PaystackButton({ config, onTransactionComplete, onTransactionClose, dis
   }
 
   return (
-    <Button type="button" onClick={handlePayment} size="lg" className="w-full text-lg" disabled={disabled || config.isSubmitting}>
+    <Button type="button" onClick={handlePayment} size="lg" className="w-full text-lg" disabled={disabled || config.isSubmitting || !isFormValid}>
       {config.isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
       {disabled && !config.isSubmitting ? 'Out of Stock' : 'Proceed to Payment'}
     </Button>
@@ -160,7 +163,7 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
 
   const config = {
       key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
-      email: form.getValues('email'),
+      email: form.watch('email'),
       amount: product.price * 100, // Amount in kobo
       currency: 'NGN',
       ref: `AERNIFY-${Date.now()}`,
@@ -169,20 +172,15 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
             {
                 display_name: "Full Name",
                 variable_name: "full_name",
-                value: form.getValues('fullName'),
+                value: form.watch('fullName'),
             },
         ],
       },
       isSubmitting: isSubmitting,
     };
     
-    const handleFormSubmit: SubmitHandler<ShippingFormData> = (shippingValues) => {
-       if (product.variants && product.variants.length > 0 && !selectedVariant) {
-        toast({ variant: 'destructive', title: 'Variant Not Selected', description: 'Please select a color for the product.' });
-        return;
-       }
-       // The PaystackButton will now handle the payment initiation
-    };
+    // The form submission is now only for validation. Payment is handled by the button.
+    const handleFormSubmit: SubmitHandler<ShippingFormData> = (shippingValues) => {};
 
 
   return (
@@ -286,6 +284,7 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
               onTransactionComplete={handleSuccess}
               onTransactionClose={handleClose}
               disabled={selectedVariant?.stock === 0}
+              isFormValid={form.formState.isValid}
           />
         </div>
       </div>
@@ -311,6 +310,7 @@ export default function CheckoutPage() {
 
   const form = useForm<ShippingFormData>({
     resolver: zodResolver(shippingSchema),
+    mode: 'onChange', // Validate form fields as they change
     defaultValues: {
       email: profile?.email || '',
       fullName: profile?.displayName || '',
@@ -325,13 +325,10 @@ export default function CheckoutPage() {
   });
   
    useEffect(() => {
-    // When the user profile loads, reset the form with the user's data.
-    // This pre-fills the form and prevents the controlled/uncontrolled warning.
     if (profile) {
       form.reset({
         email: profile.email || '',
         fullName: profile.displayName || '',
-        // keep other fields as they were, let the user fill them
         phoneNumber: form.getValues('phoneNumber') || '',
         addressLine1: form.getValues('addressLine1') || '',
         addressLine2: form.getValues('addressLine2') || '',

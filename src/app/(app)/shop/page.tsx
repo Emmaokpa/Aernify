@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useMemo } from 'react';
 import PageHeader from '@/components/page-header';
@@ -40,7 +39,7 @@ export default function ShopPage() {
     <>
       <PageHeader
         title="Shop"
-        description="Purchase real tech gadgets and watches. Shipping available within Nigeria."
+        description=""
       />
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
         {isLoading &&
