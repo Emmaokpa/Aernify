@@ -95,14 +95,14 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
   const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    product?.variants?.[0] ?? null
+    null
   );
   
   useEffect(() => {
-    if (product?.variants && product.variants.length > 0) {
+    if (product?.variants && product.variants.length > 0 && !selectedVariant) {
       setSelectedVariant(product.variants[0]);
     }
-  }, [product?.variants]);
+  }, [product?.variants, selectedVariant]);
   
   const placeOrderInFirestore = async (shippingValues: ShippingFormData, transactionRef: string) => {
      if (product.variants && product.variants.length > 0 && !selectedVariant) {
@@ -170,6 +170,7 @@ function CheckoutForm({ product, user, profile, form }: { product: Product & {id
       amount: product.price * 100, // Amount in kobo
       currency: 'NGN',
       ref: `AERNIFY-${Date.now()}`,
+      channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'],
       metadata: {
         custom_fields: [
             {
