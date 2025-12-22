@@ -49,7 +49,7 @@ export default function VideoAdPlayer({
         // 1. Load Google IMA SDK
         await loadScript(IMA_SDK_SRC);
 
-        // 2. Dynamically import and register plugins on the core videojs object
+        // 2. Dynamically import and register plugins
         const VjsContribAds = (await import('videojs-contrib-ads')).default;
         const VjsIma = (await import('videojs-ima')).default;
         
@@ -67,34 +67,40 @@ export default function VideoAdPlayer({
 
         playerRef.current = player;
 
-        // 4. Initialize ads framework FIRST
+        // 4. Initialize ads framework
         (player as any).ads();
 
-        // 5. Initialize IMA
-        (player as any).ima({
-          adTagUrl,
-          debug: true,
-        });
+        // 5. Defer IMA initialization to the next event loop tick
+        setTimeout(() => {
+          if (player.isDisposed()) return;
+          
+          // 6. Initialize IMA
+          (player as any).ima({
+            adTagUrl,
+            debug: true,
+          });
 
-        // 6. Require user interaction to start ads
-        const startAds = () => {
-          player.off('click', startAds);
-          // This call is crucial for iOS and other platforms
-          (player as any).ima.initializeAdDisplayContainer();
-          (player as any).ima.requestAds();
-        };
+          // 7. Require user interaction to start ads
+          const startAds = () => {
+            player.off('click', startAds);
+            // This call is crucial for iOS and other platforms
+            (player as any).ima.initializeAdDisplayContainer();
+            (player as any).ima.requestAds();
+          };
 
-        player.on('click', startAds);
+          player.on('click', startAds);
 
-        // 7. Reward only after all ads complete
-        player.on('ads-all-ads-completed', () => {
-          onAdEnded();
-        });
+          // 8. Reward only after all ads complete
+          player.on('ads-all-ads-completed', () => {
+            onAdEnded();
+          });
 
-        player.on('adserror', (e: any) => {
-          console.error("Ad Error Event:", e);
-          onAdError(e);
-        });
+          player.on('adserror', (e: any) => {
+            console.error("Ad Error Event:", e);
+            onAdError(e);
+          });
+
+        }, 0);
 
       } catch (err) {
         console.error("Error setting up player:", err);
