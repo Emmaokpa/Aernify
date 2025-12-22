@@ -9,6 +9,7 @@ import 'videojs-contrib-ads'; // Import contrib-ads before IMA
 import 'videojs-ima';
 import { AlertTriangle, PlayCircle } from 'lucide-react';
 import { Button } from './ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 // Extend the Player interface from video.js to include the 'ima' property
 interface PlayerWithIMA extends Player {
@@ -31,6 +32,7 @@ export default function VideoAdPlayer({
   const [errorMessage, setErrorMessage] = useState('');
   const [adStarted, setAdStarted] = useState(false);
   const [imaInitialized, setImaInitialized] = useState(false);
+  const { toast } = useToast();
 
   // Effect for basic player setup
   useEffect(() => {
@@ -110,6 +112,7 @@ export default function VideoAdPlayer({
   };
 
   const handlePlayClick = () => {
+    toast({ title: 'Play button clicked!' });
     if (playerRef.current) {
       // First, try to play the video to get user gesture.
       playerRef.current.play()
