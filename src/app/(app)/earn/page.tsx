@@ -166,8 +166,7 @@ export default function EarnPage() {
           </AlertDialogHeader>
           <div className="w-full bg-black rounded-md overflow-hidden relative flex items-center justify-center min-h-[300px]">
             <VideoAdPlayer
-              // IMPORTANT: Replace this placeholder with your actual VAST ad tag URL from Adcash.
-              adTagUrl="https://example.com/your-adcash-vast-tag.xml"
+              adTagUrl="https://youradexchange.com/video/select.php?r=10739066"
               onAdEnded={handleAdEnded}
               onAdError={handleAdError}
             />
