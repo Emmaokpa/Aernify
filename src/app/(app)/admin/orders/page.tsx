@@ -38,8 +38,7 @@ function OrderList({ status }: { status: OrderStatus }) {
       // The security rules will enforce that only admins can perform this query.
       return query(
         collectionGroup(firestore, 'orders'),
-        where('status', '==', status),
-        orderBy('orderedAt', 'desc')
+        where('status', '==', status)
       );
     }
   );

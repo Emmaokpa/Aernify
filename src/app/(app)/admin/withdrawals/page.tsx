@@ -32,8 +32,7 @@ function WithdrawalList({ status }: { status: RequestStatus }) {
   const { data: requests, isLoading } = usePublicFirestoreQuery<WithdrawalRequest>(
       () => query(
         collection(firestore, 'withdrawal_requests'),
-        where('status', '==', status),
-        orderBy('requestedAt', 'desc')
+        where('status', '==', status)
       )
   );
 
@@ -94,7 +93,7 @@ function WithdrawalList({ status }: { status: RequestStatus }) {
 
   return (
     <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-      {requests?.map((req) => (
+      {requests.map((req) => (
         <Card key={req.id}>
           <CardHeader>
             <div className="flex justify-between items-start">
