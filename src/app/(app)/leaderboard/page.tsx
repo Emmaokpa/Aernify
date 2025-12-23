@@ -147,20 +147,6 @@ export default function LeaderboardPage() {
         }));
     }, [users]);
 
-    const currentUserEntryForDisplay: LeaderboardEntry | null = useMemo(() => {
-      if (!currentUserProfile || !currentUserAuth) return null;
-      return {
-        rank: 0, // No rank shown
-        score: currentUserProfile?.weeklyCoins ?? 0,
-        user: {
-          id: currentUserAuth.uid,
-          name: currentUserProfile.displayName || 'Anonymous',
-          avatarUrl: currentUserProfile.photoURL || '',
-          email: currentUserProfile.email || '',
-        }
-      };
-    }, [currentUserProfile, currentUserAuth]);
-
     const isLoading = isUserLoading || isUsersLoading;
 
     if(isLoading) {
@@ -169,8 +155,10 @@ export default function LeaderboardPage() {
 
     const topThree = leaderboardData?.slice(0, 3) ?? [];
     const rest = leaderboardData?.slice(3) ?? [];
-    const isCurrentUserInTop50 = leaderboardData?.some(entry => entry.user.id === currentUserAuth?.uid) ?? false;
-  
+    
+    // Find the current user in the fetched leaderboard data
+    const currentUserEntry = leaderboardData?.find(entry => entry.user.id === currentUserAuth?.uid);
+
     return (
         <>
         <PageHeader
@@ -198,7 +186,7 @@ export default function LeaderboardPage() {
         <Card>
             <CardHeader>
             <CardTitle>Rankings</CardTitle>
-            <CardDescription>All players ranked by coins earned this week.</CardDescription>
+            <CardDescription>Top 50 players ranked by coins earned this week.</CardDescription>
             </CardHeader>
             <CardContent>
             <div className="space-y-2">
@@ -220,15 +208,14 @@ export default function LeaderboardPage() {
         </Card>
       
         {/* Current User Not in Top 50 Display */}
-        {!isCurrentUserInTop50 && currentUserEntryForDisplay && (
+        {currentUserEntry && (
             <div className="mt-8">
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">Your Current Standing</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <RankedUser entry={currentUserEntryForDisplay} isCurrentUser={true} isAdmin={!!isAdmin} />
-                        <p className="text-xs text-muted-foreground text-center mt-3">You are not in the top 50. Keep playing to climb the ranks!</p>
+                        <RankedUser entry={currentUserEntry} isCurrentUser={true} isAdmin={!!isAdmin} />
                     </CardContent>
                 </Card>
             </div>
