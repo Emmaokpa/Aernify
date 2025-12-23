@@ -18,6 +18,8 @@ interface UseFirestoreQueryResult<T> {
   error: FirestoreError | Error | null;
 }
 
+const LOADING_DELAY_MS = 200; // 200ms delay before showing loading skeletons
+
 /**
  * A robust, auth-aware hook for subscribing to Firestore queries.
  * It strictly waits for a valid user UID before attempting to execute the query factory.
@@ -32,9 +34,7 @@ export function useFirestoreQuery<T = any>(
   const { user, isUserLoading } = useUser();
   const [data, setData] = useState<WithId<T>[] | null>(null);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
-
-  // The effective loading state considers both auth loading and data fetching.
-  const isLoading = isUserLoading || (user && data === null && error === null);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   const memoizedQuery = useMemo(() => {
     // **Strict Guard**: Only produce a query if the user is fully loaded and has a UID.
@@ -44,14 +44,32 @@ export function useFirestoreQuery<T = any>(
     return queryFactory(user.uid);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isUserLoading]); // Depends only on the user object and its loading state.
+  
+  const [delayedIsLoading, setDelayedIsLoading] = useState(true);
+
+  useEffect(() => {
+    const effectiveIsLoading = isUserLoading || isDataLoading;
+    if (effectiveIsLoading) {
+      const timer = setTimeout(() => {
+        setDelayedIsLoading(true);
+      }, LOADING_DELAY_MS);
+      return () => clearTimeout(timer);
+    } else {
+      setDelayedIsLoading(false);
+    }
+  }, [isUserLoading, isDataLoading]);
+
 
   useEffect(() => {
     // If there's no valid query (e.g., user is logging out or not yet loaded),
     // clear data and do nothing.
     if (!memoizedQuery) {
       setData(null);
+      setIsDataLoading(false);
       return;
     }
+    
+    setIsDataLoading(true);
 
     const unsubscribe = onSnapshot(
       memoizedQuery,
@@ -62,11 +80,13 @@ export function useFirestoreQuery<T = any>(
         });
         setData(results);
         setError(null);
+        setIsDataLoading(false);
       },
       (err: FirestoreError) => {
         console.error('Firestore query error:', err);
         setError(err);
         setData(null);
+        setIsDataLoading(false);
       }
     );
 
@@ -74,7 +94,7 @@ export function useFirestoreQuery<T = any>(
     return () => unsubscribe();
   }, [memoizedQuery]);
 
-  return { data, isLoading, error };
+  return { data, isLoading: delayedIsLoading, error };
 }
 
 /**
@@ -84,19 +104,32 @@ export function usePublicFirestoreQuery<T = any>(
   queryFactory: () => CollectionReference | Query | null | undefined
 ): UseFirestoreQueryResult<T> {
   const [data, setData] = useState<WithId<T>[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [internalIsLoading, setInternalIsLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   const memoizedQuery = useMemo(queryFactory, [queryFactory]);
+  
+  const [delayedIsLoading, setDelayedIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (internalIsLoading) {
+      const timer = setTimeout(() => {
+        setDelayedIsLoading(true);
+      }, LOADING_DELAY_MS);
+      return () => clearTimeout(timer);
+    } else {
+      setDelayedIsLoading(false);
+    }
+  }, [internalIsLoading]);
 
   useEffect(() => {
     if (!memoizedQuery) {
-      setIsLoading(false);
+      setInternalIsLoading(false);
       setData(null);
       return;
     }
     
-    setIsLoading(true);
+    setInternalIsLoading(true);
     const unsubscribe = onSnapshot(
       memoizedQuery,
       (snapshot) => {
@@ -106,18 +139,18 @@ export function usePublicFirestoreQuery<T = any>(
         });
         setData(results);
         setError(null);
-        setIsLoading(false);
+        setInternalIsLoading(false);
       },
       (err: FirestoreError) => {
         console.error('Public Firestore query error:', err);
         setError(err);
         setData(null);
-        setIsLoading(false);
+        setInternalIsLoading(false);
       }
     );
 
     return () => unsubscribe();
   }, [memoizedQuery]);
 
-  return { data, isLoading, error };
+  return { data, isLoading: delayedIsLoading, error };
 }
