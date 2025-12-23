@@ -67,10 +67,11 @@ const applyReferralCodeFlow = ai.defineFlow(
 
     const referralBonus = 100;
 
-    // Award 100 coins to the referrer
+    // Award 100 coins to the referrer and increment their referral count
     batch.update(referrerUserRef, {
       coins: increment(referralBonus),
       weeklyCoins: increment(referralBonus),
+      referralCount: increment(1),
     });
 
     try {
@@ -82,5 +83,3 @@ const applyReferralCodeFlow = ai.defineFlow(
     }
   }
 );
-
-    

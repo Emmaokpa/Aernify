@@ -104,6 +104,7 @@ export interface UserProfile {
     coins: number;
     weeklyCoins: number;
     referralCode: string;
+    referralCount: number;
     isAdmin: boolean;
     isVip: boolean; // Retained for compatibility but logic will use vipExpiresAt
     vipExpiresAt?: any; // Firestore Timestamp

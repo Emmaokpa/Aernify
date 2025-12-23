@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { collection, writeBatch, doc, increment, serverTimestamp } from 'firebase/firestore';
-import { Loader2, Coins, Banknote, AlertTriangle } from 'lucide-react';
+import { Loader2, Coins, Banknote, AlertTriangle, UserPlus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
@@ -27,6 +27,7 @@ import {
 
 const COIN_TO_NAIRA_RATE = 1.5; // 1 coin = 1.5 Naira
 const MINIMUM_WITHDRAWAL_COINS = 2000;
+const MINIMUM_REFERRALS = 2;
 
 const withdrawalSchema = z.object({
   coinsToWithdraw: z.coerce.number()
@@ -59,14 +60,16 @@ export default function WithdrawPage() {
   const nairaAmount = coinsToWithdraw * COIN_TO_NAIRA_RATE;
   
   const hasSufficientCoins = profile ? profile.coins >= coinsToWithdraw : false;
+  const hasSufficientReferrals = profile ? (profile.referralCount || 0) >= MINIMUM_REFERRALS : false;
+  const canWithdraw = hasSufficientCoins && hasSufficientReferrals;
 
   const onSubmit: SubmitHandler<WithdrawalFormData> = async (data) => {
     if (!user || !profile) {
         toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to make a withdrawal.' });
         return;
     }
-    if (!hasSufficientCoins) {
-        toast({ variant: 'destructive', title: 'Insufficient Coins', description: `You do not have enough coins to withdraw ${data.coinsToWithdraw}.` });
+    if (!canWithdraw) {
+        toast({ variant: 'destructive', title: 'Requirements Not Met', description: `You need at least ${MINIMUM_WITHDRAWAL_COINS} coins and ${MINIMUM_REFERRALS} referrals.` });
         return;
     }
 
@@ -123,33 +126,44 @@ export default function WithdrawPage() {
                     <CardDescription>Enter the amount and your bank details below. Please double-check all information before submitting.</CardDescription>
                 </CardHeader>
                 <CardContent>
+                    {!hasSufficientReferrals && !isUserLoading && (
+                        <div className="flex items-center p-4 mb-6 rounded-lg bg-yellow-600/10 border border-yellow-600/20 text-yellow-400">
+                            <AlertTriangle className="h-5 w-5 mr-3 mt-1 flex-shrink-0" />
+                            <div>
+                                <h4 className="font-semibold">Withdrawal Locked</h4>
+                                <p className="text-sm">
+                                You need at least {MINIMUM_REFERRALS} referrals to unlock withdrawals. You currently have {profile?.referralCount || 0}.
+                                </p>
+                            </div>
+                        </div>
+                    )}
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                         <div>
                             <Label htmlFor="coinsToWithdraw">Coins to Withdraw</Label>
-                            <Input id="coinsToWithdraw" type="number" {...register('coinsToWithdraw')} />
+                            <Input id="coinsToWithdraw" type="number" {...register('coinsToWithdraw')} disabled={!canWithdraw} />
                             {errors.coinsToWithdraw && <p className="text-sm text-destructive mt-1">{errors.coinsToWithdraw.message}</p>}
                         </div>
                         <div>
                             <Label htmlFor="bankName">Bank Name</Label>
-                            <Input id="bankName" {...register('bankName')} placeholder="e.g., Kuda Bank"/>
+                            <Input id="bankName" {...register('bankName')} placeholder="e.g., Kuda Bank" disabled={!canWithdraw}/>
                             {errors.bankName && <p className="text-sm text-destructive mt-1">{errors.bankName.message}</p>}
                         </div>
                         <div className="grid sm:grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="accountNumber">Account Number (10 digits)</Label>
-                                <Input id="accountNumber" {...register('accountNumber')} />
+                                <Input id="accountNumber" {...register('accountNumber')} disabled={!canWithdraw} />
                                 {errors.accountNumber && <p className="text-sm text-destructive mt-1">{errors.accountNumber.message}</p>}
                             </div>
                              <div>
                                 <Label htmlFor="accountName">Account Name</Label>
-                                <Input id="accountName" {...register('accountName')} />
+                                <Input id="accountName" {...register('accountName')} disabled={!canWithdraw} />
                                 {errors.accountName && <p className="text-sm text-destructive mt-1">{errors.accountName.message}</p>}
                             </div>
                         </div>
 
                          <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button className="w-full" size="lg" disabled={isSubmitting || !hasSufficientCoins || !!Object.keys(errors).length}>
+                                <Button className="w-full" size="lg" disabled={isSubmitting || !canWithdraw || !!Object.keys(errors).length}>
                                     {isSubmitting ? (
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     ) : (
@@ -181,16 +195,25 @@ export default function WithdrawPage() {
         <div className="md:col-span-1 space-y-6">
             <Card>
                  <CardHeader>
-                    <CardTitle className='text-lg'>Your Balance</CardTitle>
+                    <CardTitle className='text-lg'>Your Stats</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                      {isUserLoading ? (
-                        <Skeleton className="h-12 w-3/4" />
+                        <div className='space-y-4'>
+                          <Skeleton className="h-12 w-3/4" />
+                          <Skeleton className="h-12 w-3/4" />
+                        </div>
                      ) : (
-                        <p className="text-4xl font-bold text-primary flex items-center gap-2">
-                            <Coins className="w-9 h-9" />
-                            <span>{profile?.coins?.toLocaleString() ?? 0}</span>
-                        </p>
+                        <>
+                          <p className="text-4xl font-bold text-primary flex items-center gap-2">
+                              <Coins className="w-9 h-9" />
+                              <span>{profile?.coins?.toLocaleString() ?? 0}</span>
+                          </p>
+                           <p className="text-2xl font-bold text-foreground flex items-center gap-2">
+                              <UserPlus className="w-7 h-7 text-muted-foreground" />
+                              <span>{profile?.referralCount?.toLocaleString() ?? 0} <span className="text-base text-muted-foreground font-normal">Referrals</span></span>
+                          </p>
+                        </>
                      )}
                 </CardContent>
             </Card>
@@ -214,7 +237,7 @@ export default function WithdrawPage() {
               <div>
                 <h4 className="font-semibold">Please Note</h4>
                 <p className="text-sm">
-                  The current conversion rate is {COIN_TO_NAIRA_RATE} Naira per coin. The minimum withdrawal is {MINIMUM_WITHDRAWAL_COINS.toLocaleString()} coins.
+                  The current conversion rate is {COIN_TO_NAIRA_RATE} Naira per coin. You need at least {MINIMUM_WITHDRAWAL_COINS.toLocaleString()} coins and {MINIMUM_REFERRALS} referrals to withdraw.
                 </p>
               </div>
             </div>

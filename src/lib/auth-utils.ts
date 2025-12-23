@@ -37,8 +37,6 @@ export const ensureUserProfile = async (firestore: Firestore, user: User) => {
       }
     } else {
       // Document does not exist, so create it.
-      
-      // Step 1: Create the document with fields allowed by the 'create' rule.
       const initialProfileData: Omit<UserProfile, 'coins'> = {
         uid: user.uid,
         displayName: user.displayName || 'New User',
@@ -46,6 +44,7 @@ export const ensureUserProfile = async (firestore: Firestore, user: User) => {
         photoURL: user.photoURL,
         weeklyCoins: 0,
         referralCode: generateReferralCode(),
+        referralCount: 0,
         isAdmin: false,
         isVip: false,
         currentStreak: 0,
@@ -54,7 +53,7 @@ export const ensureUserProfile = async (firestore: Firestore, user: User) => {
 
       await setDoc(userRef, initialProfileData);
 
-      // Step 2: Immediately update the new document to add the starting coins.
+      // Immediately update the new document to add the starting coins.
       await updateDoc(userRef, {
         coins: 10,
       });
