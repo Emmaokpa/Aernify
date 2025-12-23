@@ -39,8 +39,7 @@ service cloud.firestore {
 
     // --- Rules for the users collection ---
     match /users/{userId} {
-      allow create: if isSignedIn() 
-                    && isOwner(userId)
+      allow create: if request.resource.data.uid == request.auth.uid
                     && request.resource.data.isAdmin == false;
       
       allow get, list: if isSignedIn();
@@ -110,7 +109,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && request.query.where[0][0] == 'userId' && request.query.where[0][2] == request.auth.uid;
+      allow list: if false;
       
       allow update: if isAdmin();
       allow delete: if false;

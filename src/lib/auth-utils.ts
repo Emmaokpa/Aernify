@@ -42,7 +42,7 @@ export const ensureUserProfile = async (firestore: Firestore, user: User) => {
         displayName: user.displayName || 'New User',
         email: user.email || '',
         photoURL: user.photoURL,
-        coins: 10, // Start with 10 coins
+        coins: 10,
         weeklyCoins: 0,
         referralCode: generateReferralCode(),
         referralCount: 0,

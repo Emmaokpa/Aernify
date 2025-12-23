@@ -84,18 +84,21 @@ export default function SignUpPage() {
       const user = userCredential.user;
 
       await updateProfile(user, { displayName: username });
+      
+      // Create the user profile document in Firestore using the new centralized function.
+      await ensureUserProfile(firestore, user);
 
-      // Apply referral code if provided.
+      // Apply referral code if provided. This is now separate from user creation.
       if (referralCode) {
         const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
         if (!referralResult.success) {
           console.warn("Referral code application failed:", referralResult.message);
+          // Non-blocking toast, we don't want to fail the whole signup for a bad code.
           toast({ variant: 'destructive', title: 'Invalid Referral Code', description: referralResult.message });
+        } else {
+          toast({ title: 'Referral Applied!', description: 'Your referrer has been rewarded.' });
         }
       }
-
-      // Create the user profile document in Firestore using the new centralized function.
-      await ensureUserProfile(firestore, user);
 
       toast({
         title: 'Account Created!',
