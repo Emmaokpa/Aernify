@@ -11,6 +11,9 @@ import { useUser } from '@/firebase/provider';
 import { useCollection, UseCollectionResult, WithId } from './use-collection';
 
 /**
+ * DEPRECATED: This hook has known race conditions and is replaced by `useFirestoreQuery`.
+ * It is kept for historical purposes but should not be used in new code.
+ *
  * A "safe" wrapper around the useCollection hook that prevents queries from
  * running before the user is authenticated.
  *

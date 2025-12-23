@@ -2,7 +2,7 @@
 'use client';
 import { useMemo } from 'react';
 import PageHeader from '@/components/page-header';
-import { useSafeCollection, useFirestore, useUser } from '@/firebase';
+import { usePublicFirestoreQuery, useFirestore, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,7 +29,7 @@ function ProductSkeleton() {
 export default function ShopPage() {
   const firestore = useFirestore();
   
-  const { data: products, isLoading } = useSafeCollection<Product>(
+  const { data: products, isLoading } = usePublicFirestoreQuery<Product>(
     () => collection(firestore, 'products')
   );
 

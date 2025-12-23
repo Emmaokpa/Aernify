@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,6 @@ import {
   QuerySnapshot,
   CollectionReference,
 } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -27,7 +27,7 @@ export interface UseCollectionResult<T> {
 
 /**
  * React hook to subscribe to a Firestore collection or query in real-time.
- * * IMPORTANT: You must memoize the `memoizedTargetRefOrQuery` using `useMemo` 
+ * * IMPORTANT: You must memoize the `memoizedTargetRefOrQuery` using `useMemo`
  * in the calling component to prevent infinite re-renders.
  */
 export function useCollection<T = any>(
@@ -41,8 +41,8 @@ export function useCollection<T = any>(
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-    // GATE 1: Wait if no query is provided yet. This is the hard brake.
-    // This was the source of the error. If the query is null, we must stop and wait.
+    // **THE FIX**: If the query is not ready, do not proceed.
+    // This prevents sending an invalid request to Firestore.
     if (!memoizedTargetRefOrQuery) {
       setIsLoading(false);
       setData(null);
@@ -71,14 +71,13 @@ export function useCollection<T = any>(
           operation: 'list',
           path,
         });
-        
+
+        // Although we now know it's a code issue, this logging is still valuable.
         if (err.code === 'permission-denied') {
-          const auth = getAuth();
-          console.group('🔥 Firestore Security Error');
-          console.error(`A Firestore query was denied. This is often a race condition on initial load or a security rule mismatch.`);
-          console.error(`Firebase Error Code: ${err.code}`);
-          console.error(`User UID: ${auth.currentUser?.uid || 'Not Logged In'}`);
-          console.groupEnd();
+            console.group('🔥 Firestore Security Error');
+            console.error(`A Firestore query was denied. This can be a security rule mismatch or an invalid query (e.g., querying for a user that isn't loaded yet).`);
+            console.error(`Firebase Error Code: ${err.code}`);
+            console.groupEnd();
         }
 
         setError(contextualError);

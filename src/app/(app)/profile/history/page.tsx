@@ -5,7 +5,7 @@ import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, FileQuestion, Loader2, Coins, Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
-import { useSafeCollection, useFirestore } from '@/firebase';
+import { useFirestoreQuery, useFirestore } from '@/firebase';
 import type { WithdrawalRequest } from '@/lib/types';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,12 +36,12 @@ function HistoryCardSkeleton() {
 function WithdrawalHistoryList() {
     const firestore = useFirestore();
 
-    const { data: requests, isLoading } = useSafeCollection<WithdrawalRequest>(
-        (uid) => uid ? query(
+    const { data: requests, isLoading } = useFirestoreQuery<WithdrawalRequest>(
+        (uid) => query(
             collection(firestore, 'withdrawal_requests'), 
             where('userId', '==', uid),
             orderBy('requestedAt', 'desc')
-        ) : null
+        )
     );
 
     const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);

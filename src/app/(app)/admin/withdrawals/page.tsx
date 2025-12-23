@@ -6,7 +6,7 @@ import AdminAuthWrapper from '../AdminAuthWrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useSafeCollection } from '@/firebase';
+import { useFirestore, usePublicFirestoreQuery } from '@/firebase';
 import { collection, doc, writeBatch, increment, query, where, orderBy } from 'firebase/firestore';
 import type { WithdrawalRequest } from '@/lib/types';
 import { Loader2, Check, X, FileQuestion, User, Coins, Banknote } from 'lucide-react';
@@ -29,7 +29,7 @@ function WithdrawalList({ status }: { status: RequestStatus }) {
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const { data: requests, isLoading } = useSafeCollection<WithdrawalRequest>(
+  const { data: requests, isLoading } = usePublicFirestoreQuery<WithdrawalRequest>(
       () => query(
         collection(firestore, 'withdrawal_requests'),
         where('status', '==', status),

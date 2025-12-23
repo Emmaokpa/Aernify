@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Game } from '@/lib/types';
-import { useSafeCollection, useFirestore, useUser } from '@/firebase';
+import { usePublicFirestoreQuery, useFirestore, useUser } from '@/firebase';
 import { collection, doc, getDoc, serverTimestamp, setDoc, writeBatch, increment } from 'firebase/firestore';
 import { incrementChallengeProgress } from '@/lib/challenges';
 import { getTodayString } from '@/lib/utils';
@@ -28,7 +28,7 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const { user, profile, isUserLoading } = useUser();
 
-  const { data: games, isLoading: isGamesLoading } = useSafeCollection<Game>(
+  const { data: games, isLoading: isGamesLoading } = usePublicFirestoreQuery<Game>(
       () => collection(firestore, 'games')
   );
 

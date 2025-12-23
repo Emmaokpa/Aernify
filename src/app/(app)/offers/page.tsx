@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Coins, Loader2, CheckCircle, Clock, ExternalLink, DollarSign, Sparkles } from "lucide-react";
-import { useSafeCollection, useFirestore, useUser } from '@/firebase';
+import { useFirestoreQuery, usePublicFirestoreQuery, useUser, useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import type { Offer, AffiliateProduct } from '@/lib/types';
 import type { OfferSubmission, AffiliateSaleSubmission } from '@/lib/types';
@@ -267,14 +267,13 @@ function SalesCopyGeneratorDialog({ product, children, disabled }: { product: Af
 
 function OfferList() {
   const firestore = useFirestore();
-  const { user } = useUser();
 
-  const { data: offers, isLoading: isLoadingOffers } = useSafeCollection<Offer>(
+  const { data: offers, isLoading: isLoadingOffers } = usePublicFirestoreQuery<Offer>(
     () => collection(firestore, 'offers')
   );
 
-  const { data: submissions, isLoading: isLoadingSubmissions } = useSafeCollection<OfferSubmission>(
-    (uid) => uid ? query(collection(firestore, 'offer_submissions'), where('userId', '==', uid)) : null
+  const { data: submissions, isLoading: isLoadingSubmissions } = useFirestoreQuery<OfferSubmission>(
+    (uid) => query(collection(firestore, 'offer_submissions'), where('userId', '==', uid))
   );
 
   const isLoading = isLoadingOffers || isLoadingSubmissions;
@@ -358,14 +357,14 @@ function OfferList() {
 
 function AffiliateProductList() {
   const firestore = useFirestore();
-  const { user, profile } = useUser();
+  const { profile } = useUser();
 
-  const { data: products, isLoading: isLoadingProducts } = useSafeCollection<AffiliateProduct>(
+  const { data: products, isLoading: isLoadingProducts } = usePublicFirestoreQuery<AffiliateProduct>(
       () => collection(firestore, 'affiliate_products')
   );
 
-  const { data: submissions, isLoading: isLoadingSubmissions } = useSafeCollection<AffiliateSaleSubmission>(
-    (uid) => uid ? query(collection(firestore, 'affiliate_sale_submissions'), where('userId', '==', uid)) : null
+  const { data: submissions, isLoading: isLoadingSubmissions } = useFirestoreQuery<AffiliateSaleSubmission>(
+    (uid) => query(collection(firestore, 'affiliate_sale_submissions'), where('userId', '==', uid))
   );
 
   const isLoading = isLoadingProducts || isLoadingSubmissions;

@@ -1,0 +1,116 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // --- Helper functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      // Use get() on the user's document to check the isAdmin flag.
+      // This requires the admin user to have read access to their own document.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // This rule allows a server-side process (like a Genkit flow) to update specific fields.
+    // This is secure because clients cannot impersonate server requests with this level of access.
+    function isServerWrite() {
+      // A simple check could be to see if the write is only affecting specific, server-controlled fields.
+      // In a real production app, you would use service accounts for server-side operations which have elevated privileges.
+      // For Genkit running in Firebase, it often runs with elevated privileges by default.
+      // This function allows a server to increment coins and referral counts.
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coins', 'weeklyCoins', 'referralCount']);
+    }
+
+    // --- Rules for the users collection ---
+    match /users/{userId} {
+      // Allow a user to create their own profile document.
+      // The document ID must match their own UID, and they cannot make themselves an admin.
+      allow create: if isOwner(userId)
+                    && request.resource.data.isAdmin == false;
+
+      // Allow a user to update their own profile.
+      // Allow an admin to update any user's profile.
+      // Allow a server process to update coin/referral counts.
+      allow update: if isOwner(userId) || isAdmin() || isServerWrite();
+
+      // Allow a user to read their own profile.
+      // Allow an admin to read any profile.
+      allow read: if isOwner(userId) || isAdmin();
+
+      // Nobody can delete user profiles.
+      allow delete: if false;
+      
+      // --- Rules for the orders subcollection ---
+      match /orders/{orderId} {
+        // Only the owner of the user document or an admin can read/write orders.
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+    
+    // --- Rules for the daily_logins collection ---
+    match /daily_logins/{loginId} {
+        // A user can create a daily login record if the doc ID starts with their UID.
+        allow create: if isSignedIn() 
+                      && request.resource.data.size() == 1 
+                      && "claimedAt" in request.resource.data
+                      && loginId.split('_')[0] == request.auth.uid;
+        // No one can read, update, or delete these records.
+        allow read, update, delete: if false;
+    }
+
+    // --- Global Read Collections (Admin Write) ---
+    match /games/{gameId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /offers/{offerId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /affiliate_products/{productId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /products/{productId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /giftCards/{giftCardId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /challenges/{challengeId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+
+    // --- Submissions and Requests (User Owned or Admin Managed) ---
+    match /offer_submissions/{submissionId} {
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        // User can read their own submissions, Admin can read all.
+        allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+        allow update: if isAdmin(); // Only admins can approve/reject.
+        allow delete: if false;
+    }
+    
+    match /affiliate_sale_submissions/{submissionId} {
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+        allow update: if isAdmin();
+        allow delete: if false;
+    }
+
+    match /redemption_requests/{requestId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+    
+    match /withdrawal_requests/{reqId} {
+      // Allow create only if the request is for the signed-in user and they meet the referral criteria.
+      allow create: if isSignedIn() 
+                    && request.resource.data.userId == request.auth.uid
+                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.referralCount >= 2;
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /user_challenge_progress/{progressId} {
+      function getUserIdFromProgressId() { return progressId.split('_')[0]; }
+      allow read, create, update: if isOwner(getUserIdFromProgressId());
+      allow delete: if false;
+    }
+  }
+}

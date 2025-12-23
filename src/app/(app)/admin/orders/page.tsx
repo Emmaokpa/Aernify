@@ -6,8 +6,7 @@ import AdminAuthWrapper from '../AdminAuthWrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useSafeCollection } from '@/firebase';
-import { useAuthContext } from '@/firebase/auth-provider';
+import { useFirestore, usePublicFirestoreQuery } from '@/firebase';
 import { collection, doc, updateDoc, query, where, orderBy, collectionGroup } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import Image from 'next/image';
@@ -33,8 +32,8 @@ function OrderList({ status }: { status: OrderStatus }) {
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
   
-  const { data: orders, isLoading } = useSafeCollection<Order>(
-    (uid) => {
+  const { data: orders, isLoading } = usePublicFirestoreQuery<Order>(
+    () => {
       // The admin needs to query all orders, so we use a collectionGroup query.
       // The security rules will enforce that only admins can perform this query.
       return query(

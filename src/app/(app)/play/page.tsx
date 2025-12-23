@@ -8,13 +8,13 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Game } from '@/lib/types';
 import { useMemo } from 'react';
-import { useSafeCollection, useFirestore, useUser } from '@/firebase';
+import { usePublicFirestoreQuery, useFirestore, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
 export default function PlayPage() {
     const firestore = useFirestore();
     
-    const { data: games, isLoading } = useSafeCollection<Game>(
+    const { data: games, isLoading } = usePublicFirestoreQuery<Game>(
         () => collection(firestore, 'games')
     );
 

@@ -15,7 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { Coins, CheckCircle, Trophy, Sparkles, Gamepad2, Video, ListChecks, Star, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { useUser, useFirestore, useSafeCollection, useDoc } from '@/firebase';
+import { useUser, useFirestore, usePublicFirestoreQuery, useFirestoreQuery, useDoc } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
 import type { DailyChallenge, UserChallengeProgress } from '@/lib/types';
 import { claimChallengeReward } from '@/lib/challenges';
@@ -128,7 +128,7 @@ export default function ChallengesPage() {
   const { toast } = useToast();
   const [claimingId, setClaimingId] = useState<string | null>(null);
 
-  const { data: challenges, isLoading: isLoadingChallenges } = useSafeCollection<DailyChallenge>(
+  const { data: challenges, isLoading: isLoadingChallenges } = usePublicFirestoreQuery<DailyChallenge>(
     () => {
         const today = getTodayString();
         return query(collection(firestore, 'challenges'), where('date', '==', today));

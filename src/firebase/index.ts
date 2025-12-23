@@ -25,4 +25,4 @@ export * from './auth-provider';
 export * from './firestore/use-collection';
 export * from './firestore/use-doc';
 export * from './firestore/use-safe-collection';
-
+export * from './firestore/use-firestore-query';
