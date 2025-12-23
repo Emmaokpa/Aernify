@@ -49,7 +49,7 @@ export const ensureUserProfile = async (firestore: Firestore, user: User) => {
         isAdmin: false,
         isVip: false,
         currentStreak: 0,
-        lastLoginDate: "", // Must be an empty string to satisfy create rule
+        lastLoginDate: "",
       };
 
       await setDoc(userRef, initialProfileData);

@@ -40,15 +40,8 @@ service cloud.firestore {
     // --- Rules for the users collection ---
     match /users/{userId} {
       allow create: if isSignedIn() 
-                    && isOwner(userId) 
-                    && request.resource.data.isAdmin == false
-                    && request.resource.data.weeklyCoins == 0
-                    && request.resource.data.referralCount == 0
-                    && request.resource.data.currentStreak == 0
-                    && request.resource.data.lastLoginDate == ""
-                    && request.resource.data.isVip == false
-                    && !('vipExpiresAt' in request.resource.data)
-                    && !exists(/databases/$(database)/documents/users/$(userId));
+                    && isOwner(userId)
+                    && request.resource.data.isAdmin == false;
       
       allow get, list: if isSignedIn();
       
