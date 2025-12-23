@@ -104,8 +104,9 @@ service cloud.firestore {
     
     match /withdrawal_requests/{requestId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow get: if isSignedIn() && isOwner(resource.data.userId);
-      allow list: if isSignedIn() && request.query.where.userId == request.auth.uid;
+      // Allow read (get and list) if the user owns the document.
+      // This works for both single doc fetches and queries with `where('userId', '==', auth.uid)`.
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow update: if isAdmin();
       allow delete: if false;
     }
