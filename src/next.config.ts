@@ -3,6 +3,7 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // This comment is added to trigger a clean rebuild and fix ChunkLoadError.
   typescript: {
     ignoreBuildErrors: true,
   },
