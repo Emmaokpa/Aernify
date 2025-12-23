@@ -163,14 +163,14 @@ export default function LeaderboardPage() {
 
     const isLoading = isUserLoading || isUsersLoading;
 
-    if(isLoading || !leaderboardData) {
+    const topThree = leaderboardData?.slice(0, 3) ?? [];
+    const rest = leaderboardData?.slice(3) ?? [];
+
+    const isCurrentUserInTop50 = leaderboardData?.some(entry => entry.user.id === currentUserAuth?.uid) ?? false;
+  
+    if(isLoading) {
         return null; // App layout shows skeleton
     }
-  
-    const topThree = leaderboardData.slice(0, 3);
-    const rest = leaderboardData.slice(3);
-
-    const isCurrentUserInTop50 = leaderboardData.some(entry => entry.user.id === currentUserAuth?.uid);
 
     return (
         <>
@@ -211,7 +211,7 @@ export default function LeaderboardPage() {
                     isAdmin={!!isAdmin}
                     />
                 ))}
-                {leaderboardData.length === 0 && (
+                {(leaderboardData ?? []).length === 0 && (
                 <div className="text-center text-muted-foreground py-10">
                     No leaderboard data available yet.
                 </div>

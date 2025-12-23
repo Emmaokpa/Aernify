@@ -42,7 +42,7 @@ service cloud.firestore {
       allow update: if isOwner(userId) || isAdmin() || isServerWrite();
 
       // Allow any signed-in user or an admin to read profiles for the leaderboard.
-      allow read: if isSignedIn() || isAdmin();
+      allow read: if isSignedIn();
 
       // Nobody can delete user profiles.
       allow delete: if false;
