@@ -147,94 +147,93 @@ export default function LeaderboardPage() {
         }));
     }, [users]);
 
-  const isLoading = isUserLoading || isUsersLoading;
+    const currentUserEntryForDisplay: LeaderboardEntry | null = useMemo(() => {
+      if (!currentUserProfile || !currentUserAuth) return null;
+      return {
+        rank: 0, // No rank shown
+        score: currentUserProfile?.weeklyCoins ?? 0,
+        user: {
+          id: currentUserAuth.uid,
+          name: currentUserProfile.displayName || 'Anonymous',
+          avatarUrl: currentUserProfile.photoURL || '',
+          email: currentUserProfile.email || '',
+        }
+      };
+    }, [currentUserProfile, currentUserAuth]);
 
-  if(isLoading || !leaderboardData) {
-    return null; // App layout shows skeleton
-  }
+    const isLoading = isUserLoading || isUsersLoading;
+
+    if(isLoading || !leaderboardData) {
+        return null; // App layout shows skeleton
+    }
   
-  const topThree = leaderboardData.slice(0, 3);
-  const rest = leaderboardData.slice(3);
+    const topThree = leaderboardData.slice(0, 3);
+    const rest = leaderboardData.slice(3);
 
-  const isCurrentUserInTop50 = leaderboardData.some(entry => entry.user.id === currentUserAuth?.uid);
-  
-  const currentUserEntryForDisplay: LeaderboardEntry | null = useMemo(() => {
-    if (!currentUserProfile || !currentUserAuth) return null;
-    return {
-      rank: 0, // No rank shown
-      score: currentUserProfile?.weeklyCoins ?? 0,
-      user: {
-        id: currentUserAuth.uid,
-        name: currentUserProfile.displayName || 'Anonymous',
-        avatarUrl: currentUserProfile.photoURL || '',
-        email: currentUserProfile.email || '',
-      }
-    };
-  }, [currentUserProfile, currentUserAuth]);
+    const isCurrentUserInTop50 = leaderboardData.some(entry => entry.user.id === currentUserAuth?.uid);
 
+    return (
+        <>
+        <PageHeader
+            title="Weekly Leaderboard"
+            description="See who's on top this week. Top players win weekly prizes!"
+        />
 
-  return (
-    <>
-      <PageHeader
-        title="Weekly Leaderboard"
-        description="See who's on top this week. Top players win weekly prizes!"
-      />
+        <Card className="mb-8 bg-primary/10 border-primary/20">
+            <CardContent className='p-6 text-center'>
+                <div className='max-w-md mx-auto'>
+                    <Award className='w-12 h-12 mx-auto text-primary mb-2' />
+                    <h3 className='text-xl font-bold text-foreground'>Weekly Champion's Prize</h3>
+                    <p className='text-muted-foreground'>The #1 player at the end of the week with over <span className='font-bold text-primary'>30,000 coins</span> wins a <span className='font-bold text-primary'>$50 Gift Card</span>. Do you have what it takes?</p>
+                </div>
+            </CardContent>
+        </Card>
 
-      <Card className="mb-8 bg-primary/10 border-primary/20">
-          <CardContent className='p-6 text-center'>
-            <div className='max-w-md mx-auto'>
-                <Award className='w-12 h-12 mx-auto text-primary mb-2' />
-                <h3 className='text-xl font-bold text-foreground'>Weekly Champion's Prize</h3>
-                <p className='text-muted-foreground'>The #1 player at the end of the week with over <span className='font-bold text-primary'>30,000 coins</span> wins a <span className='font-bold text-primary'>$50 Gift Card</span>. Do you have what it takes?</p>
-            </div>
-          </CardContent>
-      </Card>
-
-      {/* --- Top 3 Display --- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-8 mb-8 items-end">
-        {topThree[1] && <TopPlayerCard entry={topThree[1]} isAdmin={!!isAdmin} />}
-        {topThree[0] && <TopPlayerCard entry={topThree[0]} isAdmin={!!isAdmin} />}
-        {topThree[2] && <TopPlayerCard entry={topThree[2]} isAdmin={!!isAdmin} />}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Rankings</CardTitle>
-          <CardDescription>All players ranked by coins earned this week.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {rest.map((entry) => (
-                <RankedUser 
-                  key={entry.user.id} 
-                  entry={entry} 
-                  isCurrentUser={entry.user.id === currentUserAuth?.uid}
-                  isAdmin={!!isAdmin}
-                />
-            ))}
-            {leaderboardData.length === 0 && (
-              <div className="text-center text-muted-foreground py-10">
-                No leaderboard data available yet.
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Current User Not in Top 50 Display */}
-      {!isCurrentUserInTop50 && currentUserEntryForDisplay && (
-        <div className="mt-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-base">Your Current Standing</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <RankedUser entry={currentUserEntryForDisplay} isCurrentUser={true} isAdmin={!!isAdmin} />
-                    <p className="text-xs text-muted-foreground text-center mt-3">You are not in the top 50. Keep playing to climb the ranks!</p>
-                </CardContent>
-            </Card>
+        {/* --- Top 3 Display --- */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-8 mb-8 items-end">
+            {topThree[1] && <TopPlayerCard entry={topThree[1]} isAdmin={!!isAdmin} />}
+            {topThree[0] && <TopPlayerCard entry={topThree[0]} isAdmin={!!isAdmin} />}
+            {topThree[2] && <TopPlayerCard entry={topThree[2]} isAdmin={!!isAdmin} />}
         </div>
-      )}
-    </>
-  );
+
+        <Card>
+            <CardHeader>
+            <CardTitle>Rankings</CardTitle>
+            <CardDescription>All players ranked by coins earned this week.</CardDescription>
+            </CardHeader>
+            <CardContent>
+            <div className="space-y-2">
+                {rest.map((entry) => (
+                    <RankedUser 
+                    key={entry.user.id} 
+                    entry={entry} 
+                    isCurrentUser={entry.user.id === currentUserAuth?.uid}
+                    isAdmin={!!isAdmin}
+                    />
+                ))}
+                {leaderboardData.length === 0 && (
+                <div className="text-center text-muted-foreground py-10">
+                    No leaderboard data available yet.
+                </div>
+                )}
+            </div>
+            </CardContent>
+        </Card>
+      
+        {/* Current User Not in Top 50 Display */}
+        {!isCurrentUserInTop50 && currentUserEntryForDisplay && (
+            <div className="mt-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base">Your Current Standing</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <RankedUser entry={currentUserEntryForDisplay} isCurrentUser={true} isAdmin={!!isAdmin} />
+                        <p className="text-xs text-muted-foreground text-center mt-3">You are not in the top 50. Keep playing to climb the ranks!</p>
+                    </CardContent>
+                </Card>
+            </div>
+        )}
+        </>
+    );
 }
