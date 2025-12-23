@@ -40,7 +40,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import ImageUploadForm from '@/components/image-upload-form';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function EditProfileDialog() {
     const { user, profile } = useUser();
@@ -117,41 +116,26 @@ function EditProfileDialog() {
     );
 }
 
-const ProfileMenuItem = ({ icon, text, href, onClick, disabled = false, comingSoon = false }: { icon: React.ReactNode, text: string, href?: string, onClick?: () => void, disabled?: boolean, comingSoon?: boolean }) => {
+const ProfileMenuItem = ({ icon, text, href, onClick, disabled = false }: { icon: React.ReactNode, text: string, href?: string, onClick?: () => void, disabled?: boolean }) => {
   const content = (
     <div
       className="flex items-center justify-between p-4 bg-card rounded-lg data-[disabled=true]:opacity-50 data-[disabled=true]:pointer-events-none"
       onClick={onClick}
-      data-disabled={disabled || comingSoon}
+      data-disabled={disabled}
     >
       <div className="flex items-center gap-4">
         <div className="text-muted-foreground">{icon}</div>
         <span className="font-medium text-foreground">{text}</span>
-         {comingSoon && <span className="text-xs font-semibold bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">Soon</span>}
       </div>
       <ChevronRight className="text-muted-foreground" />
     </div>
   );
 
-  const wrapper = (children: React.ReactNode) => {
-    if (comingSoon) {
-       return (
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger className='w-full'>{children}</TooltipTrigger>
-                    <TooltipContent><p>This feature is coming soon!</p></TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-       )
-    }
-    return children;
+  if (href && !disabled) {
+    return <Link href={href} className="cursor-pointer">{content}</Link>;
   }
 
-  if (href && !disabled && !comingSoon) {
-    return wrapper(<Link href={href} className="cursor-pointer">{content}</Link>);
-  }
-
-  return wrapper(<div className={disabled ? 'cursor-not-allowed' : 'cursor-pointer'}>{content}</div>);
+  return <div className={disabled ? 'cursor-not-allowed' : 'cursor-pointer'}>{content}</div>;
 };
 
 
@@ -231,13 +215,13 @@ export default function ProfilePage() {
             {!isVipActive && <p className="font-semibold text-foreground">₦5,000/month</p>}
           </div>
            {isVipActive ? (
-             <div className="text-center text-primary font-semibold flex flex-col items-center justify-center gap-2">
-                <div className="flex items-center gap-2 text-green-400">
+             <div className="text-center font-semibold flex flex-col items-center justify-center gap-2">
+                <div className="flex items-center gap-2 text-primary">
                     <Crown className="w-5 h-5" />
                     <span>Your 2x earning rate is active!</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                    Expires in {formatDistanceToNow(profile.vipExpiresAt.toDate(), { addSuffix: true })}
+                    Expires {formatDistanceToNow(profile.vipExpiresAt.toDate(), { addSuffix: true })}
                 </p>
              </div>
            ) : (
