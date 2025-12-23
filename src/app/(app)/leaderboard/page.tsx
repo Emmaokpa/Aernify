@@ -124,21 +124,7 @@ function RankedUser({
 export default function LeaderboardPage() {
     const firestore = useFirestore();
     const { user: currentUserAuth, profile: currentUserProfile, isAdmin, isUserLoading } = useUser();
-
-    const currentUserEntryForDisplay: LeaderboardEntry | null = useMemo(() => {
-      if (!currentUserProfile || !currentUserAuth) return null;
-      return {
-        rank: 0, // No rank shown
-        score: currentUserProfile?.weeklyCoins ?? 0,
-        user: {
-          id: currentUserAuth.uid,
-          name: currentUserProfile.displayName || 'Anonymous',
-          avatarUrl: currentUserProfile.photoURL || '',
-          email: currentUserProfile.email || '',
-        }
-      };
-    }, [currentUserProfile, currentUserAuth]);
-
+    
     const { data: users, isLoading: isUsersLoading } = usePublicFirestoreQuery<UserProfile>(
         () => query(
             collection(firestore, 'users'), 
@@ -161,17 +147,30 @@ export default function LeaderboardPage() {
         }));
     }, [users]);
 
+    const currentUserEntryForDisplay: LeaderboardEntry | null = useMemo(() => {
+      if (!currentUserProfile || !currentUserAuth) return null;
+      return {
+        rank: 0, // No rank shown
+        score: currentUserProfile?.weeklyCoins ?? 0,
+        user: {
+          id: currentUserAuth.uid,
+          name: currentUserProfile.displayName || 'Anonymous',
+          avatarUrl: currentUserProfile.photoURL || '',
+          email: currentUserProfile.email || '',
+        }
+      };
+    }, [currentUserProfile, currentUserAuth]);
+
     const isLoading = isUserLoading || isUsersLoading;
 
-    const topThree = leaderboardData?.slice(0, 3) ?? [];
-    const rest = leaderboardData?.slice(3) ?? [];
-
-    const isCurrentUserInTop50 = leaderboardData?.some(entry => entry.user.id === currentUserAuth?.uid) ?? false;
-  
     if(isLoading) {
         return null; // App layout shows skeleton
     }
 
+    const topThree = leaderboardData?.slice(0, 3) ?? [];
+    const rest = leaderboardData?.slice(3) ?? [];
+    const isCurrentUserInTop50 = leaderboardData?.some(entry => entry.user.id === currentUserAuth?.uid) ?? false;
+  
     return (
         <>
         <PageHeader
