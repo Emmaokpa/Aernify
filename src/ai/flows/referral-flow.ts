@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -22,7 +23,6 @@ export type ReferralInput = z.infer<typeof ReferralInputSchema>;
 const ReferralOutputSchema = z.object({
   success: z.boolean().describe('Whether the referral was applied successfully.'),
   message: z.string().describe('A message describing the result.'),
-  bonusAwarded: z.boolean().describe('Whether the new user received a bonus for using the code.')
 });
 export type ReferralOutput = z.infer<typeof ReferralOutputSchema>;
 
@@ -47,7 +47,7 @@ const applyReferralCodeFlow = ai.defineFlow(
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
-      return { success: false, message: 'Invalid referral code.', bonusAwarded: false };
+      return { success: false, message: 'Invalid referral code.' };
     }
 
     if (querySnapshot.size > 1) {
@@ -58,7 +58,7 @@ const applyReferralCodeFlow = ai.defineFlow(
     const referrerUid = referrerDoc.id;
 
     if (referrerUid === newUserUid) {
-      return { success: false, message: 'You cannot refer yourself.', bonusAwarded: false };
+      return { success: false, message: 'You cannot refer yourself.' };
     }
     
     const referrerUserRef = doc(firestore, 'users', referrerUid);
@@ -76,10 +76,10 @@ const applyReferralCodeFlow = ai.defineFlow(
 
     try {
       await batch.commit();
-      return { success: true, message: 'Referral successful! The referrer has been rewarded.', bonusAwarded: false };
+      return { success: true, message: 'Referral successful! The referrer has been rewarded.' };
     } catch (error) {
       console.error("Error committing referral batch:", error);
-      return { success: false, message: 'An error occurred while applying the referral.', bonusAwarded: false };
+      return { success: false, message: 'An error occurred while applying the referral.' };
     }
   }
 );

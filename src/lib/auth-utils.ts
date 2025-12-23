@@ -34,8 +34,8 @@ export const ensureUserProfile = async (firestore: Firestore, user: User, referr
         displayName: user.displayName || 'New User',
         email: user.email || '',
         photoURL: user.photoURL || null,
-        coins: 100, // Start with 100 coins
-        weeklyCoins: 100,
+        coins: 0, // Start with 0 coins
+        weeklyCoins: 0,
         referralCode: generateReferralCode(),
         referralCount: 0,
         isAdmin: false,
@@ -71,3 +71,4 @@ export const ensureUserProfile = async (firestore: Firestore, user: User, referr
     throw new Error('Failed to create or verify user profile in the database.');
   }
 };
+
