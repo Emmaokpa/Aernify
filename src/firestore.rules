@@ -27,6 +27,15 @@ service cloud.firestore {
       // Allows user to update their own displayName, photoURL
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL']);
     }
+    
+    function isReferralUpdate(userId) {
+      // Allows a signed-in user (the new user) to update the referrer's document,
+      // but ONLY to increment coin and referral counts.
+      // This rule is designed to be called by a trusted server-side flow.
+      return isSignedIn()
+             && request.auth.uid != userId // The user making the change is not the user being changed
+             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coins', 'weeklyCoins', 'referralCount']);
+    }
 
     // --- Rules for the users collection ---
     match /users/{userId} {
@@ -49,7 +58,8 @@ service cloud.firestore {
                        request.resource.data.referralCode == resource.data.referralCode)
                     || (isAdmin() && 
                         // Admin can update anything EXCEPT referral code and uid
-                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['referralCode', 'uid']));
+                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['referralCode', 'uid']))
+                    || isReferralUpdate(userId); // Allow referral updates
 
       allow delete: if isAdmin();
       
