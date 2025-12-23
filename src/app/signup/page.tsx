@@ -18,7 +18,6 @@ import Logo from '@/components/icons/logo';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider, signInWithPopup, AuthErrorCodes } from 'firebase/auth';
-import { applyReferralCode } from '@/ai/flows/referral-flow';
 import { ensureUserProfile } from '@/lib/auth-utils';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
@@ -34,15 +33,22 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  async function handleAuthSuccess(user: User) {
+    await ensureUserProfile(firestore, user);
+    toast({
+      title: 'Account Ready!',
+      description: "You've successfully signed up. Redirecting...",
+    });
+    router.push('/dashboard');
+  }
+
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
     setError(null);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
-      // Explicitly ensure the user profile exists before redirecting.
-      await ensureUserProfile(firestore, result.user);
-      router.push('/dashboard');
+      await handleAuthSuccess(result.user);
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         console.log('Google Sign-In cancelled by user.');
@@ -71,7 +77,6 @@ export default function SignUpPage() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
-    const referralCode = (formData.get('referralCode') as string) || null;
 
     if (password !== confirmPassword) {
       setError("Passwords don't match.");
@@ -85,27 +90,8 @@ export default function SignUpPage() {
 
       await updateProfile(user, { displayName: username });
       
-      // Create the user profile document in Firestore using the new centralized function.
-      await ensureUserProfile(firestore, user);
-
-      // Apply referral code if provided. This is now separate from user creation.
-      if (referralCode) {
-        const referralResult = await applyReferralCode({ newUserUid: user.uid, referralCode });
-        if (!referralResult.success) {
-          console.warn("Referral code application failed:", referralResult.message);
-          // Non-blocking toast, we don't want to fail the whole signup for a bad code.
-          toast({ variant: 'destructive', title: 'Invalid Referral Code', description: referralResult.message });
-        } else {
-          toast({ title: 'Referral Applied!', description: 'Your referrer has been rewarded.' });
-        }
-      }
-
-      toast({
-        title: 'Account Created!',
-        description: "You've successfully signed up. Redirecting...",
-      });
-      
-      router.push('/dashboard');
+      // After successful auth and profile update, handle the DB record.
+      await handleAuthSuccess(user);
 
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
@@ -196,9 +182,9 @@ export default function SignUpPage() {
                   </Button>
                 </div>
               </div>
-              <div className="space-y-2">
+               <div className="space-y-2">
                 <Label htmlFor="referralCode">Referral Code (Optional)</Label>
-                <Input id="referralCode" name="referralCode" placeholder="Enter a code" disabled={isLoading || isGoogleLoading}/>
+                <Input id="referralCode" name="referralCode" placeholder="Enter a code" disabled={true}/>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

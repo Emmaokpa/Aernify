@@ -10,55 +10,32 @@ service cloud.firestore {
     }
 
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
-
+    
     function isAdmin() {
-      // Improved: Check existence first to prevent rule crashes
       let userDoc = /databases/$(database)/documents/users/$(request.auth.uid);
       return exists(userDoc) && get(userDoc).data.isAdmin == true;
-    }
-    
-    function isCoinUpdate() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coins', 'weeklyCoins']);
-    }
-
-    function isUpdatingProfile() {
-      // Allows user to update their own displayName, photoURL
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL']);
-    }
-    
-    function isReferralUpdate(userId) {
-      // Allows a signed-in user (the new user) to update the referrer's document,
-      // but ONLY to increment coin and referral counts.
-      // This rule is designed to be called by a trusted server-side flow.
-      return isSignedIn()
-             && request.auth.uid != userId // The user making the change is not the user being changed
-             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coins', 'weeklyCoins', 'referralCount']);
     }
 
     // --- Rules for the users collection ---
     match /users/{userId} {
-      allow create: if request.resource.data.uid == request.auth.uid
+      // A user can create their own profile document.
+      // The document ID must match their UID.
+      // They cannot make themselves an admin on creation.
+      allow create: if isOwner(userId)
                     && request.resource.data.isAdmin == false;
-      
-      allow get, list: if isSignedIn();
-      
-      allow update: if (isOwner(userId) &&
-                       isUpdatingProfile() &&
-                       request.resource.data.isAdmin == resource.data.isAdmin &&
-                       request.resource.data.vipExpiresAt == resource.data.vipExpiresAt &&
-                       request.resource.data.referralCode == resource.data.referralCode)
-                    || (isAdmin() && 
-                        // Admin can update anything EXCEPT referral code and uid
-                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['referralCode', 'uid']))
-                    || isReferralUpdate(userId); // Allow referral updates
 
-      allow delete: if isAdmin();
+      // A user can read and update their own profile.
+      // Admins can read/update any profile.
+      allow read, update: if isOwner(userId) || isAdmin();
+
+      // Nobody can delete user profiles.
+      allow delete: if false;
       
       // --- Rules for the orders subcollection ---
       match /orders/{orderId} {
-        allow read, write: if isSignedIn() && isOwner(userId);
+        allow read, write: if isOwner(userId) || isAdmin();
       }
     }
     
@@ -68,9 +45,7 @@ service cloud.firestore {
                       && request.resource.data.size() == 1 
                       && "claimedAt" in request.resource.data
                       && loginId.split('_')[0] == request.auth.uid;
-
-        allow update, delete: if false;
-        allow get, list: if isSignedIn() && isOwner(loginId.split('_')[0]);
+        allow read, update, delete: if false;
     }
 
     // --- Global Read Collections (Games, Offers, Products, etc.) ---
@@ -81,52 +56,41 @@ service cloud.firestore {
     match /giftCards/{giftCardId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /challenges/{challengeId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
 
-    // --- Submissions and Requests (User Owned) ---
-    
+    // --- Submissions and Requests (User Owned or Admin) ---
     match /offer_submissions/{submissionId} {
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        // User can read/list their own, Admin can read everything
-        allow read: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
+        allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
         allow update: if isAdmin();
         allow delete: if false;
     }
     
     match /affiliate_sale_submissions/{submissionId} {
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow read: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
+        allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
         allow update: if isAdmin();
         allow delete: if false;
     }
 
     match /redemption_requests/{requestId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read: if isAdmin() || (isSignedIn() && (resource == null || resource.data.userId == request.auth.uid));
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow update: if isAdmin();
       allow delete: if false;
     }
     
-    match /withdrawal_requests/{requestId} {
+    match /withdrawal_requests/{reqId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if false;
-      
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow update: if isAdmin();
       allow delete: if false;
     }
 
     match /user_challenge_progress/{progressId} {
       function getUserId() { return progressId.split('_')[0]; }
-      allow get, list: if isSignedIn() && isOwner(getUserId());
-      allow create, update: if isSignedIn() && isOwner(getUserId());
+      allow read, create, update: if isOwner(getUserId());
       allow delete: if false;
     }
 
-    // --- Rules for collections that are NO LONGER USED ---
-    match /orders/{orderId} {
-      allow read, write: if false;
-    }
-    
     // Fallback rule
     match /{document=**} {
       allow read, write: if false;
