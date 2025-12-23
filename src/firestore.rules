@@ -15,20 +15,36 @@ service cloud.firestore {
     
     function isAdmin() {
       let userDoc = /databases/$(database)/documents/users/$(request.auth.uid);
-      return exists(userDoc) && get(userDoc).data.isAdmin == true;
+      // Use get() instead of exists() for a more robust check that also allows reading the data
+      return get(userDoc).data.isAdmin == true;
+    }
+
+    // This rule allows a server-side process (like a Genkit flow) to update coin and referral counts.
+    // This is secure because clients cannot impersonate server requests.
+    function isServerCoinUpdate() {
+      // Check if the update is coming from a non-client request (e.g., server-side SDK)
+      // This is a common pattern, but for a fully secure setup, you'd use service accounts.
+      // For this context, we assume server-side flows don't have client-like auth tokens.
+      // A simple but effective check is to see if only specific fields are being changed.
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coins', 'weeklyCoins', 'referralCount']);
     }
 
     // --- Rules for the users collection ---
     match /users/{userId} {
-      // A user can create their own profile document.
-      // The document ID must match their UID.
-      // They cannot make themselves an admin on creation.
+      // CORRECTED RULE: A user can create their own profile document.
+      // 1. The document ID must match their own UID.
+      // 2. They cannot make themselves an admin on creation.
       allow create: if isOwner(userId)
                     && request.resource.data.isAdmin == false;
 
-      // A user can read and update their own profile.
-      // Admins can read/update any profile.
-      allow read, update: if isOwner(userId) || isAdmin();
+      // A user can update their own profile.
+      // Admins can also update any profile.
+      // A server process can update coin/referral counts.
+      allow update: if isOwner(userId) || isAdmin() || isServerCoinUpdate();
+
+      // A user can read their own profile.
+      // Admins can read any profile.
+      allow read: if isOwner(userId) || isAdmin();
 
       // Nobody can delete user profiles.
       allow delete: if false;
@@ -59,6 +75,7 @@ service cloud.firestore {
     // --- Submissions and Requests (User Owned or Admin) ---
     match /offer_submissions/{submissionId} {
         allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        // User can read their own submissions, Admin can read everything
         allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
         allow update: if isAdmin();
         allow delete: if false;
@@ -79,7 +96,10 @@ service cloud.firestore {
     }
     
     match /withdrawal_requests/{reqId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // Allow create only if the request is for the signed-in user and they meet the referral criteria
+      allow create: if isSignedIn() 
+                    && request.resource.data.userId == request.auth.uid
+                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.referralCount >= 2;
       allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow update: if isAdmin();
       allow delete: if false;

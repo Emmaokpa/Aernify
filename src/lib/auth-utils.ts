@@ -28,13 +28,19 @@ export const ensureUserProfile = async (firestore: Firestore, user: User, referr
     const docSnap = await getDoc(userRef);
 
     if (!docSnap.exists()) {
-      const initialProfileData: Omit<UserProfile, 'id' | 'isVip' | 'vipExpiresAt' | 'weeklyCoins' | 'currentStreak' | 'lastLoginDate' | 'wishlist' | 'dvaBankName' | 'dvaAccountNumber' | 'photoURL' | 'referralCount'> & { createdAt: any } = {
+      // Define the data for the new user profile
+      const initialProfileData = {
         uid: user.uid,
         displayName: user.displayName || 'New User',
         email: user.email || '',
+        photoURL: user.photoURL || null,
         coins: 100, // Start with 100 coins
+        weeklyCoins: 100,
         referralCode: generateReferralCode(),
+        referralCount: 0,
         isAdmin: false,
+        currentStreak: 0,
+        lastLoginDate: null,
         createdAt: serverTimestamp(),
       };
 
@@ -61,6 +67,7 @@ export const ensureUserProfile = async (firestore: Firestore, user: User, referr
     }
   } catch (error) {
     console.error(`Error ensuring user profile for ${user.uid}:`, error);
+    // Re-throw a more specific error for the UI to catch if needed
     throw new Error('Failed to create or verify user profile in the database.');
   }
 };
