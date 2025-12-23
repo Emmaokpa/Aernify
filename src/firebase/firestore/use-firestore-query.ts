@@ -8,12 +8,16 @@ import {
   CollectionReference,
   onSnapshot,
   FirestoreError,
+  DocumentReference,
 } from 'firebase/firestore';
 import { useUser } from '@/firebase/provider';
 import type { WithId } from './use-collection';
 
+// Add the document reference to the result type
+export type WithRef<T> = T & { id: string; ref: DocumentReference<DocumentData> };
+
 interface UseFirestoreQueryResult<T> {
-  data: WithId<T>[] | null;
+  data: WithRef<T>[] | null;
   isLoading: boolean;
   error: FirestoreError | Error | null;
 }
@@ -30,31 +34,33 @@ export function useFirestoreQuery<T = any>(
   queryFactory: (uid: string) => CollectionReference | Query | null | undefined
 ): UseFirestoreQueryResult<T> {
   const { user, isUserLoading } = useUser();
-  const [data, setData] = useState<WithId<T>[] | null>(null);
+  const [data, setData] = useState<WithRef<T>[] | null>(null);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
   
   const memoizedQuery = useMemo(() => {
-    // **Strict Guard**: Only produce a query if the user is fully loaded and has a UID.
-    if (isUserLoading || !user?.uid) {
+    if (!user?.uid) {
       return null;
     }
     return queryFactory(user.uid);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, isUserLoading]); // Depends only on the user's UID and its loading state.
+  }, [user?.uid]);
 
   useEffect(() => {
-    // If there's no valid query (e.g., user is logging out or not yet loaded),
-    // do nothing and wait.
+    if (isUserLoading) {
+      return;
+    }
+
     if (!memoizedQuery) {
+      setData([]);
       return;
     }
     
     const unsubscribe = onSnapshot(
       memoizedQuery,
       (snapshot) => {
-        const results: WithId<T>[] = [];
+        const results: WithRef<T>[] = [];
         snapshot.forEach((doc) => {
-          results.push({ ...(doc.data() as T), id: doc.id });
+          results.push({ ...(doc.data() as T), id: doc.id, ref: doc.ref });
         });
         setData(results);
         setError(null);
@@ -66,12 +72,10 @@ export function useFirestoreQuery<T = any>(
       }
     );
 
-    // Cleanup subscription on unmount or when query changes.
     return () => unsubscribe();
-  }, [memoizedQuery]);
+  }, [memoizedQuery, isUserLoading]);
   
-  // The final loading state is true if auth is loading OR if we have a valid query but no data/error yet.
-  const isLoading = isUserLoading || (!!memoizedQuery && data === null && error === null);
+  const isLoading = (isUserLoading || data === null) && error === null;
 
   return { data, isLoading, error };
 }
@@ -82,39 +86,40 @@ export function useFirestoreQuery<T = any>(
 export function usePublicFirestoreQuery<T = any>(
   queryFactory: () => CollectionReference | Query | null | undefined
 ): UseFirestoreQueryResult<T> {
-  const [data, setData] = useState<WithId<T>[] | null>(null);
+  const [data, setData] = useState<WithRef<T>[] | null>(null);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const memoizedQuery = useMemo(queryFactory, [queryFactory]);
 
   useEffect(() => {
     if (!memoizedQuery) {
-      setData([]); // Set to empty array if no query, signifying "loaded but no data"
+      setData([]);
+      setIsLoading(false);
       return;
     }
     
     const unsubscribe = onSnapshot(
       memoizedQuery,
       (snapshot) => {
-        const results: WithId<T>[] = [];
+        const results: WithRef<T>[] = [];
         snapshot.forEach((doc) => {
-          results.push({ ...(doc.data() as T), id: doc.id });
+          results.push({ ...(doc.data() as T), id: doc.id, ref: doc.ref });
         });
         setData(results);
         setError(null);
+        setIsLoading(false);
       },
       (err: FirestoreError) => {
         console.error('Public Firestore query error:', err);
         setError(err);
         setData(null);
+        setIsLoading(false);
       }
     );
 
     return () => unsubscribe();
   }, [memoizedQuery]);
-  
-  // Loading is true only if we have a query but haven't received data or an error yet.
-  const isLoading = !!memoizedQuery && data === null && error === null;
 
   return { data, isLoading, error };
 }

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, usePublicFirestoreQuery } from '@/firebase';
-import { collection, doc, updateDoc, query, where, orderBy, collectionGroup } from 'firebase/firestore';
+import { collection, doc, updateDoc, query, where, orderBy, collectionGroup, DocumentReference, DocumentData } from 'firebase/firestore';
 import type { Order } from '@/lib/types';
 import Image from 'next/image';
 import { Loader2, PackageCheck, Truck, CheckCircle, FileQuestion, Ban } from 'lucide-react';
@@ -17,7 +17,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import Link from 'next/link';
 
 type OrderStatus = 'pending' | 'shipped' | 'delivered' | 'cancelled';
-const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+const formatToNaira = (amount: number | undefined) => {
+    if (typeof amount !== 'number' || isNaN(amount)) {
+        return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(0);
+    }
+    return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
+}
 
 const statusIcons = {
     pending: <PackageCheck className="mr-2 h-4 w-4" />,
@@ -31,10 +36,8 @@ function OrderList({ status }: { status: OrderStatus }) {
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
   
-  const { data: orders } = usePublicFirestoreQuery<Order>(
+  const { data: orders, isLoading } = usePublicFirestoreQuery<Order>(
     () => {
-      // The admin needs to query all orders, so we use a collectionGroup query.
-      // The security rules will enforce that only admins can perform this query.
       return query(
         collectionGroup(firestore, 'orders'),
         where('status', '==', status)
@@ -42,11 +45,9 @@ function OrderList({ status }: { status: OrderStatus }) {
     }
   );
 
-  const handleStatusChange = async (orderId: string, userId: string, newStatus: OrderStatus) => {
-    setProcessingId(orderId);
+  const handleStatusChange = async (orderRef: DocumentReference<DocumentData>, newStatus: OrderStatus) => {
+    setProcessingId(orderRef.id);
     try {
-        // The path to the order is now inside a user's subcollection
-        const orderRef = doc(firestore, 'users', userId, 'orders', orderId);
         await updateDoc(orderRef, { status: newStatus });
         toast({
             title: 'Order Updated',
@@ -64,11 +65,11 @@ function OrderList({ status }: { status: OrderStatus }) {
     }
   }
 
-  if (!orders) {
-    return null; // Data is loading, the layout skeleton will be shown
+  if (isLoading) {
+    return null; 
   }
   
-  if (orders.length === 0) {
+  if (orders && orders.length === 0) {
     return (
       <div className="text-center py-20 rounded-lg bg-card border">
         <FileQuestion className="mx-auto h-16 w-16 text-muted-foreground" />
@@ -80,31 +81,31 @@ function OrderList({ status }: { status: OrderStatus }) {
 
   return (
     <div className="grid sm:grid-cols-1 lg:grid-cols-2 gap-6">
-      {orders.map((order) => (
+      {orders?.map((order) => (
         <Card key={order.id} className="flex flex-col">
           <CardHeader>
             <div className="flex items-start justify-between">
                 <div>
                     <CardTitle className="text-lg">{order.productName}</CardTitle>
-                    <CardDescription>Order from: {order.shippingInfo.fullName}</CardDescription>
+                    <CardDescription>Order from: {order.shippingInfo?.fullName || 'Unknown User'}</CardDescription>
                 </div>
                 <div className="text-lg font-bold text-primary">{formatToNaira(order.amountPaid)}</div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4 flex-grow">
             <div className='flex gap-4'>
-                <Link href={`/shop/${order.productId}`} className="block">
+                {order.productId && <Link href={`/shop/${order.productId}`} className="block">
                   <div className='relative w-24 h-24 rounded-md overflow-hidden border hover:opacity-80 transition-opacity'>
                       <Image src={order.productImageUrl} alt={order.productName} fill className='object-cover'/>
                   </div>
-                </Link>
-                <div className='text-sm'>
+                </Link>}
+                {order.shippingInfo && <div className='text-sm'>
                     <h4 className='font-semibold'>Shipping Address</h4>
                     <p className='text-muted-foreground'>
                         {order.shippingInfo.addressLine1}, {order.shippingInfo.city}, {order.shippingInfo.state}, {order.shippingInfo.country}
                     </p>
                     <p className='text-muted-foreground font-medium'>{order.shippingInfo.phoneNumber}</p>
-                </div>
+                </div>}
             </div>
              {order.selectedVariant && (
                 <div className="text-sm">
@@ -130,7 +131,7 @@ function OrderList({ status }: { status: OrderStatus }) {
                 {(['pending', 'shipped', 'delivered', 'cancelled'] as OrderStatus[]).map(s => (
                     <DropdownMenuItem 
                         key={s}
-                        onClick={() => handleStatusChange(order.id, order.userId, s)}
+                        onClick={() => handleStatusChange(order.ref, s)}
                         disabled={order.status === s}
                     >
                        {statusIcons[s]} {s.charAt(0).toUpperCase() + s.slice(1)}
