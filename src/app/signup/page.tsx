@@ -33,8 +33,8 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  async function handleAuthSuccess(user: User) {
-    await ensureUserProfile(firestore, user);
+  async function handleAuthSuccess(user: User, referralCode?: string) {
+    await ensureUserProfile(firestore, user, referralCode);
     toast({
       title: 'Account Ready!',
       description: "You've successfully signed up. Redirecting...",
@@ -48,6 +48,7 @@ export default function SignUpPage() {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
+      // For Google Sign-In, we can't easily get a referral code, so we pass undefined.
       await handleAuthSuccess(result.user);
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
@@ -77,6 +78,8 @@ export default function SignUpPage() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
+    const referralCode = formData.get('referralCode') as string;
+
 
     if (password !== confirmPassword) {
       setError("Passwords don't match.");
@@ -91,7 +94,7 @@ export default function SignUpPage() {
       await updateProfile(user, { displayName: username });
       
       // After successful auth and profile update, handle the DB record.
-      await handleAuthSuccess(user);
+      await handleAuthSuccess(user, referralCode);
 
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
@@ -184,7 +187,7 @@ export default function SignUpPage() {
               </div>
                <div className="space-y-2">
                 <Label htmlFor="referralCode">Referral Code (Optional)</Label>
-                <Input id="referralCode" name="referralCode" placeholder="Enter a code" disabled={true}/>
+                <Input id="referralCode" name="referralCode" placeholder="Enter a code" disabled={isLoading || isGoogleLoading}/>
               </div>
               <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
