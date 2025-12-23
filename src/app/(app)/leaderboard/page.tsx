@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from '@/components/page-header';
@@ -11,7 +12,6 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Crown, Coins, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Skeleton } from '@/components/ui/skeleton';
 import type { LeaderboardEntry, UserProfile } from '@/lib/types';
 import { useMemo } from 'react';
 import { useUser, useFirestore, usePublicFirestoreQuery } from '@/firebase';
@@ -35,26 +35,11 @@ const getTrophyCardClass = (rank: number) => {
 // --- Top Player Card Component ---
 function TopPlayerCard({
   entry,
-  isLoading,
   isAdmin,
 }: {
-  entry?: LeaderboardEntry;
-  isLoading: boolean;
+  entry: LeaderboardEntry;
   isAdmin: boolean;
 }) {
-  if (isLoading || !entry) {
-    return (
-       <div className="flex flex-col items-center">
-        <Skeleton className="h-10 w-8 mb-2" />
-        <Card className="w-full text-center p-6">
-          <Skeleton className="w-24 h-24 rounded-full mx-auto mb-4" />
-          <Skeleton className="h-6 w-32 mx-auto mb-2" />
-          <Skeleton className="h-8 w-24 mx-auto" />
-        </Card>
-      </div>
-    );
-  }
-
   const { rank, score, user } = entry;
   const isFirst = rank === 1;
 
@@ -138,9 +123,9 @@ function RankedUser({
 // --- Main Leaderboard Page Component ---
 export default function LeaderboardPage() {
     const firestore = useFirestore();
-    const { user: currentUserAuth, profile: currentUserProfile, isAdmin } = useUser();
+    const { user: currentUserAuth, profile: currentUserProfile, isAdmin, isUserLoading } = useUser();
 
-    const { data: users, isLoading } = usePublicFirestoreQuery<UserProfile>(
+    const { data: users, isLoading: isUsersLoading } = usePublicFirestoreQuery<UserProfile>(
         () => query(
             collection(firestore, 'users'), 
             orderBy('weeklyCoins', 'desc'), 
@@ -148,8 +133,8 @@ export default function LeaderboardPage() {
         )
     );
 
-    const leaderboardData: LeaderboardEntry[] = useMemo(() => {
-        if (!users) return [];
+    const leaderboardData: LeaderboardEntry[] | null = useMemo(() => {
+        if (!users) return null;
         return users.map((user, index) => ({
             rank: index + 1,
             score: user.weeklyCoins,
@@ -162,14 +147,16 @@ export default function LeaderboardPage() {
         }));
     }, [users]);
 
+  const isLoading = isUserLoading || isUsersLoading;
 
+  if(isLoading || !leaderboardData) {
+    return null; // App layout shows skeleton
+  }
+  
   const topThree = leaderboardData.slice(0, 3);
   const rest = leaderboardData.slice(3);
 
-  const isCurrentUserInTop50 = useMemo(() => {
-    if (!currentUserAuth || !leaderboardData) return false;
-    return leaderboardData.some(entry => entry.user.id === currentUserAuth.uid);
-  }, [currentUserAuth, leaderboardData]);
+  const isCurrentUserInTop50 = leaderboardData.some(entry => entry.user.id === currentUserAuth?.uid);
   
   const currentUserEntryForDisplay: LeaderboardEntry | null = useMemo(() => {
     if (!currentUserProfile || !currentUserAuth) return null;
@@ -203,12 +190,11 @@ export default function LeaderboardPage() {
           </CardContent>
       </Card>
 
-
       {/* --- Top 3 Display --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-8 mb-8 items-end">
-        <TopPlayerCard entry={topThree[1]} isLoading={isLoading} isAdmin={!!isAdmin} />
-        <TopPlayerCard entry={topThree[0]} isLoading={isLoading} isAdmin={!!isAdmin} />
-        <TopPlayerCard entry={topThree[2]} isLoading={isLoading} isAdmin={!!isAdmin} />
+        {topThree[1] && <TopPlayerCard entry={topThree[1]} isAdmin={!!isAdmin} />}
+        {topThree[0] && <TopPlayerCard entry={topThree[0]} isAdmin={!!isAdmin} />}
+        {topThree[2] && <TopPlayerCard entry={topThree[2]} isAdmin={!!isAdmin} />}
       </div>
 
       <Card>
@@ -218,26 +204,15 @@ export default function LeaderboardPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {isLoading ? (
-               Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className="flex items-center p-3">
-                  <Skeleton className="h-6 w-12" />
-                  <Skeleton className="w-10 h-10 rounded-full mx-4" />
-                  <Skeleton className="h-6 flex-grow" />
-                  <Skeleton className="h-6 w-20" />
-                </div>
-              ))
-            ) : (
-               rest.map((entry) => (
+            {rest.map((entry) => (
                 <RankedUser 
                   key={entry.user.id} 
                   entry={entry} 
                   isCurrentUser={entry.user.id === currentUserAuth?.uid}
                   isAdmin={!!isAdmin}
                 />
-              ))
-            )}
-             {!isLoading && leaderboardData.length === 0 && (
+            ))}
+            {leaderboardData.length === 0 && (
               <div className="text-center text-muted-foreground py-10">
                 No leaderboard data available yet.
               </div>
@@ -247,7 +222,7 @@ export default function LeaderboardPage() {
       </Card>
       
       {/* Current User Not in Top 50 Display */}
-      {!isLoading && !isCurrentUserInTop50 && currentUserEntryForDisplay && (
+      {!isCurrentUserInTop50 && currentUserEntryForDisplay && (
         <div className="mt-8">
             <Card>
                 <CardHeader>

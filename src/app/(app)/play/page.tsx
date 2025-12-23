@@ -5,10 +5,8 @@ import PageHeader from '@/components/page-header';
 import { Card } from '@/components/ui/card';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Skeleton } from '@/components/ui/skeleton';
 import type { Game } from '@/lib/types';
-import { useMemo } from 'react';
-import { usePublicFirestoreQuery, useFirestore, useUser } from '@/firebase';
+import { usePublicFirestoreQuery, useFirestore } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
 export default function PlayPage() {
@@ -18,6 +16,10 @@ export default function PlayPage() {
         () => collection(firestore, 'games')
     );
 
+    if (isLoading) {
+      return null; // App layout skeleton is shown.
+    }
+
   return (
     <>
       <PageHeader
@@ -25,10 +27,6 @@ export default function PlayPage() {
         description="Choose a game to play and earn coins. The more you play, the more you earn!"
       />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {isLoading &&
-          Array.from({ length: 10 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-[3/4] rounded-2xl" />
-          ))}
         {games?.map((game) => (
           <Link href={`/play/${game.id}`} key={game.id}>
             <Card className="overflow-hidden aspect-[3/4] relative group transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 rounded-2xl">

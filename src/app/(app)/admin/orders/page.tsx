@@ -12,7 +12,6 @@ import type { Order } from '@/lib/types';
 import Image from 'next/image';
 import { Loader2, PackageCheck, Truck, CheckCircle, FileQuestion, Ban } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
@@ -32,7 +31,7 @@ function OrderList({ status }: { status: OrderStatus }) {
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
   
-  const { data: orders, isLoading } = usePublicFirestoreQuery<Order>(
+  const { data: orders } = usePublicFirestoreQuery<Order>(
     () => {
       // The admin needs to query all orders, so we use a collectionGroup query.
       // The security rules will enforce that only admins can perform this query.
@@ -65,16 +64,11 @@ function OrderList({ status }: { status: OrderStatus }) {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="grid md:grid-cols-2 gap-6">
-        <Skeleton className="h-56 w-full rounded-lg" />
-        <Skeleton className="h-56 w-full rounded-lg" />
-      </div>
-    );
+  if (!orders) {
+    return null; // Data is loading, the layout skeleton will be shown
   }
-
-  if (!orders || orders.length === 0) {
+  
+  if (orders.length === 0) {
     return (
       <div className="text-center py-20 rounded-lg bg-card border">
         <FileQuestion className="mx-auto h-16 w-16 text-muted-foreground" />

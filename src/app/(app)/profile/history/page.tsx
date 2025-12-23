@@ -9,7 +9,6 @@ import { useFirestoreQuery, useFirestore } from '@/firebase';
 import type { WithdrawalRequest } from '@/lib/types';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -19,19 +18,6 @@ const statusConfig = {
     rejected: { icon: XCircle, color: 'text-destructive' },
 };
 
-function HistoryCardSkeleton() {
-    return (
-        <Card>
-            <CardHeader>
-                <Skeleton className="h-7 w-32 mb-1" />
-                <Skeleton className="h-4 w-40" />
-            </CardHeader>
-            <CardFooter>
-                 <Skeleton className="h-5 w-24" />
-            </CardFooter>
-        </Card>
-    )
-}
 
 function WithdrawalHistoryList() {
     const firestore = useFirestore();
@@ -47,13 +33,7 @@ function WithdrawalHistoryList() {
     const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
 
     if (isLoading) {
-        return (
-             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                <HistoryCardSkeleton />
-                <HistoryCardSkeleton />
-                <HistoryCardSkeleton />
-            </div>
-        )
+        return null; // App layout skeleton is shown.
     }
 
     if (!requests || requests.length === 0) {

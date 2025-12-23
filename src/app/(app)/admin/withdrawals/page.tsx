@@ -11,7 +11,6 @@ import { collection, doc, writeBatch, increment, query, where, orderBy } from 'f
 import type { WithdrawalRequest } from '@/lib/types';
 import { Loader2, Check, X, FileQuestion, User, Coins, Banknote } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
@@ -29,7 +28,7 @@ function WithdrawalList({ status }: { status: RequestStatus }) {
   const { toast } = useToast();
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const { data: requests, isLoading } = usePublicFirestoreQuery<WithdrawalRequest>(
+  const { data: requests } = usePublicFirestoreQuery<WithdrawalRequest>(
       () => query(
         collection(firestore, 'withdrawal_requests'),
         where('status', '==', status)
@@ -69,17 +68,11 @@ function WithdrawalList({ status }: { status: RequestStatus }) {
 
   const formatToNaira = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
 
-  if (isLoading) {
-    return (
-      <div className="grid sm:grid-cols-1 lg:grid-cols-2 gap-6">
-        {Array.from({ length: 2 }).map((_, i) => (
-          <Card key={i}><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
-        ))}
-      </div>
-    );
+  if (!requests) {
+    return null; // Data is loading, layout skeleton will be shown.
   }
 
-  if (requests?.length === 0) {
+  if (requests.length === 0) {
     return (
       <div className="text-center py-20 rounded-lg bg-card border">
         <FileQuestion className="mx-auto h-16 w-16 text-muted-foreground" />

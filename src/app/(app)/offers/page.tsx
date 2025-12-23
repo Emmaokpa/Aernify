@@ -10,7 +10,6 @@ import { useFirestoreQuery, usePublicFirestoreQuery, useUser, useFirestore } fro
 import { collection, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import type { Offer, AffiliateProduct } from '@/lib/types';
 import type { OfferSubmission, AffiliateSaleSubmission } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -276,23 +275,16 @@ function OfferList() {
     (uid) => query(collection(firestore, 'offer_submissions'), where('userId', '==', uid))
   );
 
-  const isLoading = isLoadingOffers || isLoadingSubmissions;
-  
   const augmentedOffers = useMemo(() => {
-    if (!offers) return [];
-    if (!submissions) return offers.map(offer => ({ ...offer, status: null }));
+    if (!offers || !submissions) return null;
     const submissionMap = new Map(submissions.map(s => [s.offerId, s]));
     return offers
       .map(offer => ({ ...offer, status: submissionMap.get(offer.id)?.status || null }))
       .filter(offer => offer.status !== 'approved');
   }, [offers, submissions]);
 
-  if (isLoading) {
-     return (
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-         {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="aspect-[4/3.5] rounded-2xl" />)}
-       </div>
-     )
+  if (!augmentedOffers) {
+     return null; // App layout skeleton is shown.
   }
 
   return (
@@ -342,7 +334,7 @@ function OfferList() {
           </Card>
         )
       })}
-      {!isLoading && augmentedOffers.length === 0 && (
+      {augmentedOffers.length === 0 && (
         <div className="col-span-full text-center py-20 rounded-lg bg-card border">
             <CheckCircle className="mx-auto h-16 w-16 text-muted-foreground" />
             <h3 className="mt-4 text-xl font-semibold">All Caught Up!</h3>
@@ -367,23 +359,16 @@ function AffiliateProductList() {
     (uid) => query(collection(firestore, 'affiliate_sale_submissions'), where('userId', '==', uid))
   );
 
-  const isLoading = isLoadingProducts || isLoadingSubmissions;
-  
   const augmentedProducts = useMemo(() => {
-    if (!products) return [];
-    if (!submissions) return products.map(p => ({ ...p, status: null }));
+    if (!products || !submissions) return null;
     const submissionMap = new Map(submissions.map(s => [s.affiliateProductId, s]));
     return products
       .map(p => ({ ...p, status: submissionMap.get(p.id)?.status || null }))
       .filter(p => p.status !== 'approved');
   }, [products, submissions]);
 
-  if (isLoading) {
-     return (
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-         {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="aspect-[4/3.5] rounded-2xl" />)}
-       </div>
-     )
+  if (!augmentedProducts) {
+     return null; // App layout skeleton is shown.
   }
 
   return (
@@ -450,7 +435,7 @@ function AffiliateProductList() {
           </Card>
         )
       })}
-      {!isLoading && augmentedProducts.length === 0 && (
+      {augmentedProducts.length === 0 && (
         <div className="col-span-full text-center py-20 rounded-lg bg-card border">
             <CheckCircle className="mx-auto h-16 w-16 text-muted-foreground" />
             <h3 className="mt-4 text-xl font-semibold">No Products Available</h3>
@@ -464,6 +449,12 @@ function AffiliateProductList() {
 }
 
 export default function AffiliatePage() {
+  const { isLoading } = useUser();
+
+  if (isLoading) {
+    return null; // The AppLayout will show the main skeleton
+  }
+
   return (
     <>
       <PageHeader

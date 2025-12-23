@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo, useState } from 'react';
 import PageHeader from '@/components/page-header';
@@ -20,7 +21,6 @@ import type { DailyChallenge, UserChallengeProgress } from '@/lib/types';
 import { claimChallengeReward } from '@/lib/challenges';
 import { getTodayString } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 
 const challengeIcons: { [key: string]: React.ReactNode } = {
@@ -122,7 +122,7 @@ function ChallengeCard({ challenge, onClaim, claimingId }: { challenge: any, onC
 }
 
 export default function ChallengesPage() {
-  const { user } = useUser();
+  const { user, isLoading: isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [claimingId, setClaimingId] = useState<string | null>(null);
@@ -164,8 +164,6 @@ export default function ChallengesPage() {
     }
   }
   
-  const isLoading = isLoadingChallenges || (user && isLoadingProgress);
-
   const augmentedChallenges = useMemo(() => {
     if (!challenges) return [];
     
@@ -187,20 +185,10 @@ export default function ChallengesPage() {
     }).sort((a,b) => a.reward - b.reward);
   }, [challenges, progressData]);
 
+  const isLoading = isUserLoading || isLoadingChallenges || (user && isLoadingProgress);
+
   if (isLoading) {
-    return (
-      <>
-        <PageHeader
-          title="Daily Challenges"
-          description="Complete tasks to earn bonus coins. New challenges unlock every day!"
-        />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({length: 6}).map((_, i) => (
-             <Skeleton key={i} className="h-56 rounded-2xl" />
-          ))}
-        </div>
-      </>
-    )
+    return null; // The AppLayout will show the main skeleton
   }
 
   return (

@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import type { Game } from '@/lib/types';
 import { usePublicFirestoreQuery, useFirestore, useUser } from '@/firebase';
 import { collection, doc, getDoc, serverTimestamp, setDoc, writeBatch, increment } from 'firebase/firestore';
@@ -26,7 +25,7 @@ export default function DashboardPage() {
   const [modalState, setModalState] = useState({ isOpen: false, reward: 0, bonus: 0, streak: 0 });
   
   const firestore = useFirestore();
-  const { user, profile, isUserLoading } = useUser();
+  const { user, isUserLoading } = useUser();
 
   const { data: games, isLoading: isGamesLoading } = usePublicFirestoreQuery<Game>(
       () => collection(firestore, 'games')
@@ -120,11 +119,14 @@ export default function DashboardPage() {
   const heroGame = games?.[0];
   const isLoading = isGamesLoading || isUserLoading;
 
+  if (isLoading) {
+    return null; // App layout skeleton is shown
+  }
+
   return (
     <>
       <div className="grid gap-8">
         <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden group">
-          {isLoading && <Skeleton className="absolute inset-0" />}
           {heroGame && (
             <>
               {heroGame.imageUrl ? (
@@ -154,10 +156,6 @@ export default function DashboardPage() {
             Popular Games
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {isLoading &&
-              Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="aspect-[3/4] rounded-2xl" />
-              ))}
             {games?.map((game) => (
               <Link href={`/play/${game.id}`} key={game.id}>
                 <Card className="overflow-hidden aspect-[3/4] relative group transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 rounded-2xl">
