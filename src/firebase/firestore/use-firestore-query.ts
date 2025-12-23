@@ -18,7 +18,7 @@ interface UseFirestoreQueryResult<T> {
   error: FirestoreError | Error | null;
 }
 
-const LOADING_DELAY_MS = 200; // 200ms delay before showing loading skeletons
+const LOADING_DELAY_MS = 500; // Increased delay to 500ms to prevent flashing
 
 /**
  * A robust, auth-aware hook for subscribing to Firestore queries.
@@ -50,14 +50,16 @@ export function useFirestoreQuery<T = any>(
   useEffect(() => {
     const effectiveIsLoading = isUserLoading || isDataLoading;
     if (effectiveIsLoading) {
-      const timer = setTimeout(() => {
-        setDelayedIsLoading(true);
-      }, LOADING_DELAY_MS);
-      return () => clearTimeout(timer);
+        setDelayedIsLoading(true); // Keep it true initially
+        const timer = setTimeout(() => {
+            // No-op, the state is already true. We just wait for the data.
+        }, LOADING_DELAY_MS);
+        return () => clearTimeout(timer);
     } else {
-      setDelayedIsLoading(false);
+        // Data has loaded, so we can turn off the loading indicator.
+        setDelayedIsLoading(false);
     }
-  }, [isUserLoading, isDataLoading]);
+}, [isUserLoading, isDataLoading]);
 
 
   useEffect(() => {
@@ -113,14 +115,15 @@ export function usePublicFirestoreQuery<T = any>(
 
   useEffect(() => {
     if (internalIsLoading) {
-      const timer = setTimeout(() => {
-        setDelayedIsLoading(true);
-      }, LOADING_DELAY_MS);
-      return () => clearTimeout(timer);
+        setDelayedIsLoading(true); // Keep it true initially
+        const timer = setTimeout(() => {
+            // No-op
+        }, LOADING_DELAY_MS);
+        return () => clearTimeout(timer);
     } else {
-      setDelayedIsLoading(false);
+        setDelayedIsLoading(false);
     }
-  }, [internalIsLoading]);
+}, [internalIsLoading]);
 
   useEffect(() => {
     if (!memoizedQuery) {
