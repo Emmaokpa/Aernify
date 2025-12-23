@@ -221,7 +221,7 @@ export default function ProfilePage() {
                     <span>Your 2x earning rate is active!</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                    Expires {formatDistanceToNow(profile.vipExpiresAt.toDate(), { addSuffix: true })}
+                  Expires {formatDistanceToNow(profile.vipExpiresAt.toDate(), { addSuffix: true })}
                 </p>
              </div>
            ) : (
@@ -260,7 +260,7 @@ export default function ProfilePage() {
       </div>
       
       <div className="mt-8">
-        <Button onClick={handleLogout} variant="destructive" className="w-full bg-red-600/20 text-red-500 hover:bg-red-600/30 hover:text-red-400">
+        <Button onClick={handleLogout} variant="destructive" className="w-full">
           <LogOut className="mr-2 h-5 w-5" />
           Logout
         </Button>
