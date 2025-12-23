@@ -36,12 +36,13 @@ export const ensureUserProfile = async (firestore: Firestore, user: User) => {
         console.log(`Successfully updated profile for user: ${user.uid}`);
       }
     } else {
-      // Document does not exist, so create it.
-      const initialProfileData: Omit<UserProfile, 'coins'> = {
+      // Document does not exist, so create it with all initial data.
+      const initialProfileData: UserProfile = {
         uid: user.uid,
         displayName: user.displayName || 'New User',
         email: user.email || '',
         photoURL: user.photoURL,
+        coins: 10, // Start with 10 coins
         weeklyCoins: 0,
         referralCode: generateReferralCode(),
         referralCount: 0,
@@ -52,11 +53,6 @@ export const ensureUserProfile = async (firestore: Firestore, user: User) => {
       };
 
       await setDoc(userRef, initialProfileData);
-
-      // Immediately update the new document to add the starting coins.
-      await updateDoc(userRef, {
-        coins: 10,
-      });
 
       console.log(`Successfully created and initialized profile for user: ${user.uid}`);
     }

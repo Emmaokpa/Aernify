@@ -43,9 +43,10 @@ service cloud.firestore {
                     && isOwner(userId) 
                     && request.resource.data.isAdmin == false
                     && request.resource.data.weeklyCoins == 0
+                    && request.resource.data.referralCount == 0
                     && request.resource.data.currentStreak == 0
                     && request.resource.data.lastLoginDate == ""
-                    && !('isVip' in request.resource.data)
+                    && request.resource.data.isVip == false
                     && !('vipExpiresAt' in request.resource.data)
                     && !exists(/databases/$(database)/documents/users/$(userId));
       
@@ -115,9 +116,8 @@ service cloud.firestore {
     match /withdrawal_requests/{requestId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       
-      // Allow users to GET their own documents and LIST queries that filter by their UID.
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && request.query.where.size() > 0 && request.query.where[0][0] == 'userId' && request.query.where[0][1] == '==' && request.query.where[0][2] == request.auth.uid;
+      allow list: if isSignedIn() && request.query.where[0][0] == 'userId' && request.query.where[0][2] == request.auth.uid;
       
       allow update: if isAdmin();
       allow delete: if false;
