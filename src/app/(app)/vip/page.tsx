@@ -33,6 +33,7 @@ export default function VipPage() {
       try {
         const userRef = doc(firestore, 'users', user.uid);
         
+        // Corrected Logic: Always set expiration to 30 days from now.
         const now = new Date();
         const newExpirationDate = add(now, { days: 30 });
 
