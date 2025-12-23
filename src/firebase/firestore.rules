@@ -30,31 +30,30 @@ service cloud.firestore {
     }
 
     // --- Rules for the users collection ---
-    // This rule allows any signed-in user to query the users collection, which is needed for the leaderboard.
+    // This collection is now considered private. Only the owner or an admin can access documents directly.
+    // Public leaderboard data is handled by the /leaderboard collection.
     match /users/{userId} {
-      // Allow any signed-in user to LIST the collection for the leaderboard.
-      allow list: if isSignedIn();
-      // Only allow a user to GET their own document, or an admin to GET any document.
       allow get: if isOwner(userId) || isAdmin();
-
-      // Allow a user to create their own profile document.
-      // The document ID must match their own UID, and they cannot make themselves an admin.
-      allow create: if isOwner(userId)
-                    && request.resource.data.isAdmin == false;
-
-      // Allow a user to update their own profile.
-      // Allow an admin to update any user's profile.
-      // Allow a server process to update coin/referral counts.
+      allow create: if isOwner(userId) && request.resource.data.isAdmin == false;
       allow update: if isOwner(userId) || isAdmin() || isServerWrite();
-
-      // Nobody can delete user profiles.
       allow delete: if false;
+      // List operation is NOT allowed for regular users to protect privacy.
+      // Admins can list for management purposes.
+      allow list: if isAdmin();
       
       // --- Rules for the orders subcollection ---
       match /orders/{orderId} {
         // Only the owner of the user document or an admin can read/write orders.
         allow read, write: if isOwner(userId) || isAdmin();
       }
+    }
+    
+    // --- Rules for the public leaderboard collection ---
+    match /leaderboard/{userId} {
+        // Anyone signed in can read the leaderboard.
+        allow read: if isSignedIn();
+        // Only an admin (or server process) can create, update, or delete entries.
+        allow write: if isAdmin();
     }
     
     // --- Rules for the daily_logins collection ---

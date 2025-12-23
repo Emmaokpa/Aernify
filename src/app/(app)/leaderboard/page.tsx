@@ -1,4 +1,3 @@
-
 'use client';
 
 import PageHeader from '@/components/page-header';
@@ -125,29 +124,16 @@ export default function LeaderboardPage() {
     const firestore = useFirestore();
     const { user: currentUserAuth, profile: currentUserProfile, isAdmin, isUserLoading } = useUser();
     
-    const { data: users, isLoading: isUsersLoading } = usePublicFirestoreQuery<UserProfile>(
+    // Query the public /leaderboard collection
+    const { data: leaderboardData, isLoading: isLeaderboardLoading } = usePublicFirestoreQuery<LeaderboardEntry>(
         () => query(
-            collection(firestore, 'users'), 
-            orderBy('weeklyCoins', 'desc'), 
+            collection(firestore, 'leaderboard'), 
+            orderBy('score', 'desc'), 
             limit(50)
         )
     );
 
-    const leaderboardData: LeaderboardEntry[] | null = useMemo(() => {
-        if (!users) return null;
-        return users.map((user, index) => ({
-            rank: index + 1,
-            score: user.weeklyCoins,
-            user: {
-                id: user.uid,
-                name: user.displayName || 'Anonymous',
-                avatarUrl: user.photoURL || '',
-                email: user.email || '',
-            }
-        }));
-    }, [users]);
-
-    const isLoading = isUserLoading || isUsersLoading;
+    const isLoading = isUserLoading || isLeaderboardLoading;
 
     if(isLoading) {
         return null; // App layout shows skeleton
@@ -200,7 +186,7 @@ export default function LeaderboardPage() {
                 ))}
                 {(leaderboardData ?? []).length === 0 && (
                 <div className="text-center text-muted-foreground py-10">
-                    No leaderboard data available yet.
+                    Leaderboard is empty. Be the first to get on the board!
                 </div>
                 )}
             </div>
