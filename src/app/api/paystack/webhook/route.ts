@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
             const { firestore } = initializeFirebase();
             const userRef = doc(firestore, 'users', userId);
             
-            // Calculate new expiration date
             const userSnap = await getDoc(userRef);
 
             if (!userSnap.exists()) {
@@ -56,16 +55,8 @@ export async function POST(request: NextRequest) {
               return NextResponse.json({ status: 'error', message: 'User not found.' }, { status: 404 });
             }
 
-            const userProfile = userSnap.data();
             const now = new Date();
-            let startDate = now;
-
-            // If user is already a VIP, extend their subscription from the current expiration date
-            if (userProfile?.vipExpiresAt && userProfile.vipExpiresAt.toDate() > now) {
-                startDate = userProfile.vipExpiresAt.toDate();
-            }
-
-            const newExpirationDate = add(startDate, { days: 30 });
+            const newExpirationDate = add(now, { days: 30 });
 
             // Update user's VIP status
             await updateDoc(userRef, { 

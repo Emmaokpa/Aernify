@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import PageHeader from '@/components/page-header';
@@ -31,20 +32,9 @@ export default function VipPage() {
     if (response.status === 'success' && user) {
       try {
         const userRef = doc(firestore, 'users', user.uid);
-        const userSnap = await getDoc(userRef);
-        const userProfile = userSnap.data();
-
+        
         const now = new Date();
-        let startDate = now;
-
-        if (
-          userProfile?.vipExpiresAt &&
-          userProfile.vipExpiresAt.toDate() > now
-        ) {
-          startDate = userProfile.vipExpiresAt.toDate();
-        }
-
-        const newExpirationDate = add(startDate, { days: 30 });
+        const newExpirationDate = add(now, { days: 30 });
 
         await updateDoc(userRef, {
           vipExpiresAt: Timestamp.fromDate(newExpirationDate),
