@@ -1,4 +1,3 @@
-
 'use client';
 import { useMemo, useState } from 'react';
 import PageHeader from '@/components/page-header';
@@ -123,7 +122,7 @@ function ChallengeCard({ challenge, onClaim, claimingId }: { challenge: any, onC
 }
 
 export default function ChallengesPage() {
-  const { user, isUserLoading } = useUser();
+  const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [claimingId, setClaimingId] = useState<string | null>(null);
@@ -165,7 +164,7 @@ export default function ChallengesPage() {
     }
   }
   
-  const isLoading = isUserLoading || isLoadingChallenges || (user && isLoadingProgress);
+  const isLoading = isLoadingChallenges || (user && isLoadingProgress);
 
   const augmentedChallenges = useMemo(() => {
     if (!challenges) return [];

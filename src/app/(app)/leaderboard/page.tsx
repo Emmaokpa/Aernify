@@ -1,4 +1,3 @@
-
 'use client';
 
 import PageHeader from '@/components/page-header';
@@ -139,17 +138,15 @@ function RankedUser({
 // --- Main Leaderboard Page Component ---
 export default function LeaderboardPage() {
     const firestore = useFirestore();
-    const { user: currentUserAuth, profile: currentUserProfile, isUserLoading, isAdmin } = useUser();
+    const { user: currentUserAuth, profile: currentUserProfile, isAdmin } = useUser();
 
-    const { data: users, isLoading: isCollectionLoading } = usePublicFirestoreQuery<UserProfile>(
+    const { data: users, isLoading } = usePublicFirestoreQuery<UserProfile>(
         () => query(
             collection(firestore, 'users'), 
             orderBy('weeklyCoins', 'desc'), 
             limit(50)
         )
     );
-
-    const isLoading = isUserLoading || isCollectionLoading;
 
     const leaderboardData: LeaderboardEntry[] = useMemo(() => {
         if (!users) return [];
@@ -209,9 +206,9 @@ export default function LeaderboardPage() {
 
       {/* --- Top 3 Display --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-8 mb-8 items-end">
-        <TopPlayerCard entry={topThree[1]} isLoading={isLoading} isAdmin={isAdmin} />
-        <TopPlayerCard entry={topThree[0]} isLoading={isLoading} isAdmin={isAdmin} />
-        <TopPlayerCard entry={topThree[2]} isLoading={isLoading} isAdmin={isAdmin} />
+        <TopPlayerCard entry={topThree[1]} isLoading={isLoading} isAdmin={!!isAdmin} />
+        <TopPlayerCard entry={topThree[0]} isLoading={isLoading} isAdmin={!!isAdmin} />
+        <TopPlayerCard entry={topThree[2]} isLoading={isLoading} isAdmin={!!isAdmin} />
       </div>
 
       <Card>
@@ -236,7 +233,7 @@ export default function LeaderboardPage() {
                   key={entry.user.id} 
                   entry={entry} 
                   isCurrentUser={entry.user.id === currentUserAuth?.uid}
-                  isAdmin={isAdmin}
+                  isAdmin={!!isAdmin}
                 />
               ))
             )}
@@ -257,7 +254,7 @@ export default function LeaderboardPage() {
                     <CardTitle className="text-base">Your Current Standing</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <RankedUser entry={currentUserEntryForDisplay} isCurrentUser={true} isAdmin={isAdmin} />
+                    <RankedUser entry={currentUserEntryForDisplay} isCurrentUser={true} isAdmin={!!isAdmin} />
                     <p className="text-xs text-muted-foreground text-center mt-3">You are not in the top 50. Keep playing to climb the ranks!</p>
                 </CardContent>
             </Card>
