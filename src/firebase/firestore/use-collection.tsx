@@ -42,6 +42,7 @@ export function useCollection<T = any>(
 
   useEffect(() => {
     // GATE 1: Wait if no query is provided yet. This is the hard brake.
+    // This was the source of the error. If the query is null, we must stop and wait.
     if (!memoizedTargetRefOrQuery) {
       setIsLoading(false);
       setData(null);
