@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
               return NextResponse.json({ status: 'error', message: 'User not found.' }, { status: 404 });
             }
 
-            // Corrected Logic: Always set expiration to 30 days from now.
             const now = new Date();
             const newExpirationDate = add(now, { days: 30 });
 
