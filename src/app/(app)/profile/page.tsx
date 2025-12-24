@@ -22,7 +22,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import PageHeader from '@/components/page-header';
 import { useUser, useAuth, useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDistanceToNow, isFuture } from 'date-fns';
+import { differenceInDays, isFuture } from 'date-fns';
 import { useState } from 'react';
 import { sendPasswordResetEmail, updateProfile as updateAuthProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -192,6 +192,7 @@ export default function ProfilePage() {
   }
 
   const isVipActive = profile?.vipExpiresAt && isFuture(profile.vipExpiresAt.toDate());
+  const daysRemaining = profile?.vipExpiresAt ? differenceInDays(profile.vipExpiresAt.toDate(), new Date()) : 0;
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -221,7 +222,7 @@ export default function ProfilePage() {
                     <span>Your 2x earning rate is active!</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Expires {formatDistanceToNow(profile.vipExpiresAt.toDate(), { addSuffix: true })}
+                  Expires in {daysRemaining > 0 ? `${daysRemaining} days` : 'less than a day'}
                 </p>
              </div>
            ) : (

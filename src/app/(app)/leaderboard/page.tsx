@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from '@/components/page-header';
@@ -11,7 +12,7 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Crown, Coins, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { LeaderboardEntry, UserProfile } from '@/lib/types';
+import type { LeaderboardEntry } from '@/lib/types';
 import { useMemo } from 'react';
 import { useUser, useFirestore, usePublicFirestoreQuery } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
@@ -122,13 +123,13 @@ function RankedUser({
 // --- Main Leaderboard Page Component ---
 export default function LeaderboardPage() {
     const firestore = useFirestore();
-    const { user: currentUserAuth, profile: currentUserProfile, isAdmin, isUserLoading } = useUser();
+    const { user: currentUserAuth, isAdmin, isUserLoading } = useUser();
     
     // Query the public /leaderboard collection
     const { data: leaderboardData, isLoading: isLeaderboardLoading } = usePublicFirestoreQuery<LeaderboardEntry>(
         () => query(
             collection(firestore, 'leaderboard'), 
-            orderBy('score', 'desc'), 
+            orderBy('rank', 'asc'), 
             limit(50)
         )
     );

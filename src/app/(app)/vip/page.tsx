@@ -14,7 +14,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, ShieldOff, Crown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { isFuture, formatDistanceToNow, add } from 'date-fns';
+import { isFuture, differenceInDays, add } from 'date-fns';
 import { doc, updateDoc, Timestamp } from 'firebase/firestore';
 import PaystackButton from '@/components/paystack-button';
 
@@ -33,7 +33,7 @@ export default function VipPage() {
       try {
         const userRef = doc(firestore, 'users', user.uid);
         
-        // Always set expiration to 30 days from now, regardless of current status.
+        // Always set expiration to 30 days from now.
         const newExpirationDate = add(new Date(), { days: 30 });
 
         await updateDoc(userRef, {
@@ -65,6 +65,7 @@ export default function VipPage() {
   };
   
   const isVipActive = profile?.vipExpiresAt && isFuture(profile.vipExpiresAt.toDate());
+  const daysRemaining = profile?.vipExpiresAt ? differenceInDays(profile.vipExpiresAt.toDate(), new Date()) : 0;
 
   return (
     <>
@@ -138,10 +139,7 @@ export default function VipPage() {
                   <span>Your VIP Membership is Active</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Expires{' '}
-                  {formatDistanceToNow(profile.vipExpiresAt.toDate(), {
-                    addSuffix: true,
-                  })}
+                  Expires in {daysRemaining > 0 ? `${daysRemaining} days` : 'less than a day'}
                 </p>
               </div>
             )}
