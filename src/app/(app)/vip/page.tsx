@@ -33,8 +33,8 @@ export default function VipPage() {
       try {
         const userRef = doc(firestore, 'users', user.uid);
         
-        const now = new Date();
-        const newExpirationDate = add(now, { days: 30 });
+        // Always set expiration to 30 days from now, regardless of current status.
+        const newExpirationDate = add(new Date(), { days: 30 });
 
         await updateDoc(userRef, {
           vipExpiresAt: Timestamp.fromDate(newExpirationDate),
@@ -42,7 +42,7 @@ export default function VipPage() {
 
         toast({
           title: 'Welcome to VIP!',
-          description: 'Your VIP status is now active.',
+          description: 'Your VIP status is now active for 30 days.',
         });
       } catch (error) {
         console.error('Client-side VIP update failed:', error);
@@ -131,7 +131,7 @@ export default function VipPage() {
 
             {isUserLoading && <Skeleton className="h-28 w-full" />}
 
-            {!isUserLoading && isVipActive && (
+            {!isUserLoading && isVipActive && profile?.vipExpiresAt && (
               <div className="flex flex-col items-center justify-center gap-2 rounded-lg border bg-primary/10 p-4 text-center text-primary font-semibold">
                 <div className="flex items-center gap-2">
                   <Crown className="h-6 w-6" />

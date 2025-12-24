@@ -60,8 +60,8 @@ export default function ManageVipPage() {
 
       let newExpiration: Timestamp | null = null;
       if (grant) {
-        const now = new Date();
-        newExpiration = Timestamp.fromDate(add(now, { days: 30 }));
+        // Always set expiration to 30 days from now.
+        newExpiration = Timestamp.fromDate(add(new Date(), { days: 30 }));
       }
       
       await updateDoc(userToUpdateRef, {

@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
               return NextResponse.json({ status: 'error', message: 'User not found.' }, { status: 404 });
             }
 
-            const now = new Date();
-            const newExpirationDate = add(now, { days: 30 });
+            // Always set expiration to 30 days from now.
+            const newExpirationDate = add(new Date(), { days: 30 });
 
             // Update user's VIP status
             await updateDoc(userRef, { 
