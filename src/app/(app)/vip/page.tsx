@@ -14,8 +14,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, ShieldOff, Crown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { isFuture, differenceInDays, add } from 'date-fns';
-import { doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { isFuture, differenceInDays } from 'date-fns';
 import PaystackButton from '@/components/paystack-button';
 
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '';
@@ -23,39 +22,21 @@ const VIP_PRICE_KOBO = 5000 * 100; // 5000 NGN in kobo
 
 export default function VipPage() {
   const { user, profile, isUserLoading } = useUser();
-  const firestore = useFirestore();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // The webhook is now the single source of truth.
+  // The client will just show a success message and let the backend handle the update.
   const handleSuccess = async (response: any) => {
-    setIsProcessing(true);
-    if (response.status === 'success' && user) {
-      try {
-        const userRef = doc(firestore, 'users', user.uid);
-        
-        // Always set expiration to 30 days from now.
-        const newExpirationDate = add(new Date(), { days: 30 });
-
-        await updateDoc(userRef, {
-          vipExpiresAt: Timestamp.fromDate(newExpirationDate),
-        });
-
-        toast({
-          title: 'Welcome to VIP!',
-          description: 'Your VIP status is now active for 30 days.',
-        });
-      } catch (error) {
-        console.error('Client-side VIP update failed:', error);
-        toast({
-          title: 'Payment Successful!',
-          description:
-            'Your VIP status will be updated shortly after verification.',
-        });
-      } finally {
-        setIsProcessing(false);
-      }
+    setIsProcessing(true); // Show processing state on the button
+    if (response.status === 'success') {
+      toast({
+        title: 'Payment Successful!',
+        description: 'Your VIP status is being processed and will update shortly. Please refresh in a moment.',
+      });
+      // NO MORE client-side database updates here.
     } else {
-        setIsProcessing(false);
+      setIsProcessing(false);
     }
   };
 
