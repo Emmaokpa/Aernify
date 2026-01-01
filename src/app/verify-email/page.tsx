@@ -23,6 +23,7 @@ export default function VerifyEmailPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isResending, setIsResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
     // If the user's email is verified, redirect them to the dashboard.
@@ -35,7 +36,7 @@ export default function VerifyEmailPage() {
   // Regularly check the user's verification status
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (auth.currentUser) {
+      if (auth.currentUser && !auth.currentUser.emailVerified) {
         await auth.currentUser.reload();
         if (auth.currentUser.emailVerified) {
           router.push('/dashboard');
@@ -46,9 +47,19 @@ export default function VerifyEmailPage() {
     return () => clearInterval(interval);
   }, [auth, router]);
 
+  // Cooldown timer effect
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => {
+        setCooldown(cooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
+
 
   const handleResendEmail = async () => {
-    if (!user) return;
+    if (!user || cooldown > 0) return;
 
     setIsResending(true);
     try {
@@ -57,13 +68,22 @@ export default function VerifyEmailPage() {
         title: 'Verification Email Sent!',
         description: 'A new verification link has been sent to your email address.',
       });
-    } catch (error) {
+      setCooldown(60); // Start 60-second cooldown
+    } catch (error: any) {
       console.error('Error resending verification email:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to resend verification email. Please try again later.',
-      });
+      if (error.code === 'auth/too-many-requests') {
+          toast({
+            variant: 'destructive',
+            title: 'Too Many Requests',
+            description: 'You have requested too many verification emails. Please wait a moment before trying again.',
+          });
+      } else {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to resend verification email. Please try again later.',
+        });
+      }
     } finally {
       setIsResending(false);
     }
@@ -101,9 +121,18 @@ export default function VerifyEmailPage() {
             <p className="text-muted-foreground text-sm">
                 Please find the email in your inbox and click the verification link inside to activate your account. You do not need to enter a code.
             </p>
-          <Button onClick={handleResendEmail} className="w-full" disabled={isResending}>
-            {isResending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Resend Verification Email
+          <Button
+            onClick={handleResendEmail}
+            className="w-full"
+            disabled={isResending || cooldown > 0}
+          >
+            {isResending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : cooldown > 0 ? (
+              `Resend available in ${cooldown}s`
+            ) : (
+              'Resend Verification Email'
+            )}
           </Button>
           <Button variant="link" onClick={handleLogout} className="text-muted-foreground">
             Sign out
