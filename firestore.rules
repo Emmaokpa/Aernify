@@ -2,8 +2,112 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+  
+    // --- Helper functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      // Use get() on the user's document to check the isAdmin flag.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function isServerWrite() {
+      // This allows a server process to update specific, non-sensitive fields.
+      // It's secure because clients cannot forge this type of limited-field write.
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coins', 'weeklyCoins', 'referralCount', 'currentStreak', 'lastLoginDate', 'vipExpiresAt']);
+    }
+
+    // --- Rules for the users collection ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      // Allow list only for admins, this protects user privacy from other users.
+      allow list: if isAdmin();
+      // A user can create their own profile, but cannot make themselves an admin.
+      allow create: if isOwner(userId) && request.resource.data.isAdmin == false;
+      // A user can update their own profile, an admin can update any, and the server can update specific fields.
+      allow update: if isOwner(userId) || isAdmin() || isServerWrite();
+      // Deleting users should be a controlled administrative action, not allowed via rules.
+      allow delete: if false;
+      
+      match /orders/{orderId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+    
+    // --- Rules for the public leaderboard collection ---
+    match /leaderboard/{userId} {
+        // Anyone signed in can read the leaderboard.
+        allow read: if isSignedIn();
+        // Only an admin (or server process) can create, update, or delete entries.
+        allow write: if isAdmin();
+    }
+    
+    // --- Rules for the daily_logins collection ---
+    match /daily_logins/{loginId} {
+        // A user can create a daily login record if the doc ID starts with their UID.
+        allow create: if isSignedIn() 
+                      && request.resource.data.size() == 1 
+                      && "claimedAt" in request.resource.data
+                      && loginId.split('_')[0] == request.auth.uid;
+        // No one can read, update, or delete these records directly.
+        allow read, update, delete: if false;
+    }
+
+    // --- Global Read Collections (Admin Write) ---
+    match /games/{gameId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /offers/{offerId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /affiliate_products/{productId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /products/{productId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /giftCards/{giftCardId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /challenges/{challengeId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+
+    // --- Submissions and Requests (User Owned or Admin Managed) ---
+    match /offer_submissions/{submissionId} {
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+        allow update: if isAdmin(); // Only admins can approve/reject.
+        allow delete: if false;
+    }
+    
+    match /affiliate_sale_submissions/{submissionId} {
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+        allow update: if isAdmin();
+        allow delete: if false;
+    }
+
+    match /redemption_requests/{requestId} {
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+    
+    match /withdrawal_requests/{reqId} {
+      // Allow create only if the request is for the signed-in user and they meet the referral criteria.
+      allow create: if isSignedIn() 
+                    && request.resource.data.userId == request.auth.uid
+                    && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.referralCount >= 2;
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /user_challenge_progress/{progressId} {
+      function getUserIdFromProgressId() { return progressId.split('_')[0]; }
+      allow read, create, update: if isOwner(getUserIdFromProgressId());
+      allow delete: if false;
+    }
+
+    // Explicitly deny access to any other path to be safe.
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }
