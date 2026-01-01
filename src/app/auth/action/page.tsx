@@ -1,10 +1,12 @@
+
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   verifyPasswordResetCode,
   confirmPasswordReset,
+  applyActionCode,
 } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -164,6 +166,65 @@ function ResetPasswordForm({ actionCode }: { actionCode: string }) {
   );
 }
 
+function EmailVerificationHandler({ actionCode }: { actionCode: string }) {
+    const auth = useAuth();
+    const router = useRouter();
+    const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        applyActionCode(auth, actionCode)
+            .then(() => {
+                setStatus('success');
+                // Redirect to dashboard after a short delay
+                setTimeout(() => router.push('/dashboard'), 3000);
+            })
+            .catch((err) => {
+                console.error(err);
+                if (err.code === 'auth/expired-action-code' || err.code === 'auth/invalid-action-code') {
+                    setError('This verification link is invalid or has expired. Please sign in to request a new one.');
+                } else {
+                    setError('An unexpected error occurred. Please try again.');
+                }
+                setStatus('error');
+            });
+    }, [actionCode, auth, router]);
+
+    if (status === 'success') {
+        return (
+            <div className="text-center space-y-6">
+                <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
+                <CardTitle>Email Verified!</CardTitle>
+                <p className="text-muted-foreground">
+                    Your email has been successfully verified. Redirecting you to the dashboard...
+                </p>
+                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+            </div>
+        );
+    }
+    
+    if (status === 'error') {
+        return (
+            <div className="text-center space-y-6">
+                <XCircle className="w-16 h-16 text-destructive mx-auto" />
+                <CardTitle>Verification Failed</CardTitle>
+                <p className="text-muted-foreground">
+                    {error}
+                </p>
+                <Button asChild className="w-full">
+                    <Link href="/login">Back to Sign In</Link>
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex justify-center items-center p-8">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+    );
+}
+
 function AuthActionHandler() {
   const searchParams = useSearchParams();
   const auth = useAuth();
@@ -171,25 +232,42 @@ function AuthActionHandler() {
   const actionCode = searchParams.get('oobCode');
 
   const [status, setStatus] = useState<ActionState>('loading');
+  const [currentMode, setCurrentMode] = useState<string | null>(null);
+  
+  const verifyResetCode = useCallback(async (code: string) => {
+      try {
+        await verifyPasswordResetCode(auth, code);
+        setCurrentMode('resetPassword');
+        setStatus('form');
+      } catch (err: any) {
+        console.error("Failed to verify password reset code", err);
+        return false;
+      }
+      return true;
+  }, [auth]);
 
   useEffect(() => {
-    if (mode !== 'resetPassword' || !actionCode) {
+    if (!mode || !actionCode) {
       setStatus('invalid');
       return;
     }
-
-    const verifyCode = async () => {
-      try {
-        await verifyPasswordResetCode(auth, actionCode);
-        setStatus('form');
-      } catch (err: any) {
-        console.error(err);
+    
+    if (mode === 'verifyEmail') {
+      setCurrentMode('verifyEmail');
+      setStatus('form'); // Let the handler component take over
+    } else if (mode === 'resetPassword') {
+       verifyResetCode(actionCode).then(isValid => {
+           if (!isValid) {
+               // If it's not a valid reset code, it might be an old email verification link.
+               // Firebase sometimes sends resetPassword mode for old verification links.
+               // We will just show a generic invalid link error.
+               setStatus('invalid');
+           }
+       });
+    } else {
         setStatus('invalid');
-      }
-    };
-
-    verifyCode();
-  }, [mode, actionCode, auth]);
+    }
+  }, [mode, actionCode, auth, verifyResetCode]);
 
   return (
     <main className="flex items-center justify-center min-h-screen p-4">
@@ -198,9 +276,10 @@ function AuthActionHandler() {
            <div className="mx-auto mb-4">
             <Logo />
           </div>
-          {status === 'loading' && <CardTitle>Verifying...</CardTitle>}
-          {status === 'form' && <CardTitle>Reset Your Password</CardTitle>}
-          {(status === 'invalid' || status === 'error') && <CardTitle>Invalid Link</CardTitle>}
+          {status === 'loading' && <CardTitle>Verifying link...</CardTitle>}
+          {currentMode === 'resetPassword' && <CardTitle>Reset Your Password</CardTitle>}
+          {currentMode === 'verifyEmail' && <CardTitle>Verifying Email</CardTitle>}
+          {(status === 'invalid') && <CardTitle>Invalid Link</CardTitle>}
         </CardHeader>
         <CardContent>
           {status === 'loading' && (
@@ -214,12 +293,15 @@ function AuthActionHandler() {
                 This link is invalid or has expired. It may have already been used.
               </p>
               <Button asChild className="w-full">
-                <Link href="/forgot-password">Request a New Link</Link>
+                <Link href="/login">Back to Sign In</Link>
               </Button>
             </div>
           )}
-          {status === 'form' && actionCode && (
+          {status === 'form' && currentMode === 'resetPassword' && actionCode && (
             <ResetPasswordForm actionCode={actionCode} />
+          )}
+          {status === 'form' && currentMode === 'verifyEmail' && actionCode && (
+            <EmailVerificationHandler actionCode={actionCode} />
           )}
         </CardContent>
       </Card>

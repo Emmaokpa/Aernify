@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useUser } from '@/firebase';
 import { sendEmailVerification } from 'firebase/auth';
@@ -25,15 +25,14 @@ export default function VerifyEmailPage() {
   const [isResending, setIsResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
+  // Redirect to dashboard if already verified.
   useEffect(() => {
-    // If the user's email is verified, redirect them to the dashboard.
-    // This handles the case where they verify in another tab and come back.
     if (user?.emailVerified) {
       router.push('/dashboard');
     }
   }, [user, router]);
   
-  // Regularly check the user's verification status
+  // Poll for verification status changes.
   useEffect(() => {
     const interval = setInterval(async () => {
       if (auth.currentUser && !auth.currentUser.emailVerified) {
@@ -42,24 +41,23 @@ export default function VerifyEmailPage() {
           router.push('/dashboard');
         }
       }
-    }, 5000); // Check every 5 seconds
+    }, 3000); // Check every 3 seconds
 
     return () => clearInterval(interval);
   }, [auth, router]);
 
   // Cooldown timer effect
   useEffect(() => {
-    if (cooldown > 0) {
-      const timer = setTimeout(() => {
-        setCooldown(cooldown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => {
+      setCooldown(cooldown - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [cooldown]);
 
 
-  const handleResendEmail = async () => {
-    if (!user || cooldown > 0) return;
+  const handleResendEmail = useCallback(async () => {
+    if (!user || cooldown > 0 || isResending) return;
 
     setIsResending(true);
     try {
@@ -87,7 +85,7 @@ export default function VerifyEmailPage() {
     } finally {
       setIsResending(false);
     }
-  };
+  }, [user, cooldown, isResending, toast]);
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -119,7 +117,7 @@ export default function VerifyEmailPage() {
         <CardContent className="space-y-4">
             <MailCheck className="w-16 h-16 text-primary mx-auto" />
             <p className="text-muted-foreground text-sm">
-                Please find the email in your inbox and click the verification link inside to activate your account. You do not need to enter a code.
+                Please find the email in your inbox and **click the verification link** inside to activate your account. You do not need to enter a code.
             </p>
           <Button
             onClick={handleResendEmail}
@@ -129,7 +127,7 @@ export default function VerifyEmailPage() {
             {isResending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : cooldown > 0 ? (
-              `Resend available in ${cooldown}s`
+              `Resend Email (${cooldown}s)`
             ) : (
               'Resend Verification Email'
             )}
