@@ -91,7 +91,7 @@ export default function VerifyEmailPage() {
           </div>
           <CardTitle>Verify Your Email</CardTitle>
           <CardDescription>
-            A verification link has been sent to your email address:
+            We've sent a verification link to your email address:
             <br />
             <strong className="text-foreground">{user?.email}</strong>
           </CardDescription>
@@ -99,7 +99,7 @@ export default function VerifyEmailPage() {
         <CardContent className="space-y-4">
             <MailCheck className="w-16 h-16 text-primary mx-auto" />
             <p className="text-muted-foreground text-sm">
-                Please click the link in the email to continue. If you don't see it, please check your spam folder.
+                Please find the email in your inbox and click the verification link inside to activate your account. You do not need to enter a code.
             </p>
           <Button onClick={handleResendEmail} className="w-full" disabled={isResending}>
             {isResending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
