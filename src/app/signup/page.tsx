@@ -17,7 +17,7 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/icons/logo';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider, signInWithPopup, AuthErrorCodes } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider, signInWithPopup, AuthErrorCodes, sendEmailVerification } from 'firebase/auth';
 import { ensureUserProfile } from '@/lib/auth-utils';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
@@ -35,11 +35,22 @@ export default function SignUpPage() {
 
   async function handleAuthSuccess(user: User, referralCode?: string) {
     await ensureUserProfile(firestore, user, referralCode);
-    toast({
-      title: 'Account Ready!',
-      description: "You've successfully signed up. Redirecting...",
-    });
-    router.push('/dashboard');
+    
+    const isEmailPasswordUser = user.providerData.some(p => p.providerId === 'password');
+    if (isEmailPasswordUser) {
+        await sendEmailVerification(user);
+        toast({
+            title: 'Almost there!',
+            description: "We've sent a verification link to your email. Please verify to continue.",
+        });
+        router.push('/verify-email');
+    } else {
+        toast({
+            title: 'Account Ready!',
+            description: "You've successfully signed up. Redirecting...",
+        });
+        router.push('/dashboard');
+    }
   }
 
   async function handleGoogleSignIn() {
@@ -48,7 +59,6 @@ export default function SignUpPage() {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
-      // For Google Sign-In, we can't easily get a referral code, so we pass undefined.
       await handleAuthSuccess(result.user);
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
@@ -93,7 +103,6 @@ export default function SignUpPage() {
 
       await updateProfile(user, { displayName: username });
       
-      // After successful auth and profile update, handle the DB record.
       await handleAuthSuccess(user, referralCode);
 
     } catch (err: any) {

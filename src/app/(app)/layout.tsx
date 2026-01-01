@@ -75,18 +75,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isGamePage = pathname.startsWith('/play/');
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
+    if (isUserLoading) return; // Wait until user status is known
+
+    if (!user) {
       router.push('/login');
+      return;
     }
-  }, [isUserLoading, user, router]);
+    
+    // Check for email verification only for users who signed up with email/password
+    const isEmailPasswordUser = user.providerData.some(
+      (provider) => provider.providerId === 'password'
+    );
+
+    if (isEmailPasswordUser && !user.emailVerified) {
+       if (pathname !== '/verify-email') {
+          router.push('/verify-email');
+       }
+    }
+
+  }, [isUserLoading, user, router, pathname]);
 
 
   if (isUserLoading) {
      return <AppSkeleton />;
   }
-
-  if (!user) {
-    // This will be shown for a brief moment before the redirect effect runs
+  
+  if (!user || (user.providerData.some(p => p.providerId === 'password') && !user.emailVerified && pathname !== '/verify-email')) {
+    // Show skeleton while redirecting to prevent content flash
     return <AppSkeleton />;
   }
   
