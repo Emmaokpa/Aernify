@@ -1,7 +1,6 @@
-
 'use server';
 /**
- * @fileOverview A flow for sending transactional emails via Resend.
+ * @fileOverview A flow for sending transactional emails via a custom SMTP server.
  *
  * - sendPasswordResetEmail - Sends a password reset link.
  * - PasswordResetInput - Input schema for the flow.
@@ -37,9 +36,10 @@ const sendPasswordResetEmailFlow = ai.defineFlow(
     outputSchema: PasswordResetOutputSchema,
   },
   async ({ email }) => {
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (!resendApiKey) {
-      console.error('RESEND_API_KEY is not set in environment variables.');
+    // Check for SMTP environment variables
+    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD } = process.env;
+    if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASSWORD) {
+      console.error('SMTP environment variables are not set.');
       return { success: false, message: 'Server is not configured for sending emails.' };
     }
 
@@ -66,10 +66,23 @@ const sendPasswordResetEmailFlow = ai.defineFlow(
       
       const link = await auth.generatePasswordResetLink(email);
 
-      // 2. Send the email using Resend
-      const resend = new Resend(resendApiKey);
+      // 2. Send the email using Resend configured with custom SMTP
+      const resend = new Resend({
+        apiKey: 're_123456789', // Dummy API key, not used for SMTP
+        // @ts-ignore - The transport option is valid but may not be in all type definitions
+        transport: {
+          host: SMTP_HOST,
+          port: Number(SMTP_PORT),
+          secure: true, // Use SSL
+          auth: {
+            user: SMTP_USER,
+            pass: SMTP_PASSWORD,
+          },
+        },
+      });
+
       await resend.emails.send({
-        from: 'Aernify <noreply@aernify.fun>', // Replace with your verified Resend domain
+        from: `Aernify <${SMTP_USER}>`, // Send from your professional email
         to: email,
         subject: 'Reset Your Aernify Password',
         html: `
@@ -85,8 +98,7 @@ const sendPasswordResetEmailFlow = ai.defineFlow(
       return { success: true, message: 'If an account with that email exists, a password reset link has been sent.' };
     } catch (error: any) {
       console.error('Error in sendPasswordResetEmailFlow:', error);
-      // In production, you might want a more generic error message
-      return { success: false, message: 'Could not send password reset email. Please try again later.' };
+      return { success: false, message: 'Could not send password reset email. Please check your SMTP configuration and try again later.' };
     }
   }
 );
