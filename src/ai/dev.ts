@@ -4,3 +4,4 @@ import './flows/referral-flow';
 import './flows/leaderboard-flow';
 import './flows/vip-flow';
 import './flows/sales-copy-flow';
+import './flows/send-email-flow';

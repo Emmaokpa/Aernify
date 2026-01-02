@@ -14,11 +14,9 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Loader2, MailCheck, AlertTriangle } from 'lucide-react';
 import Logo from '@/components/icons/logo';
-import { useAuth } from '@/firebase';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import { sendPasswordResetEmail } from '@/ai/flows/send-email-flow';
 
 export default function ForgotPasswordPage() {
-  const auth = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
@@ -27,26 +25,21 @@ export default function ForgotPasswordPage() {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
-    // Don't reset emailSent here, so the success message persists
 
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
 
     try {
-      await sendPasswordResetEmail(auth, email);
-      setEmailSent(true);
+      // We now call our custom Genkit flow instead of the Firebase client SDK
+      const result = await sendPasswordResetEmail({ email });
+      if (result.success) {
+        setEmailSent(true);
+      } else {
+        setError(result.message || 'An unexpected error occurred. Please try again.');
+      }
     } catch (err: any) {
       console.error("Forgot Password Error:", err);
-      // To prevent user enumeration, we treat 'user-not-found' as a success.
-      // The user will see the "If an account exists..." message.
-      if (err.code === 'auth/user-not-found') {
-        setEmailSent(true);
-      } else if (err.code === 'auth/network-request-failed') {
-        setError('Could not send email. Please check your internet connection or try again later. There may be a server configuration issue.');
-      }
-      else {
-        setError('An unexpected error occurred. Please try again.');
-      }
+      setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
