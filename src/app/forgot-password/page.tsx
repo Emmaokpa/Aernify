@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Loader2, MailCheck } from 'lucide-react';
+import { Loader2, MailCheck, AlertTriangle } from 'lucide-react';
 import Logo from '@/components/icons/logo';
 import { useAuth } from '@/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
@@ -26,7 +27,7 @@ export default function ForgotPasswordPage() {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
-    setEmailSent(false);
+    // Don't reset emailSent here, so the success message persists
 
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
@@ -35,13 +36,16 @@ export default function ForgotPasswordPage() {
       await sendPasswordResetEmail(auth, email);
       setEmailSent(true);
     } catch (err: any) {
-       if (err.code === 'auth/user-not-found') {
-        // To prevent user enumeration, we can show a generic success message
-        // even if the user doesn't exist.
+      console.error("Forgot Password Error:", err);
+      // To prevent user enumeration, we treat 'user-not-found' as a success.
+      // The user will see the "If an account exists..." message.
+      if (err.code === 'auth/user-not-found') {
         setEmailSent(true);
-       } else {
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Could not send email. Please check your internet connection or try again later. There may be a server configuration issue.');
+      }
+      else {
         setError('An unexpected error occurred. Please try again.');
-        console.error(err);
       }
     } finally {
       setIsLoading(false);
@@ -76,6 +80,7 @@ export default function ForgotPasswordPage() {
             <form onSubmit={onSubmit} className="space-y-6">
               {error && (
                 <div className="bg-destructive/10 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
                   <p>{error}</p>
                 </div>
               )}
