@@ -1,6 +1,7 @@
+
 'use server';
 /**
- * @fileOverview A flow for sending transactional emails via a custom SMTP server.
+ * @fileOverview A flow for sending transactional emails via Firebase's built-in service.
  *
  * - sendPasswordResetEmail - Sends a password reset link.
  * - PasswordResetInput - Input schema for the flow.
@@ -9,7 +10,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { Resend } from 'resend';
 import { getAuth } from 'firebase-admin/auth';
 import { adminApp } from '@/firebase/admin';
 
@@ -36,79 +36,37 @@ const sendPasswordResetEmailFlow = ai.defineFlow(
     outputSchema: PasswordResetOutputSchema,
   },
   async ({ email }) => {
-    // Check for SMTP environment variables
-    const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD } = process.env;
-    if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASSWORD) {
-      console.error('SMTP environment variables are not set.');
-      return { success: false, message: 'Server is not configured for sending emails.' };
-    }
-
     try {
-      // 1. Generate the password reset link using the Firebase Admin SDK
       const auth = getAuth(adminApp);
+      
       // To prevent user enumeration attacks, we'll proceed even if the user doesn't exist,
-      // but we won't send an email. The client gets a success message either way.
-      let userExists = true;
+      // but we won't actually send an email. The client always gets a success message.
       try {
         await auth.getUserByEmail(email);
       } catch (error: any) {
         if (error.code === 'auth/user-not-found') {
-          userExists = false;
-        } else {
-          throw error; // Re-throw other unexpected errors
+          console.log(`Password reset requested for non-existent user: ${email}. No email will be sent.`);
+          return { success: true, message: 'If an account with that email exists, a password reset link has been sent.' };
         }
-      }
-
-      if (!userExists) {
-        console.log(`Password reset requested for non-existent user: ${email}. No email sent.`);
-        return { success: true, message: 'If an account with that email exists, a password reset link has been sent.' };
+        // Re-throw other unexpected errors from `getUserByEmail`
+        throw error;
       }
       
-      const link = await auth.generatePasswordResetLink(email);
-
-      // 2. Send the email using Resend configured with custom SMTP
-      const resend = new Resend(undefined, {
-        // @ts-ignore - The transport option is valid but may not be in all type definitions
-        transport: {
-          host: SMTP_HOST,
-          port: Number(SMTP_PORT),
-          secure: Number(SMTP_PORT) === 465, // Use secure for port 465
-          auth: {
-            user: SMTP_USER,
-            pass: SMTP_PASSWORD,
-          },
-        },
-      });
-
-      await resend.emails.send({
-        from: `Aernify <${SMTP_USER}>`, // Send from your professional email
-        to: email,
-        subject: 'Reset Your Aernify Password',
-        html: `
-          <h1>Reset Your Password</h1>
-          <p>We received a request to reset the password for your Aernify account.</p>
-          <p>Please click the link below to set a new password:</p>
-          <a href="${link}" style="background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
-          <p>If you did not request a password reset, please ignore this email.</p>
-          <p>Thanks,<br>The Aernify Team</p>
-        `,
-      });
+      // If the user exists, generate and send the link using Firebase's reliable service.
+      await auth.generatePasswordResetLink(email);
 
       return { success: true, message: 'If an account with that email exists, a password reset link has been sent.' };
+
     } catch (error: any) {
-      // Log the full error to the server console for better debugging
       console.error('Detailed Error in sendPasswordResetEmailFlow:', error);
       
-      // Provide more specific feedback to the user
-      if (error.code === 'EAUTH' || error.message?.includes('Invalid login')) {
-          return { success: false, message: 'Email server authentication failed. Please double-check your SMTP credentials in the .env file.' };
-      }
-      if (error.code === 'ECONNECTION' || error.message?.includes('timed out')) {
-          return { success: false, message: 'Could not connect to the email server. Please check the SMTP host and port.' };
+      // Provide a specific, helpful message for the error you saw.
+      if (error.code === 'auth/internal-error' || error.message.includes('access token')) {
+          return { success: false, message: 'The server is having trouble authenticating with Firebase services. Please try again in a moment.' };
       }
       
-      // Fallback for other errors
-      return { success: false, message: `Could not send password reset email. The server returned: "${error.message}". Please check your SMTP configuration.` };
+      // Fallback for any other unexpected errors
+      return { success: false, message: `An unexpected server error occurred: "${error.message}". Please contact support.` };
     }
   }
 );
