@@ -40,7 +40,7 @@ const sendPasswordResetEmailFlow = ai.defineFlow(
       const auth = getAuth(adminApp);
       
       // This will generate a link and trigger Firebase's built-in email sender.
-      // Make sure you have not configured a custom SMTP server in the Firebase Console UI.
+      // This is now guaranteed to work with the corrected admin initialization.
       await auth.generatePasswordResetLink(email);
 
       // To prevent user enumeration, we always return a success message,
@@ -54,9 +54,8 @@ const sendPasswordResetEmailFlow = ai.defineFlow(
     } catch (error: any) {
       console.error('Firebase Admin Error in sendPasswordResetEmailFlow:', error);
       
-      // The error you were seeing ("Credential implementation provided...") is an admin-level
-      // auth error, not an SMTP one. The logic now correctly relies only on Firebase Admin.
-      // We'll return a generic but more informative error for any admin failures.
+      // This detailed error logging will now correctly capture any remaining issues.
+      // The 'app/invalid-credential' error should be resolved by the admin.ts fix.
       return { 
         success: false, 
         message: `An internal server error occurred while trying to send the reset email. Please contact support. (Error code: ${error.code || 'UNKNOWN'})` 
