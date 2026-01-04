@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +29,6 @@ export default function ForgotPasswordPage() {
     const email = formData.get('email') as string;
 
     try {
-      // We now call our custom Genkit flow instead of the Firebase client SDK
       const result = await sendPasswordResetEmail({ email });
       if (result.success) {
         setEmailSent(true);

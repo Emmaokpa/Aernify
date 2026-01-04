@@ -98,6 +98,13 @@ const sendPasswordResetEmailFlow = ai.defineFlow(
       return { success: true, message: 'If an account with that email exists, a password reset link has been sent.' };
     } catch (error: any) {
       console.error('Error in sendPasswordResetEmailFlow:', error);
+      // Check for common SMTP errors
+      if (error.code === 'EAUTH' || error.message?.includes('Invalid login')) {
+          return { success: false, message: 'Email server authentication failed. Please double-check your SMTP credentials.' };
+      }
+      if (error.code === 'ECONNECTION' || error.message?.includes('timed out')) {
+          return { success: false, message: 'Could not connect to the email server. Please check the SMTP host and port.' };
+      }
       return { success: false, message: 'Could not send password reset email. Please check your SMTP configuration and try again later.' };
     }
   }
