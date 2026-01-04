@@ -67,13 +67,12 @@ const sendPasswordResetEmailFlow = ai.defineFlow(
       const link = await auth.generatePasswordResetLink(email);
 
       // 2. Send the email using Resend configured with custom SMTP
-      const resend = new Resend({
-        apiKey: 're_123456789', // Dummy API key, not used for SMTP
+      const resend = new Resend(undefined, {
         // @ts-ignore - The transport option is valid but may not be in all type definitions
         transport: {
           host: SMTP_HOST,
           port: Number(SMTP_PORT),
-          secure: true, // Use SSL
+          secure: Number(SMTP_PORT) === 465, // Use secure for port 465
           auth: {
             user: SMTP_USER,
             pass: SMTP_PASSWORD,
@@ -89,7 +88,7 @@ const sendPasswordResetEmailFlow = ai.defineFlow(
           <h1>Reset Your Password</h1>
           <p>We received a request to reset the password for your Aernify account.</p>
           <p>Please click the link below to set a new password:</p>
-          <a href="${link}" style="background-color: #fdd835; color: #333; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
+          <a href="${link}" style="background-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
           <p>If you did not request a password reset, please ignore this email.</p>
           <p>Thanks,<br>The Aernify Team</p>
         `,
@@ -97,15 +96,19 @@ const sendPasswordResetEmailFlow = ai.defineFlow(
 
       return { success: true, message: 'If an account with that email exists, a password reset link has been sent.' };
     } catch (error: any) {
-      console.error('Error in sendPasswordResetEmailFlow:', error);
-      // Check for common SMTP errors
+      // Log the full error to the server console for better debugging
+      console.error('Detailed Error in sendPasswordResetEmailFlow:', error);
+      
+      // Provide more specific feedback to the user
       if (error.code === 'EAUTH' || error.message?.includes('Invalid login')) {
-          return { success: false, message: 'Email server authentication failed. Please double-check your SMTP credentials.' };
+          return { success: false, message: 'Email server authentication failed. Please double-check your SMTP credentials in the .env file.' };
       }
       if (error.code === 'ECONNECTION' || error.message?.includes('timed out')) {
           return { success: false, message: 'Could not connect to the email server. Please check the SMTP host and port.' };
       }
-      return { success: false, message: 'Could not send password reset email. Please check your SMTP configuration and try again later.' };
+      
+      // Fallback for other errors
+      return { success: false, message: `Could not send password reset email. The server returned: "${error.message}". Please check your SMTP configuration.` };
     }
   }
 );
