@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, getApp, App, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -28,13 +29,13 @@ function initializeAdminApp() {
 
 // --- Main API Route Handler ---
 export async function POST(request: NextRequest) {
-  const { email } = await request.json();
-
-  if (!email) {
-    return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
-  }
-
   try {
+    const { email } = await request.json();
+
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
+    }
+
     // --- Step 1: Generate Password Reset Link (Server-Side) ---
     const adminApp = initializeAdminApp();
     const auth = getAuth(adminApp);
@@ -86,6 +87,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('API Error in /api/forgot-password:', error);
     // Return a generic error to the client
-    return NextResponse.json({ error: 'An internal server error occurred.' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'An internal server error occurred.' }, { status: 500 });
   }
 }
