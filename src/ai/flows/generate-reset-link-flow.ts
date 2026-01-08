@@ -10,8 +10,30 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { initializeApp, getApps, getApp, App, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { initializeAdminApp } from '@/firebase/admin';
+
+// Define a function to initialize the Firebase Admin app with credentials
+function initializeAdminApp() {
+  const serviceAccount = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'), // Replace literal \n with actual newlines
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  };
+
+  // Check if all required environment variables are present
+  if (!serviceAccount.projectId || !serviceAccount.privateKey || !serviceAccount.clientEmail) {
+    throw new Error('Missing Firebase Admin credentials in environment variables.');
+  }
+
+  if (getApps().length) {
+    return getApp();
+  }
+
+  return initializeApp({
+    credential: cert(serviceAccount),
+  });
+}
 
 const PasswordResetLinkInputSchema = z.object({
   email: z.string().email('A valid email address is required.'),
