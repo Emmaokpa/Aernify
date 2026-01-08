@@ -17,7 +17,7 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/icons/logo';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider, signInWithPopup, AuthErrorCodes, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider, signInWithPopup, AuthErrorCodes, sendEmailVerification, ActionCodeSettings } from 'firebase/auth';
 import { ensureUserProfile } from '@/lib/auth-utils';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
@@ -33,18 +33,14 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // This function now only handles the redirection part after profile creation.
   async function handleAuthSuccess(user: User, referralCode?: string) {
     await ensureUserProfile(firestore, user, referralCode);
     
+    // For non-email providers, redirect immediately.
+    // Email provider logic is now fully handled on the client after email is sent.
     const isEmailPasswordUser = user.providerData.some(p => p.providerId === 'password');
-    if (isEmailPasswordUser) {
-        await sendEmailVerification(user);
-        toast({
-            title: 'Almost there!',
-            description: "We've sent a verification link to your email. Please verify to continue.",
-        });
-        router.push('/verify-email');
-    } else {
+    if (!isEmailPasswordUser) {
         toast({
             title: 'Account Ready!',
             description: "You've successfully signed up. Redirecting...",
@@ -98,12 +94,29 @@ export default function SignUpPage() {
     }
     
     try {
+      // Step 1: Create the Firebase Auth user
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // Step 2: Set their display name in Firebase Auth
       await updateProfile(user, { displayName: username });
+
+      // Step 3: Send verification email with referral code in continue URL
+      const continueUrl = `${window.location.origin}/auth/action?mode=verifyEmail${referralCode ? `&referralCode=${encodeURIComponent(referralCode)}` : ''}`;
+      const actionCodeSettings: ActionCodeSettings = {
+        url: continueUrl,
+        handleCodeInApp: true,
+      };
+
+      await sendEmailVerification(user, actionCodeSettings);
       
-      await handleAuthSuccess(user, referralCode);
+      // Step 4: DO NOT create the Firestore profile here. Redirect to the verify-email page.
+      toast({
+            title: 'Almost there!',
+            description: "We've sent a verification link to your email. Please verify to continue.",
+      });
+      router.push('/verify-email');
+
 
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {

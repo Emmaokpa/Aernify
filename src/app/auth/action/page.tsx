@@ -8,7 +8,7 @@ import {
   confirmPasswordReset,
   applyActionCode,
 } from 'firebase/auth';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,8 @@ import {
 import { Loader2, CheckCircle, XCircle, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import Logo from '@/components/icons/logo';
+import { ensureUserProfile } from '@/lib/auth-utils';
+import { useToast } from '@/hooks/use-toast';
 
 type ActionState = 'loading' | 'invalid' | 'form' | 'success' | 'error';
 
@@ -166,20 +168,40 @@ function ResetPasswordForm({ actionCode }: { actionCode: string }) {
   );
 }
 
-function EmailVerificationHandler({ actionCode }: { actionCode: string }) {
+function EmailVerificationHandler({ actionCode, referralCode }: { actionCode: string, referralCode: string | null }) {
     const auth = useAuth();
+    const firestore = useFirestore();
     const router = useRouter();
+    const { toast } = useToast();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        applyActionCode(auth, actionCode)
-            .then(() => {
+        const handleVerification = async () => {
+            try {
+                // Apply the action code to verify the email in Firebase Auth
+                await applyActionCode(auth, actionCode);
+
+                // This is the crucial part: after successful verification,
+                // get the now-verified user and create their Firestore profile.
+                const user = auth.currentUser;
+                if (!user) {
+                    throw new Error("User not found after email verification.");
+                }
+                
+                // Now we create the profile, passing the referral code if it exists.
+                await ensureUserProfile(firestore, user, referralCode || undefined);
+                
                 setStatus('success');
+                toast({
+                    title: 'Email Verified!',
+                    description: "Your account is ready. Welcome to Aernify!",
+                });
+                
                 // Redirect to dashboard after a short delay
                 setTimeout(() => router.push('/dashboard'), 3000);
-            })
-            .catch((err) => {
+
+            } catch (err: any) {
                 console.error(err);
                 if (err.code === 'auth/expired-action-code' || err.code === 'auth/invalid-action-code') {
                     setError('This verification link is invalid or has expired. Please sign in to request a new one.');
@@ -187,8 +209,11 @@ function EmailVerificationHandler({ actionCode }: { actionCode: string }) {
                     setError('An unexpected error occurred. Please try again.');
                 }
                 setStatus('error');
-            });
-    }, [actionCode, auth, router]);
+            }
+        };
+
+        handleVerification();
+    }, [actionCode, referralCode, auth, firestore, router, toast]);
 
     if (status === 'success') {
         return (
@@ -196,7 +221,7 @@ function EmailVerificationHandler({ actionCode }: { actionCode: string }) {
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
                 <CardTitle>Email Verified!</CardTitle>
                 <p className="text-muted-foreground">
-                    Your email has been successfully verified. Redirecting you to the dashboard...
+                    Your account is now active. Redirecting you to the dashboard...
                 </p>
                 <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
             </div>
@@ -230,6 +255,7 @@ function AuthActionHandler() {
   const auth = useAuth();
   const mode = searchParams.get('mode');
   const actionCode = searchParams.get('oobCode');
+  const referralCode = searchParams.get('referralCode');
 
   const [status, setStatus] = useState<ActionState>('loading');
   const [currentMode, setCurrentMode] = useState<string | null>(null);
@@ -301,7 +327,7 @@ function AuthActionHandler() {
             <ResetPasswordForm actionCode={actionCode} />
           )}
           {status === 'form' && currentMode === 'verifyEmail' && actionCode && (
-            <EmailVerificationHandler actionCode={actionCode} />
+            <EmailVerificationHandler actionCode={actionCode} referralCode={referralCode} />
           )}
         </CardContent>
       </Card>
