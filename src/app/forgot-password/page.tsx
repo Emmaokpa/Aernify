@@ -14,12 +14,11 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Loader2, MailCheck, AlertTriangle } from 'lucide-react';
 import Logo from '@/components/icons/logo';
-import { useAuth } from '@/firebase';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { sendMail } from '@/lib/mail';
+import { generatePasswordResetLink } from '@/ai/flows/generate-reset-link-flow';
+
 
 export default function ForgotPasswordPage() {
-  const auth = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
@@ -33,15 +32,25 @@ export default function ForgotPasswordPage() {
     const email = formData.get('email') as string;
 
     try {
-      // Step 1: Generate the password reset link using Firebase Auth
-      const actionLink = await auth.generatePasswordResetLink(email);
+      // Step 1: Generate the password reset link using the server-side flow
+      const linkResult = await generatePasswordResetEmail(email);
 
-      // Step 2: Use our Nodemailer API route to send the email
+      if (!linkResult.success) {
+        throw new Error(linkResult.error || 'Failed to generate reset link.');
+      }
+      
+      // If user doesn't exist, link will be undefined. We can stop here.
+      if (!linkResult.link) {
+        setEmailSent(true); // Show success message to prevent user enumeration
+        return;
+      }
+
+      // Step 2: Use our Nodemailer API route to send the email with the generated link
       const emailHtml = `
         <h1>Reset Your Password</h1>
         <p>Hello,</p>
         <p>Follow this link to reset your password for your Aernify account.</p>
-        <a href="${actionLink}" style="background-color: #f5a623; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+        <a href="${linkResult.link}" style="background-color: #f5a623; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
         <p>If you didn’t ask to reset your password, you can ignore this email.</p>
         <p>Thanks,<br/>The Aernify Team</p>
       `;
@@ -60,13 +69,7 @@ export default function ForgotPasswordPage() {
 
     } catch (err: any) {
       console.error("Forgot Password Error:", err);
-      if (err.code === 'auth/user-not-found') {
-        // To prevent user enumeration, we still show a success message.
-        // The email just won't be sent, which is the desired behavior.
-        setEmailSent(true);
-      } else {
-        setError(err.message || 'An unexpected error occurred. Please try again.');
-      }
+      setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -126,4 +129,19 @@ export default function ForgotPasswordPage() {
       </Card>
     </main>
   );
+}
+
+// Renaming the function for clarity within this file.
+// This calls the Genkit flow to generate the link on the server.
+async function generatePasswordResetEmail(email: string) {
+  try {
+    const result = await generatePasswordResetLink({ email });
+    return result;
+  } catch (error: any) {
+    console.error('Error calling generatePasswordResetLink flow:', error);
+    return {
+      success: false,
+      error: 'An internal server error occurred while trying to generate the reset link.',
+    };
+  }
 }
