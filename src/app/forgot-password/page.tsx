@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +14,12 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Loader2, MailCheck, AlertTriangle } from 'lucide-react';
 import Logo from '@/components/icons/logo';
-import { sendPasswordResetEmail } from '@/ai/flows/send-email-flow';
+import { useAuth } from '@/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { sendMail } from '@/lib/mail';
 
 export default function ForgotPasswordPage() {
+  const auth = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
@@ -29,15 +33,40 @@ export default function ForgotPasswordPage() {
     const email = formData.get('email') as string;
 
     try {
-      const result = await sendPasswordResetEmail({ email });
-      if (result.success) {
-        setEmailSent(true);
-      } else {
-        setError(result.message || 'An unexpected error occurred. Please try again.');
+      // Step 1: Generate the password reset link using Firebase Auth
+      const actionLink = await auth.generatePasswordResetLink(email);
+
+      // Step 2: Use our Nodemailer API route to send the email
+      const emailHtml = `
+        <h1>Reset Your Password</h1>
+        <p>Hello,</p>
+        <p>Follow this link to reset your password for your Aernify account.</p>
+        <a href="${actionLink}" style="background-color: #f5a623; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+        <p>If you didn’t ask to reset your password, you can ignore this email.</p>
+        <p>Thanks,<br/>The Aernify Team</p>
+      `;
+
+      const mailResult = await sendMail({
+        to: email,
+        subject: 'Reset Your Aernify Password',
+        html: emailHtml,
+      });
+
+      if (!mailResult.success) {
+        throw new Error(mailResult.error || 'The email server failed to send the message.');
       }
+      
+      setEmailSent(true);
+
     } catch (err: any) {
       console.error("Forgot Password Error:", err);
-      setError(err.message || 'An unexpected error occurred. Please try again.');
+      if (err.code === 'auth/user-not-found') {
+        // To prevent user enumeration, we still show a success message.
+        // The email just won't be sent, which is the desired behavior.
+        setEmailSent(true);
+      } else {
+        setError(err.message || 'An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
