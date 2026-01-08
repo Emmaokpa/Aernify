@@ -51,16 +51,17 @@ const generatePasswordResetLinkFlow = ai.defineFlow(
     } catch (error: any) {
       console.error('Admin SDK Error generating password reset link:', error);
 
-      // To avoid leaking user enumeration info, we don't pass the specific error message to the client.
+      // To avoid leaking user enumeration info, we don't pass the specific error message to the client for this case.
+      // We'll return success even if user not found to prevent user enumeration.
+      // The email simply won't be sent on the client-side, which is the desired behavior.
       if (error.code === 'auth/user-not-found') {
-        // We'll return success even if user not found to prevent user enumeration.
-        // The email simply won't be sent on the client-side, which is the desired behavior.
         return { success: true, link: undefined };
       }
 
+      // For all other errors, return the actual error message for debugging.
       return {
         success: false,
-        error: `An internal server error occurred.`,
+        error: error.message || `An internal server error occurred.`,
       };
     }
   }
