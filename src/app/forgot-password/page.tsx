@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
               )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" placeholder="name@example.com" required />
+                <Input id="email" name="email" type="email" placeholder="Email" required />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

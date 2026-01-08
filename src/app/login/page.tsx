@@ -115,7 +115,7 @@ export default function LoginPage() {
             <form onSubmit={onSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" placeholder="name@example.com" required disabled={isLoading || isGoogleLoading}/>
+                <Input id="email" name="email" type="email" placeholder="Email" required disabled={isLoading || isGoogleLoading}/>
               </div>
               <div className="space-y-2">
                 <div className='flex justify-between items-center'>
