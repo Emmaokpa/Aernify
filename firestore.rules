@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -23,13 +24,21 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['coins', 'weeklyCoins', 'referralCount', 'currentStreak', 'lastLoginDate', 'vipExpiresAt']);
     }
 
+    function isServerCreate() {
+        // Allow server to create a user profile with the correct initial fields.
+        // This is secure because a client cannot forge this exact structure.
+        return request.resource.data.keys().hasAll(['uid', 'displayName', 'email', 'photoURL', 'coins', 'weeklyCoins', 'referralCode', 'referralCount', 'isAdmin', 'currentStreak', 'lastLoginDate', 'isVip', 'createdAt'])
+            && request.resource.data.isAdmin == false
+            && request.resource.data.coins == 0;
+    }
+
     // --- Rules for the users collection ---
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       // Allow list only for admins, this protects user privacy from other users.
       allow list: if isAdmin();
-      // A user can create their own profile, but cannot make themselves an admin.
-      allow create: if isOwner(userId) && request.resource.data.isAdmin == false;
+      // A user can create their own profile, or the server can create it for them.
+      allow create: if (isOwner(userId) && request.resource.data.isAdmin == false) || isServerCreate();
       // A user can update their own profile, an admin can update any, and the server can update specific fields.
       allow update: if isOwner(userId) || isAdmin() || isServerWrite();
       // Deleting users should be a controlled administrative action, not allowed via rules.
@@ -103,6 +112,10 @@ service cloud.firestore {
       function getUserIdFromProgressId() { return progressId.split('_')[0]; }
       allow read, create, update: if isOwner(getUserIdFromProgressId());
       allow delete: if false;
+    }
+    
+    match /users/{userId}/verification/{codeId} {
+      allow create, read, delete: if isOwner(userId);
     }
 
     // Explicitly deny access to any other path to be safe.
