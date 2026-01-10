@@ -1,5 +1,4 @@
 
-'use client';
 import { User } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 import type { UserProfile } from './types';
