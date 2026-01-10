@@ -8,9 +8,10 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { initializeAdminApp } from '@/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, collection, query, where, orderBy, limit, getDocs, deleteDoc } from 'firebase-admin/firestore';
+import { collection, query, where, orderBy, limit, getDocs, deleteDoc, getFirestore } from 'firebase/firestore';
 import { ensureUserProfile } from '@/lib/auth-utils';
 import { isPast } from 'date-fns';
+import { initializeFirebase } from '@/firebase';
 
 const VerifyCodeInputSchema = z.object({
   uid: z.string().describe('The UID of the user.'),
@@ -37,11 +38,11 @@ const verifyCodeFlow = ai.defineFlow(
   async ({ uid, code }) => {
     initializeAdminApp();
     const adminAuth = getAuth();
-    const adminFirestore = getFirestore();
+    const { firestore } = initializeFirebase(); // Use client SDK firestore instance
 
     try {
       // 1. Find the most recent verification code document for the user
-      const verificationCollectionRef = collection(adminFirestore, `users/${uid}/verification`);
+      const verificationCollectionRef = collection(firestore, `users/${uid}/verification`);
       const q = query(verificationCollectionRef, orderBy('createdAt', 'desc'), limit(1));
       const querySnapshot = await getDocs(q);
 
@@ -69,7 +70,6 @@ const verifyCodeFlow = ai.defineFlow(
       
       // 5. Ensure the user profile exists in Firestore (this is where it gets created)
       const userRecord = await adminAuth.getUser(uid);
-      const { firestore } = await import('@/firebase'); // Need client-side instance for ensureUserProfile
       await ensureUserProfile(firestore, userRecord, verificationData.referralCode);
 
       // 6. Delete the used verification code document

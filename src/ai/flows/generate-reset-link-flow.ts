@@ -44,8 +44,8 @@ const generateResetLinkFlow = ai.defineFlow(
   async ({ email }) => {
     try {
       // --- Step 1: Generate Password Reset Link (Server-Side) ---
-      const adminApp = initializeAdminApp();
-      const auth = getAuth(adminApp);
+      initializeAdminApp();
+      const auth = getAuth();
       
       let link: string;
       try {
