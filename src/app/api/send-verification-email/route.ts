@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const auth = getAuth(adminApp);
     
     // Append referral code to the continue URL if it exists
-    const continueUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/action?mode=verifyEmail${referralCode ? `&referralCode=${encodeURIComponent(referralCode)}` : ''}`;
+    const continueUrl = `https://aernify.fun/auth/action${referralCode ? `?referralCode=${encodeURIComponent(referralCode)}` : ''}`;
     const actionCodeSettings = {
         url: continueUrl,
         handleCodeInApp: true,
@@ -69,12 +69,17 @@ export async function POST(request: NextRequest) {
     });
 
     const emailHtml = `
-      <h1>Welcome to Aernify!</h1>
-      <p>Hello,</p>
-      <p>Please click the button below to verify your email address and activate your account.</p>
-      <a href="${link}" style="background-color: #f5a623; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email Address</a>
-      <p>If you did not create an account, you can safely ignore this email.</p>
-      <p>Thanks,<br/>The Aernify Team</p>
+      <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #f0f0f0; background-color: #121212; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #1e1e1e; padding: 30px; border-radius: 8px;">
+          <h1 style="color: #FFD700; font-size: 24px;">Welcome to Aernify!</h1>
+          <p style="font-size: 16px;">Hello,</p>
+          <p style="font-size: 16px;">Please click the button below to verify your email address and activate your account.</p>
+          <a href="${link}" style="background-color: #FFD700; color: #121212; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px; margin: 20px 0;">Verify My Account</a>
+          <p style="font-size: 14px; color: #888;">If you did not create an account, you can safely ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;">
+          <p style="font-size: 14px;">Thanks,<br/>The Aernify Team</p>
+        </div>
+      </div>
     `;
 
     await transporter.sendMail({
