@@ -11,6 +11,7 @@ import {
   query,
   where,
   setDoc,
+  orderBy,
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { DailyChallenge, UserChallengeProgress } from './types';
@@ -33,15 +34,17 @@ export const incrementChallengeProgress = async (
   const todayStr = getTodayString();
 
   try {
-    // 1. Get ALL of today's challenges from the `challenges` collection.
+    // 1. Get ALL of today's challenges of the specific type, ordered by reward to tackle easier ones first.
     const challengesQuery = query(
       collection(firestore, 'challenges'),
-      where('date', '==', todayStr)
+      where('date', '==', todayStr),
+      where('type', '==', challengeType),
+      orderBy('reward', 'asc') // Process easier/lower-reward challenges first
     );
     const challengesSnap = await getDocs(challengesQuery);
 
     if (challengesSnap.empty) {
-      return; // No challenges for today, nothing to do.
+      return; // No challenges of this type for today.
     }
 
     // 2. Get the user's current progress document for today.
@@ -52,28 +55,32 @@ export const incrementChallengeProgress = async (
     };
 
     let wasUpdated = false;
-
-    // 3. Iterate through today's challenges and update the progress object in memory.
-    challengesSnap.forEach((challengeDoc) => {
+    
+    // 3. Find the FIRST non-completed, non-claimed challenge of this type.
+    for (const challengeDoc of challengesSnap.docs) {
       const challenge = { ...challengeDoc.data(), id: challengeDoc.id } as DailyChallenge;
+      
+      const challengeProgress = progressData.progress?.[challenge.id];
+      const isClaimed = challengeProgress?.claimed ?? false;
+      const currentValue = challengeProgress?.currentValue ?? 0;
 
-      // Check if the challenge type matches the one we want to increment.
-      if (challenge.type === challengeType) {
-        const isClaimed = progressData.progress?.[challenge.id]?.claimed ?? false;
+      // If this challenge is not completed and not claimed, this is the one we update.
+      if (currentValue < challenge.targetValue && !isClaimed) {
         
-        // Only increment progress for challenges that haven't been claimed yet.
-        if (!isClaimed) {
-          const currentValue = progressData.progress?.[challenge.id]?.currentValue ?? 0;
-          
-          if (!progressData.progress[challenge.id]) {
+        // Ensure the progress object for this challenge exists
+        if (!progressData.progress[challenge.id]) {
             progressData.progress[challenge.id] = { currentValue: 0, claimed: false };
-          }
-          
-          progressData.progress[challenge.id].currentValue = currentValue + amount;
-          wasUpdated = true;
         }
+        
+        // Increment the progress
+        progressData.progress[challenge.id].currentValue = currentValue + amount;
+        wasUpdated = true;
+        
+        // We found our target challenge and updated it, so we can stop looking.
+        break; 
       }
-    });
+    }
+
 
     // 4. If any progress was updated, write the entire new progress object back to Firestore.
     if (wasUpdated) {
