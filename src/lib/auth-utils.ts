@@ -43,7 +43,6 @@ export const ensureUserProfile = async (firestore: Firestore, user: User, referr
         lastLoginDate: '', // Set to empty string initially
         isVip: false,
         vipExpiresAt: undefined,
-        createdAt: serverTimestamp(),
       };
 
       await setDoc(userRef, initialProfileData);
@@ -52,17 +51,12 @@ export const ensureUserProfile = async (firestore: Firestore, user: User, referr
       // If a referral code was used, apply it now that the profile is created.
       if (referralCode) {
         console.log(`Applying referral code "${referralCode}" for user ${user.uid}`);
-        applyReferralCode({ newUserUid: user.uid, referralCode: referralCode })
-          .then(result => {
-            if(result.success) {
-              console.log('Referral applied successfully.');
-            } else {
-              console.warn(`Failed to apply referral code: ${result.message}`);
-            }
-          })
-          .catch(error => {
-            console.error('Error calling applyReferralCode flow:', error);
-          });
+        const result = await applyReferralCode({ newUserUid: user.uid, referralCode: referralCode });
+        if(result.success) {
+          console.log('Referral applied successfully.');
+        } else {
+          console.warn(`Failed to apply referral code: ${result.message}`);
+        }
       }
     }
   } catch (error) {
