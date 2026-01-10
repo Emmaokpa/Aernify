@@ -4,7 +4,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useUser } from '@/firebase';
-import { sendEmailVerification } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -13,9 +12,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Loader2, MailCheck } from 'lucide-react';
+import { Loader2, MailCheck, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Logo from '@/components/icons/logo';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { sendVerificationCode } from '@/ai/flows/send-code-flow';
+import { verifyCode } from '@/ai/flows/verify-code-flow';
 
 export default function VerifyEmailPage() {
   const auth = useAuth();
@@ -23,7 +26,10 @@ export default function VerifyEmailPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isResending, setIsResending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [code, setCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   // Redirect to dashboard if already verified.
   useEffect(() => {
@@ -32,23 +38,6 @@ export default function VerifyEmailPage() {
     }
   }, [user, router]);
   
-  // Poll for verification status changes.
-  useEffect(() => {
-    if (!user) return;
-    const interval = setInterval(async () => {
-      // We need to reload the user from auth to get the latest emailVerified status
-      await user.reload();
-      if (user.emailVerified) {
-        clearInterval(interval);
-        // Ensure profile exists before redirecting, in case something went wrong
-        // This is a safety net. The main creation happens in /auth/action
-        router.push('/auth/action?mode=verifyEmail&oobCode=manual-refresh');
-      }
-    }, 5000); // Check every 5 seconds
-
-    return () => clearInterval(interval);
-  }, [user, router]);
-
   // Cooldown timer effect
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -58,39 +47,67 @@ export default function VerifyEmailPage() {
     return () => clearTimeout(timer);
   }, [cooldown]);
 
-
-  const handleResendEmail = useCallback(async () => {
+  const handleResendCode = useCallback(async () => {
     if (!user || cooldown > 0 || isResending) return;
 
     setIsResending(true);
+    setError(null);
     try {
-      // This now calls our custom backend instead of the default Firebase sender
-      const response = await fetch('/api/send-verification-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email }), // No referral code needed on resend
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send email.');
+      const result = await sendVerificationCode({ email: user.email!, uid: user.uid });
+      if (!result.success) {
+        throw new Error(result.message);
       }
-
+      
       toast({
-        title: 'Verification Email Sent!',
-        description: 'A new verification link has been sent to your email address.',
+        title: 'Verification Code Sent!',
+        description: 'A new code has been sent to your email address.',
       });
-      setCooldown(60); // Start 60-second cooldown
+      setCooldown(60);
     } catch (error: any) {
-      console.error('Error resending verification email:', error);
+      console.error('Error resending verification code:', error);
+      setError(error.message || 'Failed to resend verification code.');
       toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to resend verification email. Please try again later.',
+          description: error.message || 'Failed to resend code. Please try again later.',
       });
     } finally {
       setIsResending(false);
     }
   }, [user, cooldown, isResending, toast]);
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || code.length !== 6) {
+        setError("Please enter a valid 6-digit code.");
+        return;
+    }
+    
+    setIsVerifying(true);
+    setError(null);
+    
+    try {
+        const result = await verifyCode({ uid: user.uid, code });
+        if (!result.success) {
+            throw new Error(result.message);
+        }
+        
+        toast({
+            title: "Success!",
+            description: "Your email has been verified. Welcome to Aernify!",
+        });
+
+        // The user's auth state will update automatically, triggering the redirect effect.
+        await user.reload();
+        router.push('/dashboard');
+
+    } catch (error: any) {
+        console.error("Error verifying code:", error);
+        setError(error.message);
+    } finally {
+        setIsVerifying(false);
+    }
+  };
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -106,7 +123,6 @@ export default function VerifyEmailPage() {
   }
   
   if (!user) {
-    // If no user is found after loading, redirect to login
     router.push('/login');
     return (
       <main className="flex items-center justify-center min-h-screen">
@@ -124,7 +140,7 @@ export default function VerifyEmailPage() {
           </div>
           <CardTitle>Verify Your Email</CardTitle>
           <CardDescription>
-            We've sent a verification link to your email address:
+            We've sent a 6-digit code to your email address:
             <br />
             <strong className="text-foreground">{user?.email}</strong>
           </CardDescription>
@@ -132,19 +148,49 @@ export default function VerifyEmailPage() {
         <CardContent className="space-y-4">
             <MailCheck className="w-16 h-16 text-primary mx-auto" />
             <p className="text-muted-foreground text-sm">
-                Please find the email in your inbox and **click the verification link** inside to activate your account. If you don't see it, please check your spam folder.
+                Please enter the code below to activate your account.
             </p>
+            <form onSubmit={handleVerifyCode} className="space-y-4 pt-4">
+              {error && (
+                <div className="bg-destructive/10 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <p>{error}</p>
+                </div>
+              )}
+                <div className="space-y-2 text-left">
+                    <Label htmlFor="verification-code">Verification Code</Label>
+                    <Input 
+                        id="verification-code" 
+                        value={code}
+                        onChange={(e) => setCode(e.target.value.trim())}
+                        maxLength={6}
+                        placeholder="_ _ _ _ _ _"
+                        className="text-center text-lg font-mono tracking-[0.5em]"
+                    />
+                </div>
+                <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isVerifying || code.length !== 6}
+                >
+                    {isVerifying ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ): null}
+                    Verify Account
+                </Button>
+            </form>
           <Button
-            onClick={handleResendEmail}
+            onClick={handleResendCode}
             className="w-full"
+            variant="secondary"
             disabled={isResending || cooldown > 0}
           >
             {isResending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : cooldown > 0 ? (
-              `Resend Email (${cooldown}s)`
+              `Resend Code (${cooldown}s)`
             ) : (
-              'Resend Verification Email'
+              'Resend Code'
             )}
           </Button>
           <Button variant="link" onClick={handleLogout} className="text-muted-foreground">

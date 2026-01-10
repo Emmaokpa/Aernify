@@ -21,6 +21,8 @@ import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider
 import { ensureUserProfile } from '@/lib/auth-utils';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
+import { sendVerificationCode } from '@/ai/flows/send-code-flow';
+
 
 export default function SignUpPage() {
   const { toast } = useToast();
@@ -35,12 +37,10 @@ export default function SignUpPage() {
 
   // This function now only handles the redirection part after profile creation.
   async function handleAuthSuccess(user: User, referralCode?: string) {
-    await ensureUserProfile(firestore, user, referralCode);
-    
-    // For non-email providers, redirect immediately.
-    // Email provider logic is now fully handled on the client after email is sent.
+    // For non-email providers, create the profile and redirect immediately.
     const isEmailPasswordUser = user.providerData.some(p => p.providerId === 'password');
     if (!isEmailPasswordUser) {
+        await ensureUserProfile(firestore, user, referralCode);
         toast({
             title: 'Account Ready!',
             description: "You've successfully signed up. Redirecting...",
@@ -101,24 +101,17 @@ export default function SignUpPage() {
       // Step 2: Set their display name in Firebase Auth
       await updateProfile(user, { displayName: username });
       
-      // Step 3: Call our backend API to generate and send the verification email
-      const response = await fetch('/api/send-verification-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, referralCode: referralCode || null }),
-      });
+      // Step 3: Call our backend flow to generate and send the verification code
+      const result = await sendVerificationCode({ email: user.email!, uid: user.uid, referralCode: referralCode || undefined });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        // If the API fails, we should ideally roll back the user creation or let them know.
-        // For now, we'll display the error and they can try resending from the verify-email page.
-        throw new Error(errorData.error || 'Failed to send verification email.');
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to send verification code.');
       }
       
       // Step 4: Redirect to the verify-email page to await verification.
       toast({
             title: 'Almost there!',
-            description: "We've sent a verification link to your email. Please verify to continue.",
+            description: "We've sent a verification code to your email. Please check your inbox to continue.",
       });
       router.push('/verify-email');
 

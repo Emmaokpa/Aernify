@@ -1,8 +1,6 @@
 
-import { initializeApp, getApps, getApp, App } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp, App, cert } from 'firebase-admin/app';
 import 'server-only';
-
-let adminApp: App;
 
 /**
  * Initializes the Firebase Admin SDK, reusing the existing app instance if one exists.
@@ -10,12 +8,22 @@ let adminApp: App;
  * @returns The initialized Firebase Admin App instance.
  */
 export function initializeAdminApp() {
-  if (getApps().some(app => app.name === '[DEFAULT]')) {
-    adminApp = getApp();
-  } else {
-    // initializeApp() with no args will automatically use the environment's
-    // service account credentials in a managed environment like Firebase App Hosting.
-    adminApp = initializeApp();
+  if (getApps().length) {
+    return getApp();
   }
-  return adminApp;
+
+  // These credentials will be read from .env in the server environment
+  const serviceAccount = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  };
+
+  if (!serviceAccount.projectId || !serviceAccount.privateKey || !serviceAccount.clientEmail) {
+    throw new Error('Firebase Admin credentials are not configured in environment variables.');
+  }
+
+  return initializeApp({
+    credential: cert(serviceAccount),
+  });
 }

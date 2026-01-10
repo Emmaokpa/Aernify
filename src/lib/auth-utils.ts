@@ -11,8 +11,9 @@ const generateReferralCode = () => {
 };
 
 /**
- * Ensures a user profile exists in Firestore and applies a referral code if provided.
+ * Ensures a user profile exists in Firestore.
  * If the document does not exist, it creates a new profile with initial data.
+ * This should ONLY be called AFTER an email is verified or for social logins.
  * @param firestore - The Firestore instance.
  * @param user - The newly created and authenticated Firebase Auth user object.
  * @param referralCode - An optional referral code provided during signup.
@@ -29,7 +30,7 @@ export const ensureUserProfile = async (firestore: Firestore, user: User, referr
 
     if (!docSnap.exists()) {
       // Define the data for the new user profile
-      const initialProfileData = {
+      const initialProfileData: UserProfile = {
         uid: user.uid,
         displayName: user.displayName || 'New User',
         email: user.email || '',
@@ -40,18 +41,18 @@ export const ensureUserProfile = async (firestore: Firestore, user: User, referr
         referralCount: 0,
         isAdmin: false,
         currentStreak: 0,
-        lastLoginDate: null,
+        lastLoginDate: '', // Set to empty string initially
+        isVip: false,
+        vipExpiresAt: undefined,
         createdAt: serverTimestamp(),
       };
 
       await setDoc(userRef, initialProfileData);
       console.log(`Successfully created profile for new user: ${user.uid}`);
       
-      // If a referral code was used, apply it now after the user profile is created.
+      // If a referral code was used, apply it now that the profile is created.
       if (referralCode) {
         console.log(`Applying referral code "${referralCode}" for user ${user.uid}`);
-        // We run this without awaiting it to avoid blocking the UI thread.
-        // The server-side flow will handle the logic.
         applyReferralCode({ newUserUid: user.uid, referralCode: referralCode })
           .then(result => {
             if(result.success) {
@@ -67,8 +68,6 @@ export const ensureUserProfile = async (firestore: Firestore, user: User, referr
     }
   } catch (error) {
     console.error(`Error ensuring user profile for ${user.uid}:`, error);
-    // Re-throw a more specific error for the UI to catch if needed
     throw new Error('Failed to create or verify user profile in the database.');
   }
 };
-

@@ -22,14 +22,12 @@ import {
 import { Loader2, CheckCircle, XCircle, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import Logo from '@/components/icons/logo';
-import { ensureUserProfile } from '@/lib/auth-utils';
 import { useToast } from '@/hooks/use-toast';
 
 type ActionState = 'loading' | 'invalid' | 'form' | 'success' | 'error';
 
 function ResetPasswordForm({ actionCode }: { actionCode: string }) {
   const auth = useAuth();
-  const router = useRouter();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [status, setStatus] = useState<ActionState>('form');
@@ -168,105 +166,24 @@ function ResetPasswordForm({ actionCode }: { actionCode: string }) {
   );
 }
 
-function EmailVerificationHandler({ actionCode, referralCode }: { actionCode: string, referralCode: string | null }) {
-    const auth = useAuth();
-    const firestore = useFirestore();
-    const router = useRouter();
-    const { toast } = useToast();
-    const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const handleVerification = async () => {
-            try {
-                // Apply the action code. This also signs the user in.
-                await applyActionCode(auth, actionCode);
-
-                const user = auth.currentUser;
-                if (!user) {
-                    throw new Error("User not found after email verification. Please sign in to complete the process.");
-                }
-                
-                await ensureUserProfile(firestore, user, referralCode || undefined);
-                
-                setStatus('success');
-                toast({
-                    title: 'Email Verified!',
-                    description: "Your account is active. Welcome to Aernify!",
-                });
-                
-                // Redirect to login page after a short delay
-                setTimeout(() => router.push('/login'), 3000);
-
-            } catch (err: any) {
-                console.error(err);
-                if (err.code === 'auth/expired-action-code' || err.code === 'auth/invalid-action-code') {
-                    setError('This verification link is invalid or has expired. Please sign up again or log in to request a new link.');
-                } else {
-                    setError('An unexpected error occurred. Please try again.');
-                }
-                setStatus('error');
-            }
-        };
-
-        handleVerification();
-    }, [actionCode, referralCode, auth, firestore, router, toast]);
-
-    if (status === 'success') {
-        return (
-            <div className="text-center space-y-6">
-                <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
-                <CardTitle>Email Verified!</CardTitle>
-                <p className="text-muted-foreground">
-                    Your account is now active. Redirecting you to the sign-in page...
-                </p>
-                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-            </div>
-        );
-    }
-    
-    if (status === 'error') {
-        return (
-            <div className="text-center space-y-6">
-                <XCircle className="w-16 h-16 text-destructive mx-auto" />
-                <CardTitle>Verification Failed</CardTitle>
-                <p className="text-muted-foreground">
-                    {error}
-                </p>
-                <Button asChild className="w-full">
-                    <Link href="/login">Back to Sign In</Link>
-                </Button>
-            </div>
-        );
-    }
-
-    return (
-        <div className="flex justify-center items-center p-8">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        </div>
-    );
-}
-
+// This component is now largely deprecated in favor of the code-based flow.
+// It will only handle password resets.
 function AuthActionHandler() {
   const searchParams = useSearchParams();
   const auth = useAuth();
   const mode = searchParams.get('mode');
   const actionCode = searchParams.get('oobCode');
-  const referralCode = searchParams.get('referralCode');
 
   const [status, setStatus] = useState<ActionState>('loading');
-  const [currentMode, setCurrentMode] = useState<string | null>(null);
   
   const verifyResetCode = useCallback(async (code: string) => {
       try {
         await verifyPasswordResetCode(auth, code);
-        setCurrentMode('resetPassword');
         setStatus('form');
       } catch (err: any) {
         console.error("Failed to verify password reset code", err);
-        return false;
+        setStatus('invalid');
       }
-      return true;
   }, [auth]);
 
   useEffect(() => {
@@ -275,16 +192,10 @@ function AuthActionHandler() {
       return;
     }
     
-    if (mode === 'verifyEmail') {
-      setCurrentMode('verifyEmail');
-      setStatus('form'); // Let the handler component take over
-    } else if (mode === 'resetPassword') {
-       verifyResetCode(actionCode).then(isValid => {
-           if (!isValid) {
-               setStatus('invalid');
-           }
-       });
+    if (mode === 'resetPassword') {
+       verifyResetCode(actionCode);
     } else {
+        // All other modes like verifyEmail are now handled differently
         setStatus('invalid');
     }
   }, [mode, actionCode, auth, verifyResetCode]);
@@ -297,9 +208,8 @@ function AuthActionHandler() {
             <Logo />
           </div>
           {status === 'loading' && <CardTitle>Verifying link...</CardTitle>}
-          {currentMode === 'resetPassword' && <CardTitle>Reset Your Password</CardTitle>}
-          {currentMode === 'verifyEmail' && <CardTitle>Verifying Email</CardTitle>}
-          {(status === 'invalid') && <CardTitle>Invalid Link</CardTitle>}
+          {status === 'form' && <CardTitle>Reset Your Password</CardTitle>}
+          {status === 'invalid' && <CardTitle>Invalid or Expired Link</CardTitle>}
         </CardHeader>
         <CardContent>
           {status === 'loading' && (
@@ -317,11 +227,8 @@ function AuthActionHandler() {
               </Button>
             </div>
           )}
-          {status === 'form' && currentMode === 'resetPassword' && actionCode && (
+          {status === 'form' && actionCode && (
             <ResetPasswordForm actionCode={actionCode} />
-          )}
-          {status === 'form' && currentMode === 'verifyEmail' && actionCode && (
-            <EmailVerificationHandler actionCode={actionCode} referralCode={referralCode} />
           )}
         </CardContent>
       </Card>
