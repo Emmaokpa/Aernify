@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import PageHeader from '@/components/page-header';
@@ -23,6 +22,7 @@ import {
   Banknote,
   DollarSign,
   Crown,
+  Mail,
 } from 'lucide-react';
 import type { NavItem } from '@/lib/types';
 
@@ -66,6 +66,11 @@ const adminFeatures: NavItem[] = [
     title: 'Manage Gift Cards',
     href: '/admin/gift-cards',
     icon: <Gift className="w-8 h-8" />,
+  },
+    {
+    title: 'Bulk Email',
+    href: '/admin/bulk-email',
+    icon: <Mail className="w-8 h-8" />,
   },
   {
     title: 'Verify Offers',

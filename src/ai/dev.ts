@@ -5,4 +5,4 @@ import './flows/leaderboard-flow';
 import './flows/vip-flow';
 import './flows/sales-copy-flow';
 import './flows/generate-reset-link-flow';
-
+import './flows/bulk-email-flow';
