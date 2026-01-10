@@ -9,9 +9,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import nodemailer from 'nodemailer';
+import { initializeAdminApp } from '@/firebase/admin';
 
 // --- Input and Output Schemas ---
 const ResetLinkInputSchema = z.object({
@@ -25,29 +25,6 @@ const ResetLinkOutputSchema = z.object({
   error: z.string().optional().describe('An error message if the operation failed.'),
 });
 export type ResetLinkOutput = z.infer<typeof ResetLinkOutputSchema>;
-
-// --- Firebase Admin Initialization ---
-// This function initializes the Admin SDK, reusing the app if it's already created.
-function initializeAdminApp() {
-  // These credentials will be read from .env in the server environment
-  const serviceAccount = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  };
-
-  if (!serviceAccount.projectId || !serviceAccount.privateKey || !serviceAccount.clientEmail) {
-    throw new Error('Firebase Admin credentials are not configured in environment variables.');
-  }
-
-  if (getApps().length) {
-    return getApp();
-  }
-
-  return initializeApp({
-    credential: cert(serviceAccount),
-  });
-}
 
 
 // --- Public Function ---
