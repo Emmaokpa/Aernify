@@ -14,8 +14,9 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
-import type { DailyChallenge, UserChallengeProgress } from './types';
+import type { DailyChallenge, UserChallengeProgress, UserProfile } from './types';
 import { getTodayString } from './utils';
+import { isFuture } from 'date-fns';
 
 // Helper function to create or get the daily progress document reference
 const getProgressDocRef = (firestore: Firestore, userId: string) => {
@@ -100,11 +101,21 @@ export const claimChallengeReward = async (
 ) => {
     const batch = writeBatch(firestore);
 
-    // 1. Update user's coins
+    // 1. Update user's coins, checking for VIP status
     const userRef = doc(firestore, 'users', userId);
+    
+    const userSnap = await getDoc(userRef);
+    let finalReward = challenge.reward;
+    if (userSnap.exists()) {
+        const userProfile = userSnap.data() as UserProfile;
+        const isVip = userProfile.vipExpiresAt && isFuture(userProfile.vipExpiresAt.toDate());
+        const multiplier = isVip ? 2 : 1;
+        finalReward = challenge.reward * multiplier;
+    }
+    
     batch.update(userRef, {
-      coins: increment(challenge.reward),
-      weeklyCoins: increment(challenge.reward)
+      coins: increment(finalReward),
+      weeklyCoins: increment(finalReward)
     });
 
     // 2. Mark challenge as claimed for the day

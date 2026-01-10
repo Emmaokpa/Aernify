@@ -13,7 +13,7 @@ import { usePublicFirestoreQuery, useFirestore, useUser } from '@/firebase';
 import { collection, doc, getDoc, serverTimestamp, setDoc, writeBatch, increment } from 'firebase/firestore';
 import { incrementChallengeProgress } from '@/lib/challenges';
 import { getTodayString } from '@/lib/utils';
-import { differenceInCalendarDays } from 'date-fns';
+import { differenceInCalendarDays, isFuture } from 'date-fns';
 
 const DAILY_REWARD = 20;
 const STREAK_REWARDS = {
@@ -56,7 +56,10 @@ export default function DashboardPage() {
         if (!docSnap.exists()) {
           const batch = writeBatch(firestore);
 
-          let totalReward = DAILY_REWARD;
+          const isVip = currentProfile.vipExpiresAt && isFuture(currentProfile.vipExpiresAt.toDate());
+          const multiplier = isVip ? 2 : 1;
+          
+          let baseReward = DAILY_REWARD;
           let streakBonus = 0;
           let newStreak = 1;
           
@@ -83,13 +86,14 @@ export default function DashboardPage() {
           // Check for streak milestone rewards
           if (newStreak in STREAK_REWARDS) {
             streakBonus = STREAK_REWARDS[newStreak as keyof typeof STREAK_REWARDS];
-            totalReward += streakBonus;
           }
+
+          const finalReward = (baseReward + streakBonus) * multiplier;
 
           // Update user's profile with new coins, streak, and login date
           batch.update(userDocRef, { 
-            coins: increment(totalReward),
-            weeklyCoins: increment(totalReward),
+            coins: increment(finalReward),
+            weeklyCoins: increment(finalReward),
             currentStreak: newStreak,
             lastLoginDate: todayStr
           });
@@ -103,7 +107,7 @@ export default function DashboardPage() {
           await incrementChallengeProgress(firestore, user.uid, 'dailyCheckIn');
           
           // Show the user their reward
-          setModalState({ isOpen: true, reward: DAILY_REWARD, bonus: streakBonus, streak: newStreak });
+          setModalState({ isOpen: true, reward: baseReward * multiplier, bonus: streakBonus * multiplier, streak: newStreak });
         }
       } catch (error) {
         console.error("Error checking or granting daily reward:", error);

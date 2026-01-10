@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useSafeCollection } from '@/firebase';
-import { collection, doc, writeBatch, increment, query, where } from 'firebase/firestore';
+import { collection, doc, writeBatch, increment, query, where, getDoc } from 'firebase/firestore';
 import type { AffiliateSaleSubmission } from '@/lib/types';
 import { Loader2, Check, X, FileQuestion, User, Coins } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import { isFuture } from 'date-fns';
 
 function SubmissionList() {
   const firestore = useFirestore();
@@ -32,11 +33,27 @@ function SubmissionList() {
     batch.update(submissionRef, { status: decision === 'approve' ? 'approved' : 'rejected' });
 
     if (decision === 'approve') {
-      const userRef = doc(firestore, 'users', submission.userId);
-      batch.update(userRef, { 
-        coins: increment(submission.reward),
-        weeklyCoins: increment(submission.reward),
-      });
+       const userRef = doc(firestore, 'users', submission.userId);
+       try {
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const userProfile = userSnap.data();
+                const isVip = userProfile.vipExpiresAt && isFuture(userProfile.vipExpiresAt.toDate());
+                const multiplier = isVip ? 2 : 1;
+                const finalReward = submission.reward * multiplier;
+
+                batch.update(userRef, { 
+                    coins: increment(finalReward),
+                    weeklyCoins: increment(finalReward),
+                });
+            }
+       } catch (e) {
+            console.error("Could not fetch user to check VIP status, awarding base reward.", e);
+             batch.update(userRef, { 
+                coins: increment(submission.reward),
+                weeklyCoins: increment(submission.reward),
+            });
+       }
     }
 
     try {

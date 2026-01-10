@@ -24,7 +24,7 @@ import VideoAdPlayer from '@/components/video-ad-player';
 
 export default function EarnPage() {
   const { toast } = useToast();
-  const { user, profile, isUserLoading } = useUser();
+  const { user, profile, isUserLoading, isVip } = useUser();
   const firestore = useFirestore();
   const [adsWatched, setAdsWatched] = useState(0);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
@@ -57,17 +57,20 @@ export default function EarnPage() {
     if (!user) return;
 
     try {
+        const multiplier = isVip ? 2 : 1;
+        const rewardAmount = 10 * multiplier;
         const userRef = doc(firestore, 'users', user.uid);
+        
         await updateDoc(userRef, { 
-          coins: increment(10),
-          weeklyCoins: increment(10)
+          coins: increment(rewardAmount),
+          weeklyCoins: increment(rewardAmount)
         });
 
         await incrementChallengeProgress(firestore, user.uid, 'watchAd');
 
         toast({
             title: "Reward Claimed!",
-            description: "+10 Coins have been added to your balance.",
+            description: `+${rewardAmount} Coins have been added to your balance.`,
         });
 
     } catch (error) {
@@ -127,7 +130,7 @@ export default function EarnPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Watch a short video ad and get rewarded with 10 coins instantly!
+              Watch a short video ad and get rewarded with 10 coins instantly! {isVip && <span className="font-bold text-primary">(20 for VIPs!)</span>}
             </p>
             <Button
               className="w-full"
@@ -157,8 +160,8 @@ export default function EarnPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Invite a friend with your code and get{' '}
-              <span className="font-bold text-primary">100 coins!</span>
+              Invite a friend with your code and you get{' '}
+              <span className="font-bold text-primary">100 coins! {isVip && '(200 for VIPs!)'}</span>
             </p>
             <div>
               <p className="text-sm font-medium mb-2">Your referral code:</p>

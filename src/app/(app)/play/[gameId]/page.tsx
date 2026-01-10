@@ -1,3 +1,4 @@
+
 'use client';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ export default function GamePage() {
   const gameId = Array.isArray(params.gameId) ? params.gameId[0] : params.gameId;
   const { toast } = useToast();
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isVip } = useUser();
   const isMobile = useIsMobile();
   const gameContainerRef = useRef<HTMLDivElement>(null);
 
@@ -46,10 +47,13 @@ export default function GamePage() {
       // Re-check to be absolutely sure, as state might be stale in closures.
       if (!game || !user) return;
       try {
+        const multiplier = isVip ? 2 : 1;
+        const rewardAmount = game.reward * multiplier;
         const userDocRef = doc(firestore, 'users', user.uid);
+        
         await updateDoc(userDocRef, {
-          coins: increment(game.reward),
-          weeklyCoins: increment(game.reward),
+          coins: increment(rewardAmount),
+          weeklyCoins: increment(rewardAmount),
         });
         
         await incrementChallengeProgress(firestore, user.uid, 'playGame');
@@ -62,7 +66,7 @@ export default function GamePage() {
             <div className="flex items-center gap-2">
               <Coins className="h-5 w-5 text-primary" />
               <span>
-                You earned {game.reward} coins for playing {game.title}!
+                You earned {rewardAmount} coins for playing {game.title}!
               </span>
             </div>
           ),
@@ -91,7 +95,7 @@ export default function GamePage() {
     }, 1000);
     
     return () => clearInterval(gameTimer);
-  }, [isGameStarted, rewardClaimed, game, user, firestore, toast]);
+  }, [isGameStarted, rewardClaimed, game, user, isVip, firestore, toast]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -169,7 +173,7 @@ export default function GamePage() {
                 ) : (
                     <Coins className="h-5 w-5 text-primary" />
                 )}
-                <span>{rewardClaimed ? `+${game.reward} Coins!` : formatTime(countdown)}</span>
+                <span>{rewardClaimed ? `+${game.reward * (isVip ? 2 : 1)} Coins!` : formatTime(countdown)}</span>
                 </div>
                 <Button onClick={handleFullScreen} variant="ghost" size="icon" className="bg-black/50 text-white hover:bg-black/70 hover:text-white">
                     <Expand className="w-5 h-5" />

@@ -13,6 +13,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getFirestore, query, collection, where, getDocs, writeBatch, doc, increment } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
+import { isFuture } from 'date-fns';
 
 const ReferralInputSchema = z.object({
   newUserUid: z.string().describe('The UID of the new user signing up.'),
@@ -56,6 +57,7 @@ const applyReferralCodeFlow = ai.defineFlow(
 
     const referrerDoc = querySnapshot.docs[0];
     const referrerUid = referrerDoc.id;
+    const referrerProfile = referrerDoc.data();
 
     if (referrerUid === newUserUid) {
       return { success: false, message: 'You cannot refer yourself.' };
@@ -65,9 +67,11 @@ const applyReferralCodeFlow = ai.defineFlow(
 
     const batch = writeBatch(firestore);
 
-    const referralBonus = 100;
+    const isVip = referrerProfile.vipExpiresAt && isFuture(referrerProfile.vipExpiresAt.toDate());
+    const multiplier = isVip ? 2 : 1;
+    const referralBonus = 100 * multiplier;
 
-    // Award 100 coins to the referrer and increment their referral count
+    // Award bonus coins to the referrer and increment their referral count
     batch.update(referrerUserRef, {
       coins: increment(referralBonus),
       weeklyCoins: increment(referralBonus),
