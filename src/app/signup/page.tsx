@@ -100,17 +100,22 @@ export default function SignUpPage() {
 
       // Step 2: Set their display name in Firebase Auth
       await updateProfile(user, { displayName: username });
-
-      // Step 3: Send verification email with referral code in continue URL
-      const continueUrl = `${window.location.origin}/auth/action?mode=verifyEmail${referralCode ? `&referralCode=${encodeURIComponent(referralCode)}` : ''}`;
-      const actionCodeSettings: ActionCodeSettings = {
-        url: continueUrl,
-        handleCodeInApp: true,
-      };
-
-      await sendEmailVerification(user, actionCodeSettings);
       
-      // Step 4: DO NOT create the Firestore profile here. Redirect to the verify-email page.
+      // Step 3: Call our backend API to generate and send the verification email
+      const response = await fetch('/api/send-verification-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, referralCode: referralCode || null }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        // If the API fails, we should ideally roll back the user creation or let them know.
+        // For now, we'll display the error and they can try resending from the verify-email page.
+        throw new Error(errorData.error || 'Failed to send verification email.');
+      }
+      
+      // Step 4: Redirect to the verify-email page to await verification.
       toast({
             title: 'Almost there!',
             description: "We've sent a verification link to your email. Please verify to continue.",

@@ -179,8 +179,11 @@ function EmailVerificationHandler({ actionCode, referralCode }: { actionCode: st
     useEffect(() => {
         const handleVerification = async () => {
             try {
-                // Apply the action code to verify the email in Firebase Auth
-                await applyActionCode(auth, actionCode);
+                // If this is a manual refresh from the verify-email page, the user might already be verified.
+                if (actionCode !== 'manual-refresh') {
+                  // Apply the action code to verify the email in Firebase Auth
+                  await applyActionCode(auth, actionCode);
+                }
 
                 // This is the crucial part: after successful verification,
                 // get the now-verified user and create their Firestore profile.
@@ -199,7 +202,7 @@ function EmailVerificationHandler({ actionCode, referralCode }: { actionCode: st
                 });
                 
                 // Redirect to dashboard after a short delay
-                setTimeout(() => router.push('/dashboard'), 3000);
+                setTimeout(() => router.push('/dashboard'), 2000);
 
             } catch (err: any) {
                 console.error(err);

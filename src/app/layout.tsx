@@ -20,22 +20,6 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
          <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
-         {/* Hilltop Ads verification tag */}
-         <meta name="20f7dcb8433877e0f2113193c523d84396745d77" content="20f7dcb8433877e0f2113193c523d84396745d77" />
-         
-         {/* Adcash scripts commented out
-         <script async src="https://cdn.asacdn.com/aclib.js"></script>
-         <script
-            type="text/javascript"
-            dangerouslySetInnerHTML={{
-              __html: `
-                aclib.runAutoTag({
-                    zoneId: 'fike34hhxa',
-                });
-              `,
-            }}
-          />
-          */}
       </head>
       <body className={cn('font-body antialiased', inter.variable)}>
         <FirebaseClientProvider>

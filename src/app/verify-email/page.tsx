@@ -34,17 +34,20 @@ export default function VerifyEmailPage() {
   
   // Poll for verification status changes.
   useEffect(() => {
+    if (!user) return;
     const interval = setInterval(async () => {
-      if (auth.currentUser && !auth.currentUser.emailVerified) {
-        await auth.currentUser.reload();
-        if (auth.currentUser.emailVerified) {
-          router.push('/dashboard');
-        }
+      // We need to reload the user from auth to get the latest emailVerified status
+      await user.reload();
+      if (user.emailVerified) {
+        clearInterval(interval);
+        // Ensure profile exists before redirecting, in case something went wrong
+        // This is a safety net. The main creation happens in /auth/action
+        router.push('/auth/action?mode=verifyEmail&oobCode=manual-refresh');
       }
-    }, 3000); // Check every 3 seconds
+    }, 5000); // Check every 5 seconds
 
     return () => clearInterval(interval);
-  }, [auth, router]);
+  }, [user, router]);
 
   // Cooldown timer effect
   useEffect(() => {
@@ -61,7 +64,17 @@ export default function VerifyEmailPage() {
 
     setIsResending(true);
     try {
-      await sendEmailVerification(user);
+      // This now calls our custom backend instead of the default Firebase sender
+      const response = await fetch('/api/send-verification-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email }), // No referral code needed on resend
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email.');
+      }
+
       toast({
         title: 'Verification Email Sent!',
         description: 'A new verification link has been sent to your email address.',
@@ -69,19 +82,11 @@ export default function VerifyEmailPage() {
       setCooldown(60); // Start 60-second cooldown
     } catch (error: any) {
       console.error('Error resending verification email:', error);
-      if (error.code === 'auth/too-many-requests') {
-          toast({
-            variant: 'destructive',
-            title: 'Too Many Requests',
-            description: 'You have requested too many verification emails. Please wait a moment before trying again.',
-          });
-      } else {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to resend verification email. Please try again later.',
-        });
-      }
+      toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to resend verification email. Please try again later.',
+      });
     } finally {
       setIsResending(false);
     }
@@ -93,6 +98,16 @@ export default function VerifyEmailPage() {
   };
 
   if (isUserLoading) {
+    return (
+      <main className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </main>
+    );
+  }
+  
+  if (!user) {
+    // If no user is found after loading, redirect to login
+    router.push('/login');
     return (
       <main className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -117,7 +132,7 @@ export default function VerifyEmailPage() {
         <CardContent className="space-y-4">
             <MailCheck className="w-16 h-16 text-primary mx-auto" />
             <p className="text-muted-foreground text-sm">
-                Please find the email in your inbox and **click the verification link** inside to activate your account. You do not need to enter a code.
+                Please find the email in your inbox and **click the verification link** inside to activate your account. If you don't see it, please check your spam folder.
             </p>
           <Button
             onClick={handleResendEmail}
