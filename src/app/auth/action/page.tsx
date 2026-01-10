@@ -179,35 +179,29 @@ function EmailVerificationHandler({ actionCode, referralCode }: { actionCode: st
     useEffect(() => {
         const handleVerification = async () => {
             try {
-                // If this is a manual refresh from the verify-email page, the user might already be verified.
-                if (actionCode !== 'manual-refresh') {
-                  // Apply the action code to verify the email in Firebase Auth
-                  await applyActionCode(auth, actionCode);
-                }
+                // Apply the action code. This also signs the user in.
+                await applyActionCode(auth, actionCode);
 
-                // This is the crucial part: after successful verification,
-                // get the now-verified user and create their Firestore profile.
                 const user = auth.currentUser;
                 if (!user) {
-                    throw new Error("User not found after email verification.");
+                    throw new Error("User not found after email verification. Please sign in to complete the process.");
                 }
                 
-                // Now we create the profile, passing the referral code if it exists.
                 await ensureUserProfile(firestore, user, referralCode || undefined);
                 
                 setStatus('success');
                 toast({
                     title: 'Email Verified!',
-                    description: "Your account is ready. Welcome to Aernify!",
+                    description: "Your account is active. Welcome to Aernify!",
                 });
                 
-                // Redirect to dashboard after a short delay
-                setTimeout(() => router.push('/dashboard'), 2000);
+                // Redirect to login page after a short delay
+                setTimeout(() => router.push('/login'), 3000);
 
             } catch (err: any) {
                 console.error(err);
                 if (err.code === 'auth/expired-action-code' || err.code === 'auth/invalid-action-code') {
-                    setError('This verification link is invalid or has expired. Please sign in to request a new one.');
+                    setError('This verification link is invalid or has expired. Please sign up again or log in to request a new link.');
                 } else {
                     setError('An unexpected error occurred. Please try again.');
                 }
@@ -224,7 +218,7 @@ function EmailVerificationHandler({ actionCode, referralCode }: { actionCode: st
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
                 <CardTitle>Email Verified!</CardTitle>
                 <p className="text-muted-foreground">
-                    Your account is now active. Redirecting you to the dashboard...
+                    Your account is now active. Redirecting you to the sign-in page...
                 </p>
                 <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
             </div>
@@ -287,9 +281,6 @@ function AuthActionHandler() {
     } else if (mode === 'resetPassword') {
        verifyResetCode(actionCode).then(isValid => {
            if (!isValid) {
-               // If it's not a valid reset code, it might be an old email verification link.
-               // Firebase sometimes sends resetPassword mode for old verification links.
-               // We will just show a generic invalid link error.
                setStatus('invalid');
            }
        });

@@ -1,4 +1,6 @@
 
+'use server';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, getApp, App, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -38,7 +40,6 @@ export async function POST(request: NextRequest) {
     const adminApp = initializeAdminApp();
     const auth = getAuth(adminApp);
     
-    // Append referral code to the continue URL if it exists
     const continueUrl = `https://aernify.fun/auth/action${referralCode ? `?referralCode=${encodeURIComponent(referralCode)}` : ''}`;
     const actionCodeSettings = {
         url: continueUrl,
@@ -51,7 +52,6 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
         if (error.code === 'auth/user-not-found') {
             console.warn(`Verification email requested for non-existent user: ${email}`);
-            // Still return success to prevent user enumeration
             return NextResponse.json({ message: 'If an account exists, a verification email has been sent.' }, { status: 200 });
         }
         throw error; // Re-throw other Firebase errors
@@ -69,15 +69,16 @@ export async function POST(request: NextRequest) {
     });
 
     const emailHtml = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #f0f0f0; background-color: #121212; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #1e1e1e; padding: 30px; border-radius: 8px;">
-          <h1 style="color: #FFD700; font-size: 24px;">Welcome to Aernify!</h1>
-          <p style="font-size: 16px;">Hello,</p>
-          <p style="font-size: 16px;">Please click the button below to verify your email address and activate your account.</p>
-          <a href="${link}" style="background-color: #FFD700; color: #121212; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px; margin: 20px 0;">Verify My Account</a>
-          <p style="font-size: 14px; color: #888;">If you did not create an account, you can safely ignore this email.</p>
-          <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;">
-          <p style="font-size: 14px;">Thanks,<br/>The Aernify Team</p>
+      <div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; margin: 0; padding: 0;">
+        <div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+          <h1 style="color: #2c3e50; font-size: 24px; text-align: center;">Welcome to Aernify!</h1>
+          <p style="font-size: 16px; text-align: center;">Please click the button below to verify your email address and activate your account.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${link}" style="background-color: #f5a623; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px;">Verify My Account</a>
+          </div>
+          <p style="font-size: 14px; color: #888; text-align: center;">If you did not create an account, you can safely ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
+          <p style="font-size: 14px; color: #888; text-align: center;">Thanks,<br/>The Aernify Team</p>
         </div>
       </div>
     `;
