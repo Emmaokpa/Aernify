@@ -5,7 +5,7 @@
  * build issues on platforms like Vercel.
  */
 import 'server-only';
-import {create} from 'njwt'; // Note: njwt is a common library, ensure it's installed or use another JWT library
+import { create } from 'njwt';
 
 interface AccessToken {
   token: string;
@@ -20,7 +20,8 @@ let cachedToken: AccessToken | null = null;
  * @returns A valid OAuth access token.
  */
 async function getAccessToken(): Promise<string> {
-  if (cachedToken && cachedToken.expires > Date.now() / 1000 + 60) {
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedToken && cachedToken.expires > now + 60) {
     return cachedToken.token;
   }
 
@@ -38,7 +39,8 @@ async function getAccessToken(): Promise<string> {
     ...claims,
   }, privateKey, 'RS256');
   
-  const now = Math.floor(Date.now() / 1000);
+  // Explicitly set both issued at and expiration times to avoid clock skew issues.
+  jwt.setIssuedAt(now);
   jwt.setExpiration(now + 3600); // 1 hour expiry
 
   const compactJwt = jwt.compact();
@@ -104,7 +106,15 @@ export async function runQuery(queryBody: object): Promise<any> {
  */
 export async function setDocument(path: string, data: any, merge: boolean = false) {
     const accessToken = await getAccessToken();
-    const url = `${getBaseUrl()}/${path}${merge ? '?updateMask.fieldPaths=' + Object.keys(data.fields).join('&updateMask.fieldPaths=') : ''}`;
+    let url = `${getBaseUrl()}/${path}`;
+
+    if (merge) {
+        const queryParams = new URLSearchParams();
+        Object.keys(data.fields).forEach(field => {
+            queryParams.append('updateMask.fieldPaths', field);
+        });
+        url += `?${queryParams.toString()}`;
+    }
     
     const method = merge ? 'PATCH' : 'POST';
 
@@ -117,6 +127,7 @@ export async function setDocument(path: string, data: any, merge: boolean = fals
         body: JSON.stringify(data),
     });
 }
+
 
 /**
  * Updates a document using the REST API.
