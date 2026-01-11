@@ -1,7 +1,10 @@
 
 import { User } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, Firestore } from 'firebase/firestore';
+import { doc, getDoc, setDoc, writeBatch, collection, query, where, getDocs, increment, Firestore } from 'firebase/firestore';
 import type { UserProfile } from './types';
+import { initializeFirebase } from '@/firebase';
+import { isFuture } from 'date-fns';
+import { applyReferralCode } from '@/ai/flows/referral-flow';
 
 // Function to generate a random referral code
 const generateReferralCode = () => {
@@ -12,10 +15,11 @@ const generateReferralCode = () => {
  * Ensures a user profile exists in Firestore.
  * If the document does not exist, it creates a new profile with initial data.
  * This should ONLY be called AFTER an email is verified or for social logins.
- * @param firestore - The Firestore instance (can be client or admin).
  * @param user - The newly created and authenticated Firebase Auth user object.
+ * @param referralCode - An optional referral code string.
  */
-export const ensureUserProfile = async (firestore: Firestore, user: User) => {
+export const ensureUserProfile = async (user: User, referralCode: string | null) => {
+  const { firestore } = initializeFirebase();
   if (!user.uid) {
     throw new Error('User object is missing UID.');
   }
@@ -32,18 +36,25 @@ export const ensureUserProfile = async (firestore: Firestore, user: User) => {
         displayName: user.displayName || 'New User',
         email: user.email || '',
         photoURL: user.photoURL || null,
-        coins: 0, // Start with 0 coins
+        coins: 0,
         weeklyCoins: 0,
         referralCode: generateReferralCode(),
         referralCount: 0,
         isAdmin: false,
         currentStreak: 0,
-        lastLoginDate: '', // Set to empty string initially
+        lastLoginDate: '',
         isVip: false,
         vipExpiresAt: undefined,
       };
 
       await setDoc(userRef, initialProfileData);
+      
+      // If a referral code was used, apply it now.
+      if (referralCode) {
+        // This non-awaited call is a likely source of silent errors.
+        applyReferralCode({ newUserUid: user.uid, referralCode });
+      }
+
       console.log(`Successfully created profile for new user: ${user.uid}`);
     }
   } catch (error) {
