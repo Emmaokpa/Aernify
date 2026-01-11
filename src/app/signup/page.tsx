@@ -17,7 +17,7 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/icons/logo';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider, signInWithPopup, AuthErrorCodes, sendEmailVerification, ActionCodeSettings } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider, signInWithPopup, AuthErrorCodes } from 'firebase/auth';
 import { ensureUserProfile } from '@/lib/auth-utils';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
@@ -36,11 +36,11 @@ export default function SignUpPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // This function now only handles the redirection part after profile creation.
-  async function handleAuthSuccess(user: User, referralCode?: string) {
+  async function handleAuthSuccess(user: User) {
     // For non-email providers, create the profile and redirect immediately.
     const isEmailPasswordUser = user.providerData.some(p => p.providerId === 'password');
     if (!isEmailPasswordUser) {
-        await ensureUserProfile(firestore, user, referralCode);
+        await ensureUserProfile(firestore, user);
         toast({
             title: 'Account Ready!',
             description: "You've successfully signed up. Redirecting...",

@@ -2,7 +2,6 @@
 import { User } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 import type { UserProfile } from './types';
-import { applyReferralCode } from '@/ai/flows/referral-flow';
 
 // Function to generate a random referral code
 const generateReferralCode = () => {
@@ -13,11 +12,10 @@ const generateReferralCode = () => {
  * Ensures a user profile exists in Firestore.
  * If the document does not exist, it creates a new profile with initial data.
  * This should ONLY be called AFTER an email is verified or for social logins.
- * @param firestore - The Firestore instance.
+ * @param firestore - The Firestore instance (can be client or admin).
  * @param user - The newly created and authenticated Firebase Auth user object.
- * @param referralCode - An optional referral code provided during signup.
  */
-export const ensureUserProfile = async (firestore: Firestore, user: User, referralCode?: string) => {
+export const ensureUserProfile = async (firestore: Firestore, user: User) => {
   if (!user.uid) {
     throw new Error('User object is missing UID.');
   }
@@ -47,20 +45,10 @@ export const ensureUserProfile = async (firestore: Firestore, user: User, referr
 
       await setDoc(userRef, initialProfileData);
       console.log(`Successfully created profile for new user: ${user.uid}`);
-      
-      // If a referral code was used, apply it now that the profile is created.
-      if (referralCode) {
-        console.log(`Applying referral code "${referralCode}" for user ${user.uid}`);
-        const result = await applyReferralCode({ newUserUid: user.uid, referralCode: referralCode });
-        if(result.success) {
-          console.log('Referral applied successfully.');
-        } else {
-          console.warn(`Failed to apply referral code: ${result.message}`);
-        }
-      }
     }
   } catch (error) {
     console.error(`Error ensuring user profile for ${user.uid}:`, error);
+    // Re-throw the error so the calling flow knows something went wrong.
     throw new Error('Failed to create or verify user profile in the database.');
   }
 };

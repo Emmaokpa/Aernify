@@ -3,10 +3,10 @@
 
 /**
  * @fileOverview A flow for handling referral code application.
- *
- * - applyReferralCode - A function that handles the referral logic.
- * - ReferralInput - The input type for the applyReferralCode function.
- * - ReferralOutput - The return type for the applyReferralCode function.
+ * THIS FLOW IS DEPRECATED for new user signups.
+ * The logic has been moved to an admin-only function in `lib/auth-utils.ts`
+ * to be called from the `verify-code-flow` to avoid SDK conflicts.
+ * This file may be used for other referral applications in the future.
  */
 
 import { ai } from '@/ai/genkit';
