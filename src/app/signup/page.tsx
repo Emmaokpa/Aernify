@@ -21,8 +21,6 @@ import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider
 import { ensureUserProfile } from '@/lib/auth-utils';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
-import { sendVerificationCode } from '@/ai/flows/send-code-flow';
-
 
 export default function SignUpPage() {
   const { toast } = useToast();
@@ -34,9 +32,8 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // This function now only handles the redirection part after profile creation.
+  // This function now only handles the redirection part after profile creation for social logins.
   async function handleAuthSuccess(user: User) {
-    // For non-email providers, create the profile and redirect immediately.
     const isEmailPasswordUser = user.providerData.some(p => p.providerId === 'password');
     if (!isEmailPasswordUser) {
         await ensureUserProfile(user);
@@ -100,10 +97,15 @@ export default function SignUpPage() {
       // Step 2: Set their display name in Firebase Auth
       await updateProfile(user, { displayName: username });
       
-      // Step 3: Call our backend flow to generate and send the verification code
-      const result = await sendVerificationCode({ email: user.email!, uid: user.uid, referralCode: referralCode || undefined });
+      // Step 3: Call our backend API to generate and send the verification code
+      const response = await fetch('/api/send-verification-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: user.uid, email: user.email, referralCode }),
+      });
 
-      if (!result.success) {
+      const result = await response.json();
+      if (!response.ok) {
         throw new Error(result.message || 'Failed to send verification code.');
       }
       

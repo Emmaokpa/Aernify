@@ -17,8 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import Logo from '@/components/icons/logo';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { sendVerificationCode } from '@/ai/flows/send-code-flow';
-import { verifyCode } from '@/ai/flows/verify-code-flow';
 
 export default function VerifyEmailPage() {
   const auth = useAuth();
@@ -53,8 +51,13 @@ export default function VerifyEmailPage() {
     setIsResending(true);
     setError(null);
     try {
-      const result = await sendVerificationCode({ email: user.email!, uid: user.uid });
-      if (!result.success) {
+      const response = await fetch('/api/send-verification-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: user.uid, email: user.email }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
         throw new Error(result.message);
       }
       
@@ -87,9 +90,16 @@ export default function VerifyEmailPage() {
     setError(null);
     
     try {
-        const result = await verifyCode({ uid: user.uid, code });
-        if (!result.success) {
-            throw new Error(result.message);
+        const response = await fetch('/api/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid: user.uid, code }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Verification failed.');
         }
         
         toast({
