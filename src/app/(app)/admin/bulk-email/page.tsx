@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Mail, AlertTriangle } from 'lucide-react';
-import { sendBulkEmail } from '@/ai/flows/bulk-email-flow';
 import { usePublicFirestoreQuery, useFirestore } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
@@ -36,17 +35,25 @@ export default function BulkEmailPage() {
 
     setIsLoading(true);
     try {
-      const result = await sendBulkEmail({ subject, htmlContent });
-      if (result.success) {
-        toast({
-          title: 'Emails Sent!',
-          description: `Successfully sent emails to ${result.sentCount} users.`,
-        });
-        setSubject('');
-        setHtmlContent('');
-      } else {
+      const response = await fetch('/api/admin/bulk-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, htmlContent }),
+      });
+      
+      const result = await response.json();
+
+      if (!response.ok) {
         throw new Error(result.error || 'An unknown error occurred.');
       }
+
+      toast({
+        title: 'Emails Sent!',
+        description: `Successfully dispatched emails to ${result.sentCount} users.`,
+      });
+      setSubject('');
+      setHtmlContent('');
+
     } catch (error: any) {
       console.error('Failed to send bulk emails:', error);
       toast({

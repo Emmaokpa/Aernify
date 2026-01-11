@@ -1,10 +1,3 @@
 
-// Flows will be imported for their side effects in this file.
-import './flows/referral-flow';
-import './flows/leaderboard-flow';
-import './flows/vip-flow';
-import './flows/sales-copy-flow';
-import './flows/generate-reset-link-flow';
-import './flows/bulk-email-flow';
-import './flows/send-code-flow';
-import './flows/verify-code-flow';
+// This file is intentionally left blank.
+// All Genkit flows have been removed and replaced with Next.js API Routes to solve build issues.

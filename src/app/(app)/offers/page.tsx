@@ -27,7 +27,6 @@ import { incrementChallengeProgress } from '@/lib/challenges';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { generateSalesCopy } from '@/ai/flows/sales-copy-flow';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -196,16 +195,26 @@ function SalesCopyGeneratorDialog({ product, children, disabled }: { product: Af
     setIsLoading(true);
     setGeneratedCopy('');
     try {
-      const result = await generateSalesCopy({
-        productName: product.title,
-        productDescription: product.description,
-        productUrl: product.productUrl,
-        format: format,
+      const response = await fetch('/api/admin/sales-copy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productName: product.title,
+          productDescription: product.description,
+          productUrl: product.productUrl,
+          format: format,
+        }),
       });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate copy.');
+      }
+      
       setGeneratedCopy(result.salesCopy);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate sales copy.' });
+      toast({ variant: 'destructive', title: 'Error', description: error.message });
     } finally {
       setIsLoading(false);
     }

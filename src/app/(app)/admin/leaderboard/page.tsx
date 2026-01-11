@@ -24,7 +24,20 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
-import { resetWeeklyLeaderboard, updateLeaderboard } from '@/ai/flows/leaderboard-flow';
+
+async function callLeaderboardApi(action: 'reset' | 'update') {
+  const response = await fetch('/api/admin/leaderboard', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action }),
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.error || `Failed to ${action} leaderboard.`);
+  }
+  return result;
+}
 
 export default function AdminLeaderboardPage() {
   const { toast } = useToast();
@@ -34,23 +47,17 @@ export default function AdminLeaderboardPage() {
   const handleReset = async () => {
     setIsResetting(true);
     try {
-      const result = await resetWeeklyLeaderboard();
-      if (result.success) {
-        toast({
-          title: 'Leaderboard Reset!',
-          description: `Successfully reset weekly coins for ${result.usersAffected} users.`,
-        });
-        // Also update the public leaderboard to reflect the reset
-        await handleUpdate();
-      } else {
-        throw new Error(result.message);
-      }
+      const result = await callLeaderboardApi('reset');
+      toast({
+        title: 'Leaderboard Reset!',
+        description: `Successfully reset weekly coins for ${result.usersAffected} users.`,
+      });
     } catch (error: any) {
       console.error('Failed to reset leaderboard:', error);
       toast({
         variant: 'destructive',
         title: 'Reset Failed',
-        description: error.message || 'An unknown error occurred.',
+        description: error.message,
       });
     } finally {
       setIsResetting(false);
@@ -60,21 +67,17 @@ export default function AdminLeaderboardPage() {
   const handleUpdate = async () => {
     setIsUpdating(true);
     try {
-      const result = await updateLeaderboard();
-      if (result.success) {
-        toast({
-          title: 'Leaderboard Updated!',
-          description: `Public leaderboard now reflects the latest scores for ${result.usersUpdated} users.`,
-        });
-      } else {
-        throw new Error(result.message);
-      }
+      const result = await callLeaderboardApi('update');
+       toast({
+        title: 'Leaderboard Updated!',
+        description: `Public leaderboard now reflects the latest scores for ${result.usersUpdated} users.`,
+      });
     } catch (error: any) {
       console.error('Failed to update leaderboard:', error);
       toast({
         variant: 'destructive',
         title: 'Update Failed',
-        description: error.message || 'An unknown error occurred.',
+        description: error.message,
       });
     } finally {
       setIsUpdating(false);
