@@ -101,7 +101,13 @@ export default function SignUpPage() {
       const response = await fetch('/api/send-verification-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uid: user.uid, email: user.email, referralCode }),
+          body: JSON.stringify({ 
+              uid: user.uid, 
+              email: user.email, 
+              referralCode,
+              displayName: username,
+              photoURL: user.photoURL
+            }),
       });
 
       const result = await response.json();

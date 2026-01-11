@@ -7,7 +7,7 @@ import { add } from 'date-fns';
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
-  const { uid, email, referralCode } = await request.json();
+  const { uid, email, referralCode, displayName, photoURL } = await request.json();
 
   if (!uid || !email) {
     return NextResponse.json({ message: 'User ID and email are required.' }, { status: 400 });
@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
       createdAt: { timestampValue: new Date().toISOString() },
       expiresAt: { timestampValue: expiresAt.toISOString() },
       referralCode: { stringValue: referralCode || '' },
+      email: { stringValue: email },
+      displayName: { stringValue: displayName || '' },
+      photoURL: { stringValue: photoURL || '' },
     },
   };
 
