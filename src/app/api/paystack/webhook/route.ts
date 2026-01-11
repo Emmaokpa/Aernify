@@ -1,9 +1,11 @@
 
 import { NextResponse, NextRequest } from 'next/server';
 import * as crypto from 'crypto';
-import { initializeFirebase } from '@/firebase'; // Server-side initialization
-import { getFirestore, doc, updateDoc, Timestamp, getDoc } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
 import { add } from 'date-fns';
+
+export const runtime = 'nodejs';
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
@@ -45,12 +47,11 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-            const { firestore } = initializeFirebase();
-            const userRef = doc(firestore, 'users', userId);
+            const userRef = adminDb.doc(`users/${userId}`);
             
-            const userSnap = await getDoc(userRef);
+            const userSnap = await userRef.get();
 
-            if (!userSnap.exists()) {
+            if (!userSnap.exists) {
               console.error(`Webhook Error: User with ID ${userId} not found in Firestore.`);
               return NextResponse.json({ status: 'error', message: 'User not found.' }, { status: 404 });
             }
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
             const newExpirationDate = add(new Date(), { days: 30 });
 
             // Update user's VIP status
-            await updateDoc(userRef, { 
+            await userRef.update({ 
               vipExpiresAt: Timestamp.fromDate(newExpirationDate)
             });
             

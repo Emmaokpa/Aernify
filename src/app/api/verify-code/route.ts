@@ -1,10 +1,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { isPast } from 'date-fns';
+import { isPast, isFuture } from 'date-fns';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { UserProfile } from '@/lib/types';
-import { isFuture } from 'date-fns';
 
 export const runtime = 'nodejs';
 
@@ -21,7 +20,7 @@ async function applyReferralCodeAdmin(newUserUid: string, referralCode: string) 
 
         if (querySnapshot.empty) {
             console.warn(`Referral code ${referralCode} not found.`);
-            return;
+            return; // Don't throw, just exit gracefully
         }
 
         const referrerDoc = querySnapshot.docs[0];
@@ -38,6 +37,7 @@ async function applyReferralCodeAdmin(newUserUid: string, referralCode: string) 
         if (!referrerProfileSnap.exists) return;
         const referrerProfile = referrerProfileSnap.data() as UserProfile;
 
+        // Check if referrer is VIP
         const isVip = referrerProfile.vipExpiresAt && isFuture(referrerProfile.vipExpiresAt.toDate());
         const multiplier = isVip ? 2 : 1;
         const referralBonus = 100 * multiplier;
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // 1. Find the verification code document for the user
+    // 1. Find the latest verification code document for the user
     const verificationCollectionRef = adminDb.collection(`users/${uid}/verification`);
     const q = verificationCollectionRef.orderBy('createdAt', 'desc').limit(1);
     const querySnapshot = await q.get();
@@ -84,12 +84,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'The code you entered is incorrect.' }, { status: 400 });
     }
 
-    // --- At this point, the code is valid ---
+    // --- Code is valid ---
     const userRecord = await adminAuth.getUser(uid);
     const userRef = adminDb.doc(`users/${uid}`);
     
-    // 4. Create or Update the user profile in Firestore
-    const initialProfileData: Omit<UserProfile, 'uid'> = {
+    // 4. Create or Update the user profile in Firestore using an "upsert"
+    const initialProfileData = {
         displayName: userRecord.displayName || 'New User',
         email: userRecord.email || '',
         photoURL: userRecord.photoURL || null,
@@ -100,11 +100,10 @@ export async function POST(request: NextRequest) {
         isAdmin: false,
         currentStreak: 0,
         lastLoginDate: '',
-        isVip: false,
-        vipExpiresAt: undefined,
+        isVip: false, // Default value
+        vipExpiresAt: null, // Default value
     };
     
-    // Use set with { merge: true } to robustly create or merge the profile
     await userRef.set(initialProfileData, { merge: true });
 
     // 5. Apply referral code if it exists
@@ -121,7 +120,7 @@ export async function POST(request: NextRequest) {
       emailVerified: true,
     });
 
-    return NextResponse.json({ success: true, message: 'Email verified successfully!' }, { status: 200 });
+    return NextResponse.json({ success: true, message: 'Email verified successfully!' });
 
   } catch (error: any) {
     console.error('API Error in /api/verify-code:', error);

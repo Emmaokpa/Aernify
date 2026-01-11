@@ -2,8 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import nodemailer from 'nodemailer';
-import { initializeAdminApp } from '@/firebase/admin';
+import { adminApp } from '@/lib/firebase-admin';
 
+export const runtime = 'nodejs';
 
 // --- Main API Route Handler ---
 export async function POST(request: NextRequest) {
@@ -15,7 +16,6 @@ export async function POST(request: NextRequest) {
     }
 
     // --- Step 1: Generate Password Reset Link (Server-Side) ---
-    const adminApp = initializeAdminApp();
     const auth = getAuth(adminApp);
     
     let link: string;

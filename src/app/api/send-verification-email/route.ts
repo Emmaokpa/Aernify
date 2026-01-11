@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import nodemailer from 'nodemailer';
-import { add, isPast } from 'date-fns';
+import { add } from 'date-fns';
 
 export const runtime = 'nodejs';
 
@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   
   // 2. Define where to store the code in Firestore
+  // We create a new doc to avoid overwriting previous ones, and query for the latest later.
   const verificationRef = adminDb.collection(`users/${uid}/verification`).doc();
   const expiresAt = add(new Date(), { minutes: 15 }); // Code is valid for 15 minutes
 
