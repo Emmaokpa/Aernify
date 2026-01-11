@@ -27,7 +27,6 @@ import { sendVerificationCode } from '@/ai/flows/send-code-flow';
 export default function SignUpPage() {
   const { toast } = useToast();
   const auth = useAuth();
-  const firestore = useFirestore();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
@@ -40,7 +39,7 @@ export default function SignUpPage() {
     // For non-email providers, create the profile and redirect immediately.
     const isEmailPasswordUser = user.providerData.some(p => p.providerId === 'password');
     if (!isEmailPasswordUser) {
-        await ensureUserProfile(firestore, user);
+        await ensureUserProfile(user);
         toast({
             title: 'Account Ready!',
             description: "You've successfully signed up. Redirecting...",

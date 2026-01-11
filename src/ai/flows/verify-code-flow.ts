@@ -1,19 +1,19 @@
 
 'use server';
+
 /**
  * @fileOverview A flow for verifying a 6-digit code and activating a user account.
+ * This flow now exclusively uses the Firebase Admin SDK to prevent build issues.
  */
+export const runtime = 'nodejs'; // Force Node.js runtime
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { initializeAdminApp } from '@/firebase/admin';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
-import { collection, query, orderBy, limit, getDocs, deleteDoc, doc } from 'firebase/firestore';
-import { ensureUserProfile } from '@/lib/auth-utils';
+import { adminAuth, adminDb } from '@/lib/firebase-admin'; // Use the new admin singleton
+import { applyReferralCodeAdmin } from '@/lib/auth-utils';
 import { isPast } from 'date-fns';
-import { initializeFirebase } from '@/firebase';
-
+import { UserProfile } from '@/lib/types';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const VerifyCodeInputSchema = z.object({
   uid: z.string().describe('The UID of the user.'),
@@ -27,6 +27,13 @@ const VerifyCodeOutputSchema = z.object({
 });
 export type VerifyCodeOutput = z.infer<typeof VerifyCodeOutputSchema>;
 
+
+// Helper to generate a random referral code
+const generateReferralCode = () => {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+};
+
+
 export async function verifyCode(input: VerifyCodeInput): Promise<VerifyCodeOutput> {
   return verifyCodeFlow(input);
 }
@@ -38,17 +45,11 @@ const verifyCodeFlow = ai.defineFlow(
     outputSchema: VerifyCodeOutputSchema,
   },
   async ({ uid, code }) => {
-    initializeAdminApp();
-    const adminAuth = getAuth();
-    // This is the problematic part for Next.js build
-    const adminFirestore = getAdminFirestore();
-    const { firestore: clientFirestore } = initializeFirebase();
-
     try {
-      // 1. Find the most recent verification code document for the user
-      const verificationCollectionRef = collection(clientFirestore, `users/${uid}/verification`);
-      const q = query(verificationCollectionRef, orderBy('createdAt', 'desc'), limit(1));
-      const querySnapshot = await getDocs(q);
+      // 1. Find the most recent verification code document for the user using Admin SDK
+      const verificationCollectionRef = adminDb.collection(`users/${uid}/verification`);
+      const q = verificationCollectionRef.orderBy('createdAt', 'desc').limit(1);
+      const querySnapshot = await q.get();
 
       if (querySnapshot.empty) {
         return { success: false, message: 'Invalid or expired code. Please request a new one.' };
@@ -70,13 +71,37 @@ const verifyCodeFlow = ai.defineFlow(
       // --- At this point, the code is valid ---
       const userRecord = await adminAuth.getUser(uid);
 
-      // 4. Ensure the user profile exists in Firestore (this is where it gets created)
-      await ensureUserProfile(userRecord, verificationData.referralCode || null);
+      // 4. Create or Update the user profile in Firestore using the Admin SDK's "upsert" capability
+      const userRef = adminDb.doc(`users/${uid}`);
+      const initialProfileData: Omit<UserProfile, 'uid'> = {
+        displayName: userRecord.displayName || 'New User',
+        email: userRecord.email || '',
+        photoURL: userRecord.photoURL || null,
+        coins: 0,
+        weeklyCoins: 0,
+        referralCode: generateReferralCode(),
+        referralCount: 0,
+        isAdmin: false,
+        currentStreak: 0,
+        lastLoginDate: '',
+        isVip: false,
+        vipExpiresAt: undefined,
+      };
+
+      // Use set with { merge: true } to create if not exists, or merge if it does.
+      // This is a robust "upsert" operation.
+      await userRef.set(initialProfileData, { merge: true });
+
+      // 5. Apply referral code if it exists
+      const referralCode = verificationData.referralCode;
+      if (referralCode) {
+        await applyReferralCodeAdmin(uid, referralCode);
+      }
       
-      // 5. Delete the used verification code document
-      await deleteDoc(verificationDoc.ref);
+      // 6. Delete the used verification code document
+      await verificationDoc.ref.delete();
       
-      // 6. Finally, mark the user as verified in Firebase Auth
+      // 7. Finally, mark the user as verified in Firebase Auth
       await adminAuth.updateUser(uid, {
         emailVerified: true,
       });
@@ -84,6 +109,7 @@ const verifyCodeFlow = ai.defineFlow(
       return { success: true, message: 'Email verified successfully!' };
     } catch (error: any) {
       console.error('Error verifying code:', error);
+      // Pass a more specific error message back if available.
       return { success: false, message: error.message || 'An unexpected server error occurred.' };
     }
   }
