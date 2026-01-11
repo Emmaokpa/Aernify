@@ -1,9 +1,8 @@
 
 import { NextResponse, NextRequest } from 'next/server';
 import * as crypto from 'crypto';
-import { adminDb } from '@/lib/firebase-admin';
-import { Timestamp } from 'firebase-admin/firestore';
 import { add } from 'date-fns';
+import { updateDocument } from '@/lib/firestore-rest';
 
 export const runtime = 'nodejs';
 
@@ -47,23 +46,23 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-            const userRef = adminDb.doc(`users/${userId}`);
-            
-            const userSnap = await userRef.get();
-
-            if (!userSnap.exists) {
-              console.error(`Webhook Error: User with ID ${userId} not found in Firestore.`);
-              return NextResponse.json({ status: 'error', message: 'User not found.' }, { status: 404 });
-            }
-
-            // Always set expiration to 30 days from now.
+            const userPath = `users/${userId}`;
             const newExpirationDate = add(new Date(), { days: 30 });
 
-            // Update user's VIP status
-            await userRef.update({ 
-              vipExpiresAt: Timestamp.fromDate(newExpirationDate)
-            });
+            const updatePayload = {
+              fields: {
+                vipExpiresAt: { timestampValue: newExpirationDate.toISOString() },
+              },
+            };
             
+            // Use the REST API helper to update the document
+            const updateResult = await updateDocument(userPath, updatePayload, ['vipExpiresAt']);
+
+            if (!updateResult.ok) {
+              const error = await updateResult.json();
+              throw new Error(`Firestore REST API Error: ${error.error.message}`);
+            }
+
             console.log(`VIP status for user ${userId} extended/activated until ${newExpirationDate.toISOString()}.`);
             return NextResponse.json({ status: 'success', message: 'VIP status updated.' });
 
