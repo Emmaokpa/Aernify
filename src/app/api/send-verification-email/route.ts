@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { setDocument } from '@/lib/firestore-rest';
 import nodemailer from 'nodemailer';
 import { add } from 'date-fns';
 
@@ -16,19 +16,27 @@ export async function POST(request: NextRequest) {
   // 1. Generate a 6-digit code
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   
-  // 2. Define where to store the code in Firestore
-  // We create a new doc to avoid overwriting previous ones, and query for the latest later.
-  const verificationRef = adminDb.collection(`users/${uid}/verification`).doc();
-  const expiresAt = add(new Date(), { minutes: 15 }); // Code is valid for 15 minutes
+  // 2. Define the path and data for Firestore REST API
+  const newDocId = Math.random().toString(36).substring(2, 15); // Firestore REST API doesn't auto-generate IDs on set
+  const documentPath = `users/${uid}/verification/${newDocId}`;
+  const expiresAt = add(new Date(), { minutes: 15 });
+
+  const firestoreData = {
+    fields: {
+      code: { stringValue: code },
+      createdAt: { timestampValue: new Date().toISOString() },
+      expiresAt: { timestampValue: expiresAt.toISOString() },
+      referralCode: { stringValue: referralCode || '' },
+    },
+  };
 
   try {
-    // 3. Store the code, expiry, and optional referral code using Admin SDK
-    await verificationRef.set({
-      code: code,
-      createdAt: new Date(),
-      expiresAt: expiresAt,
-      referralCode: referralCode || null,
-    });
+    // 3. Store the code using the Firestore REST API
+    const setResult = await setDocument(documentPath, firestoreData);
+    if (!setResult.ok) {
+        const error = await setResult.json();
+        throw new Error(`Firestore API Error: ${error.error.message}`);
+    }
 
     // 4. Send the email with Nodemailer
     const transporter = nodemailer.createTransport({

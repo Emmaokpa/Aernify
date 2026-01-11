@@ -1,11 +1,8 @@
 
 import { User } from 'firebase/auth';
-import { doc, getDoc, setDoc, writeBatch, collection, query, where, getDocs, increment, Firestore, FieldValue } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { UserProfile } from './types';
 import { initializeFirebase } from '@/firebase';
-import { isFuture } from 'date-fns';
-import { adminDb } from './firebase-admin'; // Use the admin SDK for this server-side utility
-
 
 // Function to generate a random referral code
 const generateReferralCode = () => {
@@ -13,61 +10,12 @@ const generateReferralCode = () => {
 };
 
 /**
- * Applies a referral code, rewarding the referrer.
- * This is a server-only function that uses the Admin SDK.
- * @param newUserUid The UID of the new user who used the code.
- * @param referralCode The referral code they entered.
- */
-export const applyReferralCodeAdmin = async (newUserUid: string, referralCode: string) => {
-    const usersRef = adminDb.collection('users');
-    const q = usersRef.where('referralCode', '==', referralCode.toUpperCase());
-    
-    try {
-        const querySnapshot = await q.get();
-
-        if (querySnapshot.empty) {
-            console.warn(`Referral code ${referralCode} not found.`);
-            return { success: false, message: 'Invalid referral code.' };
-        }
-
-        const referrerDoc = querySnapshot.docs[0];
-        const referrerUid = referrerDoc.id;
-        const referrerProfile = referrerDoc.data() as UserProfile;
-
-        if (referrerUid === newUserUid) {
-            console.warn(`User ${newUserUid} attempted to refer themselves.`);
-            return { success: false, message: 'You cannot refer yourself.' };
-        }
-        
-        const referrerUserRef = adminDb.doc(`users/${referrerUid}`);
-
-        const isVip = referrerProfile.vipExpiresAt && isFuture(referrerProfile.vipExpiresAt.toDate());
-        const multiplier = isVip ? 2 : 1;
-        const referralBonus = 100 * multiplier;
-
-        // Use Admin SDK's FieldValue to increment atomically
-        await referrerUserRef.update({
-            coins: FieldValue.increment(referralBonus),
-            weeklyCoins: FieldValue.increment(referralBonus),
-            referralCount: FieldValue.increment(1),
-        });
-
-        return { success: true, message: 'Referral successful!' };
-    } catch (error) {
-        console.error("Error applying referral code with Admin SDK:", error);
-        return { success: false, message: 'An error occurred while applying the referral.' };
-    }
-}
-
-
-/**
- * Ensures a user profile exists in Firestore.
- * This function is now only safe to be called by social logins on the client, as email/pass
- * user creation is handled entirely by the `verify-code-flow`.
+ * This function is now ONLY for client-side social logins.
+ * Email/password signup is handled by the /api/verify-code route.
  * @param user - The newly created and authenticated Firebase Auth user object.
  */
 export const ensureUserProfile = async (user: User) => {
-  const { firestore } = initializeFirebase(); // Using client SDK
+  const { firestore } = initializeFirebase();
   if (!user.uid) {
     throw new Error('User object is missing UID.');
   }
@@ -78,7 +26,6 @@ export const ensureUserProfile = async (user: User) => {
     const docSnap = await getDoc(userRef);
 
     if (!docSnap.exists()) {
-      // Define the data for the new user profile
       const initialProfileData: UserProfile = {
         uid: user.uid,
         displayName: user.displayName || 'New User',

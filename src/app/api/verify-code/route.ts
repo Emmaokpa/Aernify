@@ -1,9 +1,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { adminAuth } from '@/lib/firebase-admin';
+import { runQuery, updateDocument, setDocument, deleteDocument } from '@/lib/firestore-rest';
 import { isPast, isFuture } from 'date-fns';
-import { FieldValue } from 'firebase-admin/firestore';
-import type { UserProfile } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
@@ -11,46 +10,60 @@ const generateReferralCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
-async function applyReferralCodeAdmin(newUserUid: string, referralCode: string) {
-    const usersRef = adminDb.collection('users');
-    const q = usersRef.where('referralCode', '==', referralCode.toUpperCase()).limit(1);
-    
-    try {
-        const querySnapshot = await q.get();
+async function applyReferralCodeRest(newUserUid: string, referralCode: string) {
+  try {
+    const query = {
+      structuredQuery: {
+        from: [{ collectionId: 'users' }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: 'referralCode' },
+            op: 'EQUAL',
+            value: { stringValue: referralCode.toUpperCase() },
+          },
+        },
+        limit: 1,
+      },
+    };
 
-        if (querySnapshot.empty) {
-            console.warn(`Referral code ${referralCode} not found.`);
-            return; // Don't throw, just exit gracefully
-        }
-
-        const referrerDoc = querySnapshot.docs[0];
-        const referrerUid = referrerDoc.id;
-
-        if (referrerUid === newUserUid) {
-            console.warn(`User ${newUserUid} attempted to refer themselves.`);
-            return;
-        }
-        
-        const referrerUserRef = adminDb.doc(`users/${referrerUid}`);
-        const referrerProfileSnap = await referrerUserRef.get();
-
-        if (!referrerProfileSnap.exists) return;
-        const referrerProfile = referrerProfileSnap.data() as UserProfile;
-
-        // Check if referrer is VIP
-        const isVip = referrerProfile.vipExpiresAt && isFuture(referrerProfile.vipExpiresAt.toDate());
-        const multiplier = isVip ? 2 : 1;
-        const referralBonus = 100 * multiplier;
-
-        await referrerUserRef.update({
-            coins: FieldValue.increment(referralBonus),
-            weeklyCoins: FieldValue.increment(referralBonus),
-            referralCount: FieldValue.increment(1),
-        });
-
-    } catch (error) {
-        console.error("Error applying referral code with Admin SDK:", error);
+    const referrers = await runQuery(query);
+    if (!referrers || referrers.length === 0) {
+      console.warn(`Referral code ${referralCode} not found.`);
+      return;
     }
+
+    const referrerDoc = referrers[0].document;
+    const referrerUid = referrerDoc.name.split('/').pop();
+    const referrerProfile = referrerDoc.fields;
+
+    if (!referrerUid || referrerUid === newUserUid) {
+      console.warn(`User ${newUserUid} attempted to refer themselves or referrer not found.`);
+      return;
+    }
+    
+    const isVip = referrerProfile.vipExpiresAt?.timestampValue && isFuture(new Date(referrerProfile.vipExpiresAt.timestampValue));
+    const multiplier = isVip ? 2 : 1;
+    const referralBonus = 100 * multiplier;
+    
+    // In REST API, increment is not atomic. We must read, calculate, and write.
+    // This is a limitation of this approach but acceptable for non-critical counters.
+    const currentCoins = parseInt(referrerProfile.coins?.integerValue || '0');
+    const currentWeeklyCoins = parseInt(referrerProfile.weeklyCoins?.integerValue || '0');
+    const currentReferralCount = parseInt(referrerProfile.referralCount?.integerValue || '0');
+
+    const referrerPath = `users/${referrerUid}`;
+    const updatePayload = {
+      fields: {
+        coins: { integerValue: (currentCoins + referralBonus).toString() },
+        weeklyCoins: { integerValue: (currentWeeklyCoins + referralBonus).toString() },
+        referralCount: { integerValue: (currentReferralCount + 1).toString() },
+      },
+    };
+    
+    await updateDocument(referrerPath, updatePayload, ['coins', 'weeklyCoins', 'referralCount']);
+  } catch (error) {
+    console.error("Error applying referral code with REST API:", error);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -61,67 +74,61 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // 1. Find the latest verification code document for the user
-    const verificationCollectionRef = adminDb.collection(`users/${uid}/verification`);
-    const q = verificationCollectionRef.orderBy('createdAt', 'desc').limit(1);
-    const querySnapshot = await q.get();
+    const query = {
+      structuredQuery: {
+        from: [{ collectionId: 'verification' }],
+        where: {
+          fieldFilter: { field: { fieldPath: 'code' }, op: 'EQUAL', value: { stringValue: code } },
+        },
+        orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
+        limit: 1,
+      },
+      parent: `projects/${process.env.FIREBASE_PROJECT_ID}/databases/(default)/documents/users/${uid}`,
+    };
 
-    if (querySnapshot.empty) {
+    const results = await runQuery(query);
+    if (!results || results.length === 0) {
       return NextResponse.json({ message: 'Invalid or expired code. Please request a new one.' }, { status: 400 });
     }
 
-    const verificationDoc = querySnapshot.docs[0];
-    const verificationData = verificationDoc.data();
-
-    // 2. Check if the code is expired
-    if (isPast(verificationData.expiresAt.toDate())) {
-      await verificationDoc.ref.delete(); // Clean up expired code
+    const verificationDoc = results[0].document;
+    const verificationData = verificationDoc.fields;
+    const docPath = verificationDoc.name.substring(verificationDoc.name.indexOf('/documents/') + 10);
+    
+    if (isPast(new Date(verificationData.expiresAt.timestampValue))) {
+      await deleteDocument(docPath);
       return NextResponse.json({ message: 'This code has expired. Please request a new one.' }, { status: 400 });
     }
 
-    // 3. Check if the code matches
-    if (verificationData.code !== code) {
-      return NextResponse.json({ message: 'The code you entered is incorrect.' }, { status: 400 });
-    }
-
-    // --- Code is valid ---
     const userRecord = await adminAuth.getUser(uid);
-    const userRef = adminDb.doc(`users/${uid}`);
-    
-    // 4. Create or Update the user profile in Firestore using an "upsert"
     const initialProfileData = {
-        displayName: userRecord.displayName || 'New User',
-        email: userRecord.email || '',
-        photoURL: userRecord.photoURL || null,
-        coins: 0,
-        weeklyCoins: 0,
-        referralCode: generateReferralCode(),
-        referralCount: 0,
-        isAdmin: false,
-        currentStreak: 0,
-        lastLoginDate: '',
-        isVip: false, // Default value
-        vipExpiresAt: null, // Default value
+      fields: {
+        displayName: { stringValue: userRecord.displayName || 'New User' },
+        email: { stringValue: userRecord.email || '' },
+        photoURL: { stringValue: userRecord.photoURL || '' },
+        coins: { integerValue: '0' },
+        weeklyCoins: { integerValue: '0' },
+        referralCode: { stringValue: generateReferralCode() },
+        referralCount: { integerValue: '0' },
+        isAdmin: { booleanValue: false },
+        currentStreak: { integerValue: '0' },
+        lastLoginDate: { stringValue: '' },
+        isVip: { booleanValue: false },
+        vipExpiresAt: { nullValue: null },
+      },
     };
-    
-    await userRef.set(initialProfileData, { merge: true });
 
-    // 5. Apply referral code if it exists
-    const referralCode = verificationData.referralCode;
+    await setDocument(`users/${uid}`, initialProfileData, true); // Use merge=true as an upsert
+
+    const referralCode = verificationData.referralCode?.stringValue;
     if (referralCode) {
-        await applyReferralCodeAdmin(uid, referralCode);
+      await applyReferralCodeRest(uid, referralCode);
     }
     
-    // 6. Delete the used verification code document
-    await verificationDoc.ref.delete();
-    
-    // 7. Finally, mark the user as verified in Firebase Auth
-    await adminAuth.updateUser(uid, {
-      emailVerified: true,
-    });
+    await deleteDocument(docPath);
+    await adminAuth.updateUser(uid, { emailVerified: true });
 
     return NextResponse.json({ success: true, message: 'Email verified successfully!' });
-
   } catch (error: any) {
     console.error('API Error in /api/verify-code:', error);
     return NextResponse.json({ message: error.message || 'An unexpected server error occurred.' }, { status: 500 });
