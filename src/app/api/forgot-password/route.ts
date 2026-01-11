@@ -1,10 +1,44 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuth } from 'firebase-admin/auth';
 import nodemailer from 'nodemailer';
-import { adminApp } from '@/lib/firebase-admin';
 
 export const runtime = 'nodejs';
+
+// This API key is safe to be exposed on the server side.
+const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+const FIREBASE_AUTH_DOMAIN = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+
+
+async function generatePasswordResetLink(email: string): Promise<string> {
+    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            requestType: 'PASSWORD_RESET',
+            email: email,
+        }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+        // To prevent user enumeration, we won't throw an error if the user isn't found.
+        if (result.error && result.error.message === 'EMAIL_NOT_FOUND') {
+            console.log(`Password reset requested for non-existent user: ${email}`);
+            // Return an empty string to signify we should not send an email.
+            return '';
+        }
+        // For other errors, we throw.
+        throw new Error(result.error?.message || 'Failed to generate password reset link.');
+    }
+
+    // The REST API doesn't return the full link, so we construct it.
+    // This is a standard approach.
+    const oobCode = result.oobCode;
+    const link = `https://${FIREBASE_AUTH_DOMAIN}/__/auth/action?mode=resetPassword&oobCode=${oobCode}`;
+    return link;
+}
+
 
 // --- Main API Route Handler ---
 export async function POST(request: NextRequest) {
@@ -15,25 +49,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
     }
 
-    // --- Step 1: Generate Password Reset Link (Server-Side) ---
-    const auth = getAuth(adminApp);
+    // Step 1: Generate the link using the Firebase Auth REST API
+    const link = await generatePasswordResetLink(email);
     
-    let link: string;
-    try {
-        link = await auth.generatePasswordResetLink(email);
-    } catch (error: any) {
-        // If the user does not exist, Firebase throws an error.
-        // We'll catch it and return a success response to prevent user enumeration.
-        if (error.code === 'auth/user-not-found') {
-            console.log(`Password reset requested for non-existent user: ${email}`);
-            // We exit gracefully without sending an email. The client will show a generic success message.
-            return NextResponse.json({ message: 'If an account exists, an email has been sent.' }, { status: 200 });
-        }
-        // For any other Firebase Admin errors, we re-throw to be caught by the outer block.
-        throw error;
+    // If the link is empty, it means the user was not found. We exit gracefully.
+    if (!link) {
+        return NextResponse.json({ message: 'If an account exists, an email has been sent.' }, { status: 200 });
     }
 
-    // --- Step 2: Send the Email with Nodemailer (Server-Side) ---
+    // Step 2: Send the Email with Nodemailer
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.hostinger.com',
         port: Number(process.env.SMTP_PORT || 465),
@@ -48,7 +72,7 @@ export async function POST(request: NextRequest) {
       <h1>Reset Your Password</h1>
       <p>Hello,</p>
       <p>Follow this link to reset your password for your Aernify account.</p>
-      <a href="${link}" style="background-color: #f5a623; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+      <a href="${link}" style="background-color: #4B0082; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
       <p>If you didn’t ask to reset your password, you can ignore this email.</p>
       <p>Thanks,<br/>The Aernify Team</p>
     `;
@@ -64,7 +88,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('API Error in /api/forgot-password:', error);
-    // Return a generic error to the client
     return NextResponse.json({ error: error.message || 'An internal server error occurred.' }, { status: 500 });
   }
 }
