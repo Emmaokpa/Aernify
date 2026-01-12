@@ -1,14 +1,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { genkit, configureGenkit } from 'genkit';
+import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'zod';
 
 // Minimal Genkit setup within the API route
-configureGenkit({
+const ai = genkit({
   plugins: [googleAI()],
-  logLevel: 'warn',
-  enableTracing: false,
 });
 
 const SalesCopyInputSchema = z.object({
@@ -61,8 +59,8 @@ export async function POST(request: NextRequest) {
     ${promptAddition}
     `;
 
-    const llmResponse = await genkit.generate({
-        model: 'googleai/gemini-2.5-flash',
+    const llmResponse = await ai.generate({
+        model: 'gemini-1.5-flash',
         prompt: fullPrompt
     });
 

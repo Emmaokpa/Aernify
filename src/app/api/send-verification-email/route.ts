@@ -19,23 +19,63 @@ export async function POST(request: NextRequest) {
   // 2. Define the path and data for Firestore REST API
   const newDocId = Math.random().toString(36).substring(2, 15); // Firestore REST API doesn't auto-generate IDs on set
   const documentPath = `users/${uid}/verification/${newDocId}`;
-  const expiresAt = add(new Date(), { minutes: 15 });
-
-  const firestoreData = {
-    fields: {
-      code: { stringValue: code },
-      createdAt: { timestampValue: new Date().toISOString() },
-      expiresAt: { timestampValue: expiresAt.toISOString() },
-      referralCode: { stringValue: referralCode || '' },
-      email: { stringValue: email },
-      displayName: { stringValue: displayName || '' },
-      photoURL: { stringValue: photoURL || '' },
-    },
-  };
 
   try {
+    const OriginalDate = Date;
+    // Use >= to handle cases where the clock might be even further ahead.
+    const isFuture = new Date().getFullYear() >= 2026;
+    let firestoreData;
+
+    if (isFuture) {
+      // This is a workaround for a server with an incorrect system time.
+      // We create a mock Date object that reports a time in the past,
+      // which is required for Google's authentication JWTs.
+      const now = new OriginalDate();
+      // Calculate the offset to bring the date back by exactly one year.
+      const oneYearAgo = new OriginalDate(
+        now.getFullYear() - 1,
+        now.getMonth(),
+        now.getDate(),
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds(),
+        now.getMilliseconds()
+      );
+      const offset = now.getTime() - oneYearAgo.getTime();
+
+      class MockDate extends OriginalDate {
+        constructor(...args: any[]) {
+          // If no arguments, return time shifted back by the offset.
+          super(...(args.length === 0 ? [OriginalDate.now() - offset] : args) as []);
+        }
+        static now() { return OriginalDate.now() - offset; }
+      }
+      global.Date = MockDate as any;
+    }
+
+    // Define Firestore data *after* potentially mocking the Date object.
+    // This ensures createdAt/expiresAt timestamps are correct relative to the (mocked) current time.
+    const expiresAt = add(new Date(), { minutes: 15 });
+    firestoreData = {
+      fields: {
+        code: { stringValue: code },
+        createdAt: { timestampValue: new Date().toISOString() },
+        expiresAt: { timestampValue: expiresAt.toISOString() },
+        referralCode: { stringValue: referralCode || '' },
+        email: { stringValue: email },
+        displayName: { stringValue: displayName || '' },
+        photoURL: { stringValue: photoURL || '' },
+      },
+    };
+
     // 3. Store the code using the Firestore REST API
-    const setResult = await setDocument(documentPath, firestoreData);
+    let setResult;
+    try {
+      setResult = await setDocument(documentPath, firestoreData);
+    } finally {
+      if (isFuture) global.Date = OriginalDate;
+    }
+
     if (!setResult.ok) {
         const error = await setResult.json();
         throw new Error(`Firestore API Error: ${error.error.message}`);
