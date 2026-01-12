@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const OriginalDate = Date;
+    const OriginalFetch = global.fetch;
     // Use >= to handle cases where the clock might be even further ahead.
     const isFuture = new Date().getFullYear() >= 2026;
     let firestoreData;
@@ -51,6 +52,14 @@ export async function POST(request: NextRequest) {
         static now() { return OriginalDate.now() - offset; }
       }
       global.Date = MockDate as any;
+
+      // Intercept fetch to restore Date before network request
+      // This prevents Vercel's monitoring from seeing time travel and crashing
+      global.fetch = async function (...args: any[]) {
+        global.Date = OriginalDate;
+        global.fetch = OriginalFetch;
+        return OriginalFetch.apply(this, args as any);
+      } as any;
     }
 
     // Define Firestore data *after* potentially mocking the Date object.
@@ -73,7 +82,12 @@ export async function POST(request: NextRequest) {
     try {
       setResult = await setDocument(documentPath, firestoreData);
     } finally {
-      if (isFuture) global.Date = OriginalDate;
+      if (isFuture) {
+        global.Date = OriginalDate;
+        if (global.fetch !== OriginalFetch) {
+          global.fetch = OriginalFetch;
+        }
+      }
     }
 
     if (!setResult.ok) {
