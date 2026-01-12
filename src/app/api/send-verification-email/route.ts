@@ -1,123 +1,102 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { setDocument } from '@/lib/firestore-rest';
 import nodemailer from 'nodemailer';
-import { add } from 'date-fns';
+import { addMinutes } from 'date-fns';
+import { setDocument } from '@/lib/firestore-rest';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
-  const { uid, email, referralCode, displayName, photoURL } = await request.json();
-
-  if (!uid || !email) {
-    return NextResponse.json({ message: 'User ID and email are required.' }, { status: 400 });
-  }
-
-  // 1. Generate a 6-digit code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  
-  // 2. Define the path and data for Firestore REST API
-  const newDocId = Math.random().toString(36).substring(2, 15); // Firestore REST API doesn't auto-generate IDs on set
-  const documentPath = `users/${uid}/verification/${newDocId}`;
-
   try {
-    const OriginalDate = Date;
-    // Use >= to handle cases where the clock might be even further ahead.
-    const isFuture = new Date().getFullYear() >= 2026;
-    let firestoreData;
+    const { uid, email, referralCode, displayName, photoURL } =
+      await request.json();
 
-    if (isFuture) {
-      // This is a workaround for a server with an incorrect system time.
-      // We create a mock Date object that reports a time in the past,
-      // which is required for Google's authentication JWTs.
-      const now = new OriginalDate();
-      // Calculate the offset to bring the date back by exactly one year.
-      const oneYearAgo = new OriginalDate(
-        now.getFullYear() - 1,
-        now.getMonth(),
-        now.getDate(),
-        now.getHours(),
-        now.getMinutes(),
-        now.getSeconds(),
-        now.getMilliseconds()
+    if (!uid || !email) {
+      return NextResponse.json(
+        { message: 'User ID and email are required.' },
+        { status: 400 }
       );
-      const offset = now.getTime() - oneYearAgo.getTime();
-
-      class MockDate extends OriginalDate {
-        constructor(...args: any[]) {
-          // If no arguments, return time shifted back by the offset.
-          super(...(args.length === 0 ? [OriginalDate.now() - offset] : args) as []);
-        }
-        static now() { return OriginalDate.now() - offset; }
-      }
-      global.Date = MockDate as any;
     }
 
-    // Define Firestore data *after* potentially mocking the Date object.
-    // This ensures createdAt/expiresAt timestamps are correct relative to the (mocked) current time.
-    const expiresAt = add(new Date(), { minutes: 15 });
-    firestoreData = {
+    // 1️⃣ Generate 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 2️⃣ Firestore document path
+    const docId = Math.random().toString(36).substring(2, 15);
+    const documentPath = `users/${uid}/verification/${docId}`;
+
+    // 3️⃣ Correct timestamps (NO hacks)
+    const createdAt = new Date();
+    const expiresAt = addMinutes(createdAt, 15);
+
+    const firestoreData = {
       fields: {
         code: { stringValue: code },
-        createdAt: { timestampValue: new Date().toISOString() },
+        createdAt: { timestampValue: createdAt.toISOString() },
         expiresAt: { timestampValue: expiresAt.toISOString() },
-        referralCode: { stringValue: referralCode || '' },
         email: { stringValue: email },
+        referralCode: { stringValue: referralCode || '' },
         displayName: { stringValue: displayName || '' },
         photoURL: { stringValue: photoURL || '' },
       },
     };
 
-    // 3. Store the code using the Firestore REST API
-    let setResult;
-    try {
-      setResult = await setDocument(documentPath, firestoreData);
-    } finally {
-      if (isFuture) global.Date = OriginalDate;
+    // 4️⃣ Store verification code in Firestore (REST)
+    const result = await setDocument(documentPath, firestoreData);
+
+    if (!result.ok) {
+      const err = await result.json();
+      throw new Error(err?.error?.message || 'Firestore write failed');
     }
 
-    if (!setResult.ok) {
-        const error = await setResult.json();
-        throw new Error(`Firestore API Error: ${error.error.message}`);
-    }
-
-    // 4. Send the email with Nodemailer
+    // 5️⃣ Nodemailer transporter
     const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.hostinger.com',
-        port: Number(process.env.SMTP_PORT || 465),
-        secure: true,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASSWORD,
-        },
+      host: process.env.SMTP_HOST || 'smtp.hostinger.com',
+      port: Number(process.env.SMTP_PORT || 465),
+      secure: true,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
+      },
     });
 
+    // 6️⃣ Email HTML
     const emailHtml = `
-      <div style="font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; margin: 0; padding: 0;">
-        <div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-          <h1 style="color: #2c3e50; font-size: 24px; text-align: center;">Your Verification Code</h1>
-          <p style="font-size: 16px; text-align: center;">Use the code below to verify your email address and activate your Aernify account.</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <p style="background-color: #eee; color: #333; padding: 14px 28px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 28px; letter-spacing: 0.2em;">${code}</p>
+      <div style="font-family: Arial, Helvetica, sans-serif; background:#f4f4f4; padding:20px;">
+        <div style="max-width:600px; margin:auto; background:#fff; padding:30px; border-radius:8px;">
+          <h2 style="text-align:center;">Verify your email</h2>
+          <p style="text-align:center;">Use the code below to verify your Aernify account:</p>
+          <div style="text-align:center; margin:30px 0;">
+            <span style="font-size:28px; letter-spacing:6px; font-weight:bold;">
+              ${code}
+            </span>
           </div>
-          <p style="font-size: 14px; color: #888; text-align: center;">This code will expire in 15 minutes. If you did not request this, you can safely ignore this email.</p>
-          <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
-          <p style="font-size: 14px; color: #888; text-align: center;">Thanks,<br/>The Aernify Team</p>
+          <p style="text-align:center; color:#777;">
+            This code expires in 15 minutes.
+          </p>
+          <p style="text-align:center; color:#999; font-size:14px;">
+            If you didn’t request this, you can ignore this email.
+          </p>
         </div>
       </div>
     `;
 
+    // 7️⃣ Send email
     await transporter.sendMail({
-        from: `"Aernify" <${process.env.SMTP_USER}>`,
-        to: email,
-        subject: 'Your Aernify Verification Code',
-        html: emailHtml,
+      from: `"Aernify" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Your Aernify Verification Code',
+      html: emailHtml,
     });
 
-    return NextResponse.json({ success: true, message: 'Verification code sent.' });
-
+    return NextResponse.json({
+      success: true,
+      message: 'Verification code sent successfully.',
+    });
   } catch (error: any) {
-      console.error('Error in send-verification-email API route:', error);
-      return NextResponse.json({ message: error.message || 'An unexpected server error occurred.' }, { status: 500 });
+    console.error('Error in send-verification-email API route:', error);
+    return NextResponse.json(
+      { message: error.message || 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
