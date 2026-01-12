@@ -173,7 +173,7 @@ export default function LandingPage() {
           <div className="mx-auto mt-12 max-w-3xl">
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, index) => (
-                <AccordionItem value={`item-${index + 1}`} key={index}>
+                <AccordionItem value={`item-${index}`} key={index}>
                   <AccordionTrigger className="text-lg text-left">{faq.question}</AccordionTrigger>
                   <AccordionContent className="text-base text-muted-foreground">
                     {faq.answer}
