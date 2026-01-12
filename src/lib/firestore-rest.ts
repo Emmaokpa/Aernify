@@ -39,9 +39,10 @@ async function getAccessToken(): Promise<string> {
     ...claims,
   }, privateKey, 'RS256');
   
-  // Explicitly set both issued at and expiration times to avoid clock skew issues.
+  // Explicitly set issued at and expiration times to avoid clock skew issues.
   jwt.setIssuedAt(now);
-  jwt.setExpiration(now + 3600); // 1 hour expiry
+  // Use a duration string for expiration for better reliability
+  jwt.setExpiration(new Date().getTime() + (60 * 60 * 1000)); // 1 hour from now
 
   const compactJwt = jwt.compact();
 
