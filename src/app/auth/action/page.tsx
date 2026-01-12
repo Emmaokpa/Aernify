@@ -1,12 +1,12 @@
-
 'use client';
 
-import React, { useState, useEffect, Suspense, useCallback } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   verifyPasswordResetCode,
   confirmPasswordReset,
   applyActionCode,
+  checkActionCode,
 } from 'firebase/auth';
 import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -166,39 +166,94 @@ function ResetPasswordForm({ actionCode }: { actionCode: string }) {
   );
 }
 
-// This component is now largely deprecated in favor of the code-based flow.
-// It will only handle password resets.
+
 function AuthActionHandler() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const auth = useAuth();
+  const { toast } = useToast();
   const mode = searchParams.get('mode');
   const actionCode = searchParams.get('oobCode');
 
   const [status, setStatus] = useState<ActionState>('loading');
+  const [error, setError] = useState<string | null>(null);
   
-  const verifyResetCode = useCallback(async (code: string) => {
-      try {
-        await verifyPasswordResetCode(auth, code);
-        setStatus('form');
-      } catch (err: any) {
-        console.error("Failed to verify password reset code", err);
-        setStatus('invalid');
-      }
-  }, [auth]);
-
   useEffect(() => {
     if (!mode || !actionCode) {
       setStatus('invalid');
       return;
     }
-    
-    if (mode === 'resetPassword') {
-       verifyResetCode(actionCode);
-    } else {
-        // All other modes like verifyEmail are now handled differently
-        setStatus('invalid');
+
+    const handleAction = async () => {
+      try {
+        switch (mode) {
+          case 'resetPassword':
+            await verifyPasswordResetCode(auth, actionCode);
+            setStatus('form');
+            break;
+          case 'verifyEmail':
+            await applyActionCode(auth, actionCode);
+            toast({
+              title: "Email Verified!",
+              description: "Your email has been successfully verified. You can now sign in.",
+            });
+            router.push('/login');
+            break;
+          default:
+            setStatus('invalid');
+            break;
+        }
+      } catch (err: any) {
+        console.error(`Error handling action code for mode "${mode}":`, err);
+        if (err.code === 'auth/expired-action-code' || err.code === 'auth/invalid-action-code') {
+          setError('This link is invalid or has expired. Please try again.');
+        } else {
+          setError('An unexpected error occurred.');
+        }
+        setStatus('error');
+      }
+    };
+
+    handleAction();
+  }, [mode, actionCode, auth, router, toast]);
+
+  const renderContent = () => {
+     switch (status) {
+      case 'loading':
+        return (
+          <>
+            <CardTitle>Verifying link...</CardTitle>
+             <div className="flex justify-center items-center p-8">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            </div>
+          </>
+        );
+      case 'form':
+         return (
+            <>
+              <CardTitle>Reset Your Password</CardTitle>
+              {actionCode && <ResetPasswordForm actionCode={actionCode} />}
+            </>
+          );
+      case 'invalid':
+      case 'error':
+        return (
+           <div className="text-center space-y-6">
+            <XCircle className="w-16 h-16 text-destructive mx-auto" />
+            <CardTitle>Invalid or Expired Link</CardTitle>
+            <p className="text-muted-foreground">
+              {error || 'This link may have already been used. Please request a new one.'}
+            </p>
+            <Button asChild className="w-full">
+              <Link href="/login">Back to Sign In</Link>
+            </Button>
+          </div>
+        );
+      default:
+        return null;
     }
-  }, [mode, actionCode, auth, verifyResetCode]);
+  }
+
 
   return (
     <main className="flex items-center justify-center min-h-screen p-4">
@@ -207,29 +262,9 @@ function AuthActionHandler() {
            <div className="mx-auto mb-4">
             <Logo />
           </div>
-          {status === 'loading' && <CardTitle>Verifying link...</CardTitle>}
-          {status === 'form' && <CardTitle>Reset Your Password</CardTitle>}
-          {status === 'invalid' && <CardTitle>Invalid or Expired Link</CardTitle>}
         </CardHeader>
         <CardContent>
-          {status === 'loading' && (
-            <div className="flex justify-center items-center p-8">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            </div>
-          )}
-          {status === 'invalid' && (
-            <div className="text-center space-y-4">
-              <p className="text-muted-foreground">
-                This link is invalid or has expired. It may have already been used.
-              </p>
-              <Button asChild className="w-full">
-                <Link href="/login">Back to Sign In</Link>
-              </Button>
-            </div>
-          )}
-          {status === 'form' && actionCode && (
-            <ResetPasswordForm actionCode={actionCode} />
-          )}
+          {renderContent()}
         </CardContent>
       </Card>
     </main>

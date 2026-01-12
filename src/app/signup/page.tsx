@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,8 +15,8 @@ import { useState } from 'react';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Logo from '@/components/icons/logo';
 import { useRouter } from 'next/navigation';
-import { useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider, signInWithPopup, AuthErrorCodes } from 'firebase/auth';
+import { useAuth } from '@/firebase';
+import { createUserWithEmailAndPassword, updateProfile, User, GoogleAuthProvider, signInWithPopup, AuthErrorCodes, sendEmailVerification } from 'firebase/auth';
 import { ensureUserProfile } from '@/lib/auth-utils';
 import { Separator } from '@/components/ui/separator';
 import GoogleIcon from '@/components/icons/google-icon';
@@ -94,31 +93,17 @@ export default function SignUpPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Step 2: Set their display name in Firebase Auth
+      // Step 2: Set their display name & create their profile in the database
       await updateProfile(user, { displayName: username });
-      
-      // Step 3: Call our backend API to generate and send the verification code
-      const response = await fetch('/api/send-verification-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-              uid: user.uid, 
-              email: user.email, 
-              referralCode,
-              displayName: username,
-              photoURL: user.photoURL
-            }),
-      });
+      await ensureUserProfile(user, referralCode);
 
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to send verification code.');
-      }
+      // Step 3: Send the built-in verification email
+      await sendEmailVerification(user);
       
       // Step 4: Redirect to the verify-email page to await verification.
       toast({
             title: 'Almost there!',
-            description: "We've sent a verification code to your email. Please check your inbox to continue.",
+            description: "We've sent a verification link to your email. Please check your inbox to continue.",
       });
       router.push('/verify-email');
 
